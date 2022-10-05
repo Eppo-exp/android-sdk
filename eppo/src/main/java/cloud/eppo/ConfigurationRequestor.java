@@ -1,10 +1,6 @@
-package com.geteppo.android;
+package cloud.eppo;
 
 import android.util.Log;
-
-import com.geteppo.android.dto.ConfigurationResponse;
-
-import org.json.JSONObject;
 
 public class ConfigurationRequestor {
     private static final String TAG = ConfigurationRequestor.class.getCanonicalName();

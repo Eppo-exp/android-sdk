@@ -2,7 +2,7 @@ plugins {
     id 'com.android.library'
 }
 
-group = "com.geteppo"
+group = "cloud.eppo"
 version = "1.0.0"
 
 android {

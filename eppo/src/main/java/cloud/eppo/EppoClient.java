@@ -1,4 +1,4 @@
-package com.geteppo.android;
+package cloud.eppo;
 
 import java.util.Map;
 
