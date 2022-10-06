@@ -1,4 +1,4 @@
-package cloud.eppo;
+package cloud.eppo.android;
 
 import android.util.Log;
 
@@ -7,10 +7,10 @@ import com.google.gson.GsonBuilder;
 
 import java.io.Reader;
 
-import cloud.eppo.dto.EppoValue;
-import cloud.eppo.dto.adapters.EppoValueAdapter;
-import cloud.eppo.dto.FlagConfig;
-import cloud.eppo.dto.RandomizationConfigResponse;
+import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.FlagConfig;
+import cloud.eppo.android.dto.RandomizationConfigResponse;
 
 public class ConfigurationRequestor {
     private static final String TAG = ConfigurationRequestor.class.getCanonicalName();

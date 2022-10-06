@@ -1,10 +1,10 @@
-package cloud.eppo.util;
+package cloud.eppo.android.util;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import cloud.eppo.dto.ShardRange;
+import cloud.eppo.android.dto.ShardRange;
 
 public class Utils {
     public static String getMD5Hex(String input) {

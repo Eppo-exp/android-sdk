@@ -1,4 +1,4 @@
-package cloud.eppo.dto;
+package cloud.eppo.android.dto;
 
 public enum OperatorType {
     Matches("MATCHES"),
@@ -9,7 +9,7 @@ public enum OperatorType {
     OneOf("ONE_OF"),
     NotOneOf("NOT_ONE_OF");
 
-    private String value;
+    public String value;
 
     OperatorType(String value) {
         this.value = value;

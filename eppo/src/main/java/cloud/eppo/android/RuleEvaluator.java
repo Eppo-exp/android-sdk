@@ -1,31 +1,29 @@
-package cloud.eppo;
-
-import androidx.annotation.NonNull;
+package cloud.eppo.android;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import cloud.eppo.dto.EppoValue;
-import cloud.eppo.dto.SubjectAttributes;
-import cloud.eppo.dto.TargetingCondition;
-import cloud.eppo.dto.TargetingRule;
+import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.android.dto.SubjectAttributes;
+import cloud.eppo.android.dto.TargetingCondition;
+import cloud.eppo.android.dto.TargetingRule;
 
 interface IConditionFunc<T> {
     boolean check(T a, T b);
 }
 
 class Compare {
-    public static boolean compareNumber(long a, long b, @NonNull IConditionFunc<Long> conditionFunc) {
+    public static boolean compareNumber(long a, long b, IConditionFunc<Long> conditionFunc) {
         return conditionFunc.check(a, b);
     }
 
-    public static boolean compareRegex(String a, @NonNull Pattern pattern) {
+    public static boolean compareRegex(String a, Pattern pattern) {
         return pattern.matcher(a).matches();
     }
 
-    public static boolean isOneOf(@NonNull String a, @NonNull List<String> values) {
+    public static boolean isOneOf(String a, List<String> values) {
         return values.stream()
                 .map(value -> value.toLowerCase())
                 .collect(Collectors.toList())
@@ -34,10 +32,7 @@ class Compare {
 }
 
 public class RuleEvaluator {
-    public static TargetingRule findMatchingRule(
-            SubjectAttributes subjectAttributes,
-            @NonNull List<TargetingRule> rules
-    ) {
+    public static TargetingRule findMatchingRule(SubjectAttributes subjectAttributes, List<TargetingRule> rules) {
         for (TargetingRule rule : rules) {
             if (matchesRule(subjectAttributes, rule)) {
                 return rule;
@@ -46,17 +41,12 @@ public class RuleEvaluator {
         return null;
     }
 
-    private static boolean matchesRule(
-            SubjectAttributes subjectAttributes,
-            @NonNull TargetingRule rule
-    ) {
+    private static boolean matchesRule(SubjectAttributes subjectAttributes, TargetingRule rule) {
         List<Boolean> conditionEvaluations = evaluateRuleConditions(subjectAttributes, rule.getConditions());
         return !conditionEvaluations.contains(false);
     }
 
-    private static boolean evaluateCondition(
-            @NonNull SubjectAttributes subjectAttributes,
-            @NonNull TargetingCondition condition
+    private static boolean evaluateCondition(SubjectAttributes subjectAttributes, TargetingCondition condition
     ) {
         if (subjectAttributes.containsKey(condition.getAttribute())) {
             EppoValue value = subjectAttributes.get(condition.getAttribute());
@@ -88,11 +78,7 @@ public class RuleEvaluator {
         return false;
     }
 
-    @NonNull
-    private static List<Boolean> evaluateRuleConditions(
-            SubjectAttributes subjectAttributes,
-            @NonNull List<TargetingCondition> conditions
-    ) {
+    private static List<Boolean> evaluateRuleConditions(SubjectAttributes subjectAttributes, List<TargetingCondition> conditions) {
         List<Boolean> evaluations = new ArrayList<>();
         for (TargetingCondition condition : conditions) {
             evaluations.add(evaluateCondition(subjectAttributes, condition));

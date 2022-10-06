@@ -1,4 +1,4 @@
-package cloud.eppo.dto;
+package cloud.eppo.android.dto;
 
 public enum EppoValueType {
     Number,

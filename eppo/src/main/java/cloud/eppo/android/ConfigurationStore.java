@@ -1,8 +1,8 @@
-package cloud.eppo;
+package cloud.eppo.android;
 
 import java.util.Map;
 
-import cloud.eppo.dto.FlagConfig;
+import cloud.eppo.android.dto.FlagConfig;
 
 public class ConfigurationStore {
 

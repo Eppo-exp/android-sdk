@@ -1,4 +1,4 @@
-package cloud.eppo.dto.adapters;
+package cloud.eppo.android.dto.adapters;
 
 import android.util.Log;
 
@@ -11,7 +11,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
-import cloud.eppo.dto.EppoValue;
+import cloud.eppo.android.dto.EppoValue;
 
 public class EppoValueAdapter implements JsonDeserializer<EppoValue> {
     @Override

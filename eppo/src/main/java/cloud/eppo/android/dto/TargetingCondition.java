@@ -1,4 +1,4 @@
-package cloud.eppo.dto;
+package cloud.eppo.android.dto;
 
 public class TargetingCondition {
     private String operator;
@@ -15,6 +15,18 @@ public class TargetingCondition {
 
     public EppoValue getValue() {
         return value;
+    }
+
+    public void setOperator(OperatorType operatorType) {
+        this.operator = operatorType.value;
+    }
+
+    public void setAttribute(String attribute) {
+        this.attribute = attribute;
+    }
+
+    public void setValue(EppoValue value) {
+        this.value = value;
     }
 }
 

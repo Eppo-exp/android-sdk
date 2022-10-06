@@ -1,6 +1,6 @@
-package cloud.eppo;
+package cloud.eppo.android;
 
-import static cloud.eppo.util.Utils.validateNotEmptyOrNull;
+import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
 import android.util.Log;
 
@@ -8,14 +8,14 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import cloud.eppo.dto.Allocation;
-import cloud.eppo.dto.EppoValue;
-import cloud.eppo.dto.FlagConfig;
-import cloud.eppo.dto.SubjectAttributes;
-import cloud.eppo.dto.TargetingRule;
-import cloud.eppo.dto.Variation;
-import cloud.eppo.exceptions.NotInitializedException;
-import cloud.eppo.util.Utils;
+import cloud.eppo.android.dto.Allocation;
+import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.android.dto.FlagConfig;
+import cloud.eppo.android.dto.SubjectAttributes;
+import cloud.eppo.android.dto.TargetingRule;
+import cloud.eppo.android.dto.Variation;
+import cloud.eppo.android.exceptions.NotInitializedException;
+import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
     private static final String TAG = EppoClient.class.getCanonicalName();

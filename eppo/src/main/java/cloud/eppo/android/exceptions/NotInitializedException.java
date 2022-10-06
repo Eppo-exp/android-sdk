@@ -1,4 +1,4 @@
-package cloud.eppo.exceptions;
+package cloud.eppo.android.exceptions;
 
 public class NotInitializedException extends RuntimeException {
     public NotInitializedException() {

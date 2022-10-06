@@ -1,4 +1,4 @@
-package cloud.eppo.dto;
+package cloud.eppo.android.dto;
 
 import java.util.List;
 
@@ -12,5 +12,9 @@ public class TargetingRule {
 
     public List<TargetingCondition> getConditions() {
         return conditions;
+    }
+
+    public void setConditions(List<TargetingCondition> conditions) {
+        this.conditions = conditions;
     }
 }

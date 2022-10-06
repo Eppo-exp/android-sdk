@@ -1,4 +1,4 @@
-package cloud.eppo;
+package cloud.eppo.android;
 
 public interface InitializationCallback {
     void onCompleted();
