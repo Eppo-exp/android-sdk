@@ -35,7 +35,11 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue> {
             } catch (Exception ignored) {}
 
             try {
-                return EppoValue.valueOf(json.getAsString());
+                String stringValue = json.getAsString();
+                if (stringValue == "null") {
+                    return EppoValue.valueOf();
+                }
+                return EppoValue.valueOf(stringValue);
             } catch (Exception ignored) {}
 
             try {
