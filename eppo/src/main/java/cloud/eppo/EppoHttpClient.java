@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 
 import java.io.IOException;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
 
@@ -42,7 +43,7 @@ public class EppoHttpClient {
             @Override
             public void onResponse(@NonNull Call call, @NonNull Response response) {
                 if (response.isSuccessful()) {
-                    callback.onSuccess(response.body().toString());
+                    callback.onSuccess(response.body().charStream());
                 } else {
                     switch (response.code()) {
                         case HttpURLConnection.HTTP_FORBIDDEN:
@@ -70,6 +71,6 @@ public class EppoHttpClient {
 }
 
 interface RequestCallback {
-    void onSuccess(String response);
+    void onSuccess(Reader response);
     void onFailure(String errorMessage);
 }

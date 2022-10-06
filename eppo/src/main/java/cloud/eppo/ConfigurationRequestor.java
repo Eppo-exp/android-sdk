@@ -2,29 +2,51 @@ package cloud.eppo;
 
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import java.io.Reader;
+
+import cloud.eppo.dto.EppoValue;
+import cloud.eppo.dto.adapters.EppoValueAdapter;
+import cloud.eppo.dto.FlagConfig;
+import cloud.eppo.dto.RandomizationConfigResponse;
+
 public class ConfigurationRequestor {
     private static final String TAG = ConfigurationRequestor.class.getCanonicalName();
 
-    private final EppoHttpClient client;
-    private final ConfigurationStore configurationStore;
+    private EppoHttpClient client;
+    private ConfigurationStore configurationStore;
+    private Gson gson = new GsonBuilder().registerTypeAdapter(EppoValue.class, new EppoValueAdapter()).create();
 
     public ConfigurationRequestor(ConfigurationStore configurationStore, EppoHttpClient client) {
         this.configurationStore = configurationStore;
         this.client = client;
     }
 
-    public void load() {
+    public void load(InitializationCallback callback) {
         client.get("/randomized_assignment/v2/config", new RequestCallback() {
             @Override
-            public void onSuccess(String response) {
-                // TODO
+            public void onSuccess(Reader response) {
+                RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
+                configurationStore.setFlags(config.getFlags());
+
+                if (callback != null) {
+                    callback.onCompleted();
+                }
             }
 
             @Override
             public void onFailure(String errorMessage) {
                 Log.e(TAG, errorMessage);
+                if (callback != null) {
+                    callback.onError(errorMessage);
+                }
             }
         });
     }
 
+    public FlagConfig getConfiguration(String flagKey) {
+        return configurationStore.getFlag(flagKey);
+    }
 }
