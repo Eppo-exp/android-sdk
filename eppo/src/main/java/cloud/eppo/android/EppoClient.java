@@ -14,28 +14,33 @@ import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
+import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
     private static final String TAG = EppoClient.class.getCanonicalName();
-    private static final String URL = "https://eppo.cloud/api";
+    private static final String DEFAULT_HOST = "https://eppo.cloud";
 
     private final ConfigurationRequestor requestor;
     private static EppoClient instance;
 
-    private EppoClient(String apiKey) {
-        EppoHttpClient httpClient = new EppoHttpClient(URL, apiKey);
+    private EppoClient(String apiKey, String host) {
+        EppoHttpClient httpClient = new EppoHttpClient(host, apiKey);
         requestor = new ConfigurationRequestor(new ConfigurationStore(), httpClient);
     }
 
     public static EppoClient init(String apiKey) {
-        return init(apiKey, null);
+        return init(apiKey, DEFAULT_HOST, null);
     }
 
-    public static EppoClient init(String apiKey, InitializationCallback callback) {
+    public static EppoClient init(String apiKey, String host, InitializationCallback callback) {
+        if (apiKey == null) {
+            throw new MissingApiKeyException();
+        }
+
         if (instance == null) {
-            instance = new EppoClient(apiKey);
+            instance = new EppoClient(apiKey, host);
             instance.refreshConfiguration(callback);
         }
         return instance;
@@ -121,6 +126,31 @@ public class EppoClient {
         }
 
         return EppoClient.instance;
+    }
+
+    public static class Builder {
+        private String apiKey;
+        private String host = DEFAULT_HOST;
+        private InitializationCallback callback;
+
+        public Builder apiKey(String apiKey) {
+            this.apiKey = apiKey;
+            return this;
+        }
+
+        public Builder host(String host) {
+            this.host = host;
+            return this;
+        }
+
+        public Builder callback(InitializationCallback callback) {
+            this.callback = callback;
+            return this;
+        }
+
+        public EppoClient buildAndInit() {
+            return EppoClient.init(apiKey, host, callback);
+        }
     }
 }
 

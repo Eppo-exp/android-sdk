@@ -3,10 +3,10 @@ package cloud.eppo.android.dto;
 import java.util.List;
 
 public class Allocation {
-    private int percentExposure;
+    private float percentExposure;
     private List<Variation> variations;
 
-    public int getPercentExposure() {
+    public float getPercentExposure() {
         return percentExposure;
     }
 

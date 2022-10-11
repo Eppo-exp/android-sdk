@@ -25,7 +25,7 @@ public class ConfigurationRequestor {
     }
 
     public void load(InitializationCallback callback) {
-        client.get("/randomized_assignment/v2/config", new RequestCallback() {
+        client.get("/api/randomized_assignment/v2/config", new RequestCallback() {
             @Override
             public void onSuccess(Reader response) {
                 RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);

@@ -88,3 +88,5 @@ lint/tmp/
 
 .idea
 .idea/*
+
+eppo/src/test/resources/*
