@@ -1,15 +1,12 @@
-package cloud.eppo;
+package cloud.eppo.android;
 
 import android.util.Log;
 
-import androidx.annotation.NonNull;
-
-
 import java.io.IOException;
+import java.io.Reader;
 import java.net.HttpURLConnection;
 import java.util.concurrent.TimeUnit;
 
-import cloud.eppo.android.BuildConfig;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
@@ -40,9 +37,9 @@ public class EppoHttpClient {
         Request request = new Request.Builder().url(httpUrl).build();
         client.newCall(request).enqueue(new Callback() {
             @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) {
+            public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
-                    callback.onSuccess(response.body().toString());
+                    callback.onSuccess(response.body().charStream());
                 } else {
                     switch (response.code()) {
                         case HttpURLConnection.HTTP_FORBIDDEN:
@@ -59,7 +56,7 @@ public class EppoHttpClient {
             }
 
             @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
+            public void onFailure(Call call, IOException e) {
                 if (BuildConfig.DEBUG) {
                     e.printStackTrace();
                 }
@@ -70,6 +67,6 @@ public class EppoHttpClient {
 }
 
 interface RequestCallback {
-    void onSuccess(String response);
+    void onSuccess(Reader response);
     void onFailure(String errorMessage);
 }
