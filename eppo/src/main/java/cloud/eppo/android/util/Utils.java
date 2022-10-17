@@ -3,6 +3,10 @@ package cloud.eppo.android.util;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
 
 import cloud.eppo.android.dto.ShardRange;
 
@@ -40,5 +44,12 @@ public class Utils {
         if (input == null || input.isEmpty()) {
             throw new IllegalArgumentException(errorMessage);
         }
+    }
+
+    public static String getISODate(Date date) {
+        TimeZone tz = TimeZone.getTimeZone("UTC");
+        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        df.setTimeZone(tz);
+        return df.format(date);
     }
 }
