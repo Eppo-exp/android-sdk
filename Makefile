@@ -35,6 +35,21 @@ test-data:
 
 ## test
 .PHONY: test
-test: test-data build
+test: test-data
 	./gradlew :eppo:testDebugUnitTest
+
+.PHONY: publish-release
+publish-release: test
+		# $(INFO)Checking required gradle configuration(END)
+		@for required_property in "MAVEN_USERNAME" "MAVEN_PASSWORD"; do \
+				cat ~/.gradle/gradle.properties | grep -q $$required_property; \
+				if [ $$? != 0 ]; then \
+						echo "$(ERROR)ERROR: ~/.gradle/gradle.properties file is missing property: $$required_property$(END)"; \
+						exit 1; \
+				fi; \
+		done
+
+		# $(INFO)Publishing release(END)
+		./gradlew :eppo:publishReleasePublicationToMavenRepository
+
 

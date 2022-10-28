@@ -1,5 +1,6 @@
 plugins {
     id 'com.android.library'
+    id 'maven-publish'
 }
 
 group = "cloud.eppo"
@@ -47,4 +48,51 @@ dependencies {
     androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"
     implementation("com.google.code.gson:gson:${versions.gson}")
     implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
+}
+
+publishing {
+    publications {
+        release(MavenPublication) {
+            groupId = 'cloud.eppo'
+            artifactId = 'android-sdk'
+            version = '0.0.1'
+
+            afterEvaluate {
+                from components.release
+            }
+
+            pom {
+                name = 'Eppo Android'
+                description = 'Eppo Android SDK'
+                url = 'https://github.com/Eppo-exp/android-sdk'
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'http://www.opensource.org/licenses/mit-license.php'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'Eppo'
+                        email = 'https://www.geteppo.com'
+                    }
+                }
+                scm {
+                    connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
+                    developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
+                    url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            credentials {
+                username = "$MAVEN_USERNAME"
+                password = "$MAVEN_PASSWORD"
+            }
+
+            url = "https://s01.oss.sonatype.org/content/repositories/releases"
+        }
+    }
 }
