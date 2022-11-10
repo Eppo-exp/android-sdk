@@ -31,8 +31,8 @@ public class EppoValue {
         return new EppoValue(Integer.toString(value), EppoValueType.Number);
     }
 
-    public static EppoValue valueOf(long value) {
-        return new EppoValue(Long.toString(value), EppoValueType.Number);
+    public static EppoValue valueOf(double value) {
+        return new EppoValue(Double.toString(value), EppoValueType.Number);
     }
 
     public static EppoValue valueOf(boolean value) {
@@ -53,6 +53,10 @@ public class EppoValue {
 
     public double doubleValue() {
         return Double.parseDouble(value);
+    }
+
+    public long longValue() {
+        return Long.parseLong(value, 10);
     }
 
     public String stringValue() {
