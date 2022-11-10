@@ -51,8 +51,8 @@ public class EppoValue {
         return Integer.parseInt(value, 10);
     }
 
-    public long longValue() {
-        return Long.parseLong(value, 10);
+    public double doubleValue() {
+        return Double.parseDouble(value);
     }
 
     public String stringValue() {
