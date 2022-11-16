@@ -32,6 +32,8 @@ public class EppoHttpClient {
         HttpUrl httpUrl = HttpUrl.parse(baseUrl + path)
                 .newBuilder()
                 .addQueryParameter("apiKey", apiKey)
+                .addQueryParameter("sdkName", "android")
+                .addQueryParameter("sdkVersion", BuildConfig.EPPO_VERSION)
                 .build();
 
         Request request = new Request.Builder().url(httpUrl).build();
