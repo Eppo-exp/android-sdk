@@ -15,7 +15,7 @@ interface IConditionFunc<T> {
 }
 
 class Compare {
-    public static boolean compareNumber(long a, long b, IConditionFunc<Long> conditionFunc) {
+    public static boolean compareNumber(double a, double b, IConditionFunc<Double> conditionFunc) {
         return conditionFunc.check(a, b);
     }
 
@@ -53,14 +53,14 @@ public class RuleEvaluator {
             try {
                 switch (condition.getOperator()) {
                     case GreaterThanEqualTo:
-                        return Compare.compareNumber(value.longValue(), condition.getValue().longValue()
+                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue()
                                 , (a, b) -> a >= b);
                     case GreaterThan:
-                        return Compare.compareNumber(value.longValue(), condition.getValue().longValue(), (a, b) -> a > b);
+                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a > b);
                     case LessThanEqualTo:
-                        return Compare.compareNumber(value.longValue(), condition.getValue().longValue(), (a, b) -> a <= b);
+                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a <= b);
                     case LessThan:
-                        return Compare.compareNumber(value.longValue(), condition.getValue().longValue(), (a, b) -> a < b);
+                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a < b);
                     case Matches:
                         return Compare.compareRegex(value.stringValue(), Pattern.compile(condition.getValue().stringValue()));
                     case OneOf:
