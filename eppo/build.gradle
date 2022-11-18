@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "1.0.0"
+version = "0.1.1"
 
 android {
     compileSdk 30
@@ -18,9 +18,17 @@ android {
     }
 
     buildTypes {
+        def EPPO_VERSION = "EPPO_VERSION"
+
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            buildConfigField "String", EPPO_VERSION, "\"${project.properties.get("version")}\""
+        }
+
+        debug {
+            minifyEnabled false
+            buildConfigField "String", EPPO_VERSION, "\"${project.properties.get("version")}\""
         }
     }
     compileOptions {
@@ -41,6 +49,7 @@ ext.versions = [
     "wiremock": "2.34.0"
 ]
 
+
 dependencies {
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "com.github.tomakehurst:wiremock-jre8:${versions.wiremock}"
@@ -55,7 +64,7 @@ publishing {
         release(MavenPublication) {
             groupId = 'cloud.eppo'
             artifactId = 'android-sdk'
-            version = '0.0.1'
+            version = project.properties.get("version")
 
             afterEvaluate {
                 from components.release
