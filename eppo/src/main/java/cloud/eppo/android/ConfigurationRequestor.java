@@ -4,6 +4,7 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.Reader;
 
@@ -28,8 +29,17 @@ public class ConfigurationRequestor {
         client.get("/api/randomized_assignment/v2/config", new RequestCallback() {
             @Override
             public void onSuccess(Reader response) {
-                RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
-                configurationStore.setFlags(config.getFlags());
+                try {
+                    RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
+                    configurationStore.setFlags(config.getFlags());
+                } catch (JsonSyntaxException e) {
+                    // JsonSyntaxException is thrown in cases when a SocketException occurs
+                    Log.e(TAG, "Error loading configuration response", e);
+                    if (callback != null) {
+                        callback.onError("Unable to load configuration from network");
+                    }
+                    return;
+                }
 
                 if (callback != null) {
                     callback.onCompleted();
