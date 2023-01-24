@@ -24,10 +24,12 @@ class Compare {
     }
 
     public static boolean isOneOf(String a, List<String> values) {
-        return values.stream()
-                .map(value -> value.toLowerCase())
-                .collect(Collectors.toList())
-                .indexOf(a.toLowerCase()) >= 0;
+        for (String value : values) {
+            if (value.equalsIgnoreCase(a)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
