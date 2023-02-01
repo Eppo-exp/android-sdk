@@ -1,11 +1,11 @@
 package cloud.eppo.android.dto;
 
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RandomizationConfigResponse {
-    private Map<String, FlagConfig> flags;
+    private ConcurrentHashMap<String, FlagConfig> flags;
 
-    public Map<String, FlagConfig> getFlags() {
+    public ConcurrentHashMap<String, FlagConfig> getFlags() {
         return flags;
     }
 }

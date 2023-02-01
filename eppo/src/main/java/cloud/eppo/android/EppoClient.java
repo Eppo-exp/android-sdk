@@ -2,6 +2,8 @@ package cloud.eppo.android;
 
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
+import android.app.Application;
+import android.content.Context;
 import android.util.Log;
 
 import java.util.Date;
@@ -14,6 +16,7 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
+import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
@@ -27,23 +30,27 @@ public class EppoClient {
     private final AssignmentLogger assignmentLogger;
     private static EppoClient instance;
 
-    private EppoClient(String apiKey, String host, AssignmentLogger assignmentLogger) {
+    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger) {
         EppoHttpClient httpClient = new EppoHttpClient(host, apiKey);
-        requestor = new ConfigurationRequestor(new ConfigurationStore(), httpClient);
+        requestor = new ConfigurationRequestor(new ConfigurationStore(application), httpClient);
         this.assignmentLogger = assignmentLogger;
     }
 
-    public static EppoClient init(String apiKey) {
-        return init(apiKey, DEFAULT_HOST, null, null);
+    public static EppoClient init(Application application, String apiKey) {
+        return init(application, apiKey, DEFAULT_HOST, null, null);
     }
 
-    public static EppoClient init(String apiKey, String host, InitializationCallback callback, AssignmentLogger assignmentLogger) {
+    public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback, AssignmentLogger assignmentLogger) {
+        if (application == null) {
+            throw new MissingApplicationException();
+        }
+
         if (apiKey == null) {
             throw new MissingApiKeyException();
         }
 
         if (instance == null) {
-            instance = new EppoClient(apiKey, host, assignmentLogger);
+            instance = new EppoClient(application, apiKey, host, assignmentLogger);
             instance.refreshConfiguration(callback);
         }
         return instance;
@@ -135,6 +142,7 @@ public class EppoClient {
     }
 
     public static class Builder {
+        private Application application;
         private String apiKey;
         private String host = DEFAULT_HOST;
         private InitializationCallback callback;
@@ -142,6 +150,11 @@ public class EppoClient {
 
         public Builder apiKey(String apiKey) {
             this.apiKey = apiKey;
+            return this;
+        }
+
+        public Builder application(Application application) {
+            this.application = application;
             return this;
         }
 
@@ -161,7 +174,7 @@ public class EppoClient {
         }
 
         public EppoClient buildAndInit() {
-            return EppoClient.init(apiKey, host, callback, assignmentLogger);
+            return EppoClient.init(application, apiKey, host, callback, assignmentLogger);
         }
     }
 }
