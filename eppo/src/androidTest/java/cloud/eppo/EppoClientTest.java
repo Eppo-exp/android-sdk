@@ -1,24 +1,31 @@
-package cloud.eppo.android;
+package cloud.eppo;
 
 import static org.junit.Assert.assertEquals;
+
+import android.content.res.AssetManager;
+
+import androidx.test.core.app.ApplicationProvider;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import cloud.eppo.android.EppoClient;
+import cloud.eppo.android.InitializationCallback;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
@@ -47,6 +54,7 @@ public class EppoClientTest {
         setupMockRacServer();
 
         new EppoClient.Builder()
+                .application(ApplicationProvider.getApplicationContext())
                 .apiKey("mock-api-key")
                 .host("http://localhost:4001")
                 .callback(new InitializationCallback() {
@@ -79,15 +87,14 @@ public class EppoClientTest {
 
     @Test
     public void testAssignments() throws IOException {
-        File testCaseFolder = new File("src/test/resources/assignment-v2/");
-        File[] testCaseFiles = testCaseFolder.listFiles();
-        for (File testCaseFile : testCaseFiles) {
-            runTestCaseFile(testCaseFile);
+        AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
+        for (String path : assets.list("assignment-v2")) {
+            runTestCaseFileStream(assets.open("assignment-v2/" + path));
         }
     }
 
-    private void runTestCaseFile(File testCaseFile) throws IOException {
-        String json = FileUtils.readFileToString(testCaseFile, "UTF8");
+    private void runTestCaseFileStream(InputStream testCaseStream) throws IOException {
+        String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
         AssignmentTestCase testCase = gson.fromJson(json, AssignmentTestCase.class);
         List<String> assignments = getAssignments(testCase);
         assertEquals(testCase.expectedAssignments, assignments);
@@ -116,10 +123,10 @@ public class EppoClientTest {
     }
 
     private static String getMockRandomizedAssignmentResponse() {
-        File mockRacResponse = new File("src/test/resources/rac-experiments-v2.json");
         try {
-            return FileUtils.readFileToString(mockRacResponse, "UTF8");
-        } catch (Exception e) {
+            InputStream in = ApplicationProvider.getApplicationContext().getAssets().open("rac-experiments-v2.json");
+            return IOUtils.toString(in, Charsets.toCharset("UTF8"));
+        } catch (IOException e) {
             throw new RuntimeException("Error reading mock RAC data", e);
         }
     }

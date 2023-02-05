@@ -90,3 +90,4 @@ lint/tmp/
 .idea/*
 
 eppo/src/test/resources/*
+eppo/src/androidTest/assets/*

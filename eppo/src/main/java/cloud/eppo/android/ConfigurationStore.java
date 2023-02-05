@@ -49,7 +49,7 @@ public class ConfigurationStore {
     }
 
     public boolean loadFromCache(InitializationCallback callback) {
-        if (flags != null) {
+        if (flags != null || !new File(filesDir + File.separator + CACHE_FILE_NAME).exists()) {
             return false;
         }
 
