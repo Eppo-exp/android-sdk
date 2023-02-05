@@ -25,7 +25,7 @@ help: Makefile
 	@sed -n 's/^##//p' $<
 
 ## test-data
-testDataDir := eppo/src/test/resources/
+testDataDir := eppo/src/androidTest/assets/
 .PHONY: test-data
 test-data: 
 	rm -rf $(testDataDir)
@@ -36,7 +36,7 @@ test-data:
 ## test
 .PHONY: test
 test: test-data
-	./gradlew :eppo:testDebugUnitTest
+	./gradlew runEppoTests
 
 .PHONY: publish-release
 publish-release: test
