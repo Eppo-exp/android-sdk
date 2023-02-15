@@ -29,7 +29,10 @@ public class ConfigurationStore {
     private static final String CACHE_FILE_NAME = "eppo-sdk-config.enc";
     private static final String TAG = ConfigurationStore.class.getSimpleName();
 
-    private final Gson gson = new GsonBuilder().registerTypeAdapter(EppoValue.class, new EppoValueAdapter()).create();
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
+            .serializeNulls()
+            .create();
     private final Set<String> flagConfigsToSaveToPrefs = new HashSet<>();
     private final File filesDir;
     private final SharedPreferences sharedPrefs;
