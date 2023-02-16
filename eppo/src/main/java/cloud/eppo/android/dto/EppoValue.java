@@ -91,4 +91,13 @@ public class EppoValue {
     public boolean isNull() {
         return type == EppoValueType.Null;
     }
+
+    @Override
+    public String toString() {
+        return "EppoValue{" +
+                "value='" + value + '\'' +
+                ", type=" + type +
+                ", array=" + array +
+                '}';
+    }
 }

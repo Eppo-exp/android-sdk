@@ -2,6 +2,7 @@ package cloud.eppo.android;
 
 import android.util.Log;
 
+import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 import java.io.Reader;
@@ -27,10 +28,9 @@ public class ConfigurationRequestor {
             public void onSuccess(Reader response) {
                 try {
                     configurationStore.setFlags(response);
-                } catch (JsonSyntaxException e) {
-                    // JsonSyntaxException is thrown in cases when a SocketException occurs
+                } catch (JsonSyntaxException | JsonIOException e) {
                     Log.e(TAG, "Error loading configuration response", e);
-                    if (callback != null) {
+                    if (callback != null && !usedCache) {
                         callback.onError("Unable to load configuration from network");
                     }
                     return;
