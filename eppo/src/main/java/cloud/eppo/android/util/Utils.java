@@ -81,12 +81,12 @@ public class Utils {
         }
     }
 
-    public static EncryptedFile getSecureFile(String fileName, Context context) throws GeneralSecurityException, IOException {
+    public static EncryptedFile getSecureFile(File directory, String fileName, Context context) throws GeneralSecurityException, IOException {
         MasterKey masterKey = new MasterKey.Builder(context)
                 .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
                 .build();
 
-        File file = new File(context.getFilesDir(), fileName);
+        File file = new File(directory, fileName);
         return new EncryptedFile.Builder(
                 context,
                 file,

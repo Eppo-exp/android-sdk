@@ -2,8 +2,10 @@ package cloud.eppo.android;
 
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
+import android.app.ActivityManager;
 import android.app.Application;
 import android.content.Context;
+import android.os.Build;
 import android.util.Log;
 
 import java.util.Date;
@@ -30,17 +32,18 @@ public class EppoClient {
     private final AssignmentLogger assignmentLogger;
     private static EppoClient instance;
 
-    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger) {
+    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger, boolean useEncryptedCacheFileIfPossible) {
         EppoHttpClient httpClient = new EppoHttpClient(host, apiKey);
-        requestor = new ConfigurationRequestor(new ConfigurationStore(application), httpClient);
+        ConfigurationStore configStore = new ConfigurationStore(application, useEncryptedCacheFileIfPossible);
+        requestor = new ConfigurationRequestor(configStore, httpClient);
         this.assignmentLogger = assignmentLogger;
     }
 
     public static EppoClient init(Application application, String apiKey) {
-        return init(application, apiKey, DEFAULT_HOST, null, null);
+        return init(application, apiKey, DEFAULT_HOST, null, null, true);
     }
 
-    public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback, AssignmentLogger assignmentLogger) {
+    public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback, AssignmentLogger assignmentLogger, boolean useEncryptedCacheFileIfPossible) {
         if (application == null) {
             throw new MissingApplicationException();
         }
@@ -49,10 +52,16 @@ public class EppoClient {
             throw new MissingApiKeyException();
         }
 
-        if (instance == null) {
-            instance = new EppoClient(application, apiKey, host, assignmentLogger);
+        boolean shouldCreateInstance = instance == null;
+        if (!shouldCreateInstance && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            shouldCreateInstance = ActivityManager.isRunningInTestHarness();
+        }
+
+        if (shouldCreateInstance) {
+            instance = new EppoClient(application, apiKey, host, assignmentLogger, useEncryptedCacheFileIfPossible);
             instance.refreshConfiguration(callback);
         }
+
         return instance;
     }
 
@@ -147,6 +156,7 @@ public class EppoClient {
         private String host = DEFAULT_HOST;
         private InitializationCallback callback;
         private AssignmentLogger assignmentLogger;
+        private boolean useEncryptedCacheFile = true;
 
         public Builder apiKey(String apiKey) {
             this.apiKey = apiKey;
@@ -173,8 +183,13 @@ public class EppoClient {
             return this;
         }
 
+        public Builder useEncryptedCacheFile(boolean value) {
+            this.useEncryptedCacheFile = value;
+            return this;
+        }
+
         public EppoClient buildAndInit() {
-            return EppoClient.init(application, apiKey, host, callback, assignmentLogger);
+            return EppoClient.init(application, apiKey, host, callback, assignmentLogger, useEncryptedCacheFile);
         }
     }
 }

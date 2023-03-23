@@ -26,7 +26,6 @@ import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
 
-    private static final String CACHE_FILE_NAME = "eppo-sdk-config.enc";
     private static final String TAG = ConfigurationStore.class.getSimpleName();
 
     private final Gson gson = new GsonBuilder()
@@ -34,39 +33,32 @@ public class ConfigurationStore {
             .serializeNulls()
             .create();
     private final Set<String> flagConfigsToSaveToPrefs = new HashSet<>();
-    private final File filesDir;
     private final SharedPreferences sharedPrefs;
 
     private ConcurrentHashMap<String, FlagConfig> flags;
-    private EncryptedFile configCacheFile;
+    private ConfigCacheFile cacheFile;
 
-    public ConfigurationStore(Application application) {
-        filesDir = application.getFilesDir();
-
-        try {
-            this.configCacheFile = Utils.getSecureFile(CACHE_FILE_NAME, application);
-        } catch (Exception e) {
-            Log.e(TAG, "Unable to create secure cache file", e);
-        }
+    public ConfigurationStore(Application application, boolean useEncryptedCacheFileIfPossible) {
+        cacheFile = new ConfigCacheFile(application, useEncryptedCacheFileIfPossible);
         this.sharedPrefs = Utils.getSharedPrefs(application);
     }
 
     public boolean loadFromCache(InitializationCallback callback) {
-        if (flags != null || !new File(filesDir + File.separator + CACHE_FILE_NAME).exists()) {
+        if (flags != null || !cacheFile.exists()) {
             return false;
         }
 
         AsyncTask.execute(() -> {
             try {
-                synchronized (configCacheFile) {
-                    InputStreamReader reader = new InputStreamReader(configCacheFile.openFileInput());
+                synchronized (cacheFile) {
+                    InputStreamReader reader = cacheFile.getInputReader();
                     RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
                     reader.close();
                     flags = configResponse.getFlags();
                 }
             } catch (Exception e) {
                 Log.e(TAG, "Error loading from local cache", e);
-                deleteConfigCacheFile();
+                cacheFile.delete();
 
                 if (callback != null) {
                     callback.onError("Unable to load config from cache");
@@ -120,9 +112,8 @@ public class ConfigurationStore {
     private void writeConfigToFile(RandomizationConfigResponse config) {
         AsyncTask.execute(() -> {
             try {
-                synchronized (configCacheFile) {
-                    deleteConfigCacheFile(); // EncryptedFile requires deleting old versions if one exists
-                    OutputStreamWriter writer = new OutputStreamWriter(configCacheFile.openFileOutput());
+                synchronized (cacheFile) {
+                    OutputStreamWriter writer = cacheFile.getOutputWriter();
                     gson.toJson(config, writer);
                     writer.close();
                 }
@@ -130,13 +121,6 @@ public class ConfigurationStore {
                 Log.e(TAG, "Unable to cache config to file", e);
             }
         });
-    }
-
-    private void deleteConfigCacheFile() {
-        File existingFile = new File(filesDir + File.separator + CACHE_FILE_NAME);
-        if (existingFile.exists()) {
-            existingFile.delete();
-        }
     }
 
     private FlagConfig getFlagFromSharedPrefs(String flagKey) {
