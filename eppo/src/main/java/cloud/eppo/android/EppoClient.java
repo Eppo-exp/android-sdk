@@ -26,7 +26,7 @@ import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
     private static final String TAG = EppoClient.class.getCanonicalName();
-    private static final String DEFAULT_HOST = "https://eppo.cloud";
+    private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
 
     private final ConfigurationRequestor requestor;
     private final AssignmentLogger assignmentLogger;
