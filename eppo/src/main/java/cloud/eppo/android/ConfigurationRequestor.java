@@ -23,7 +23,7 @@ public class ConfigurationRequestor {
     public void load(InitializationCallback callback) {
         boolean usedCache = configurationStore.loadFromCache(callback);
 
-        client.get("/api/randomized_assignment/v3/config", new RequestCallback() {
+        client.get("/api/randomized_assignment/v3/config.json", new RequestCallback() {
             @Override
             public void onSuccess(Reader response) {
                 try {
