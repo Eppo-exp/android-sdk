@@ -1,6 +1,7 @@
 package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static cloud.eppo.android.ConfigCacheFile.ENC_CACHE_FILE_NAME;
@@ -62,10 +63,14 @@ public class EppoClientTest {
         }
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean cacheToEncryptedFile, boolean deleteCacheFiles) throws InterruptedException {
-        if (deleteCacheFiles) {
-            deleteFileIfExists(ENC_CACHE_FILE_NAME);
-            deleteFileIfExists(PT_CACHE_FILE_NAME);
+    private void deleteCacheFiles() {
+        deleteFileIfExists(ENC_CACHE_FILE_NAME);
+        deleteFileIfExists(PT_CACHE_FILE_NAME);
+    }
+
+    private void initClient(String host, boolean throwOnCallackError, boolean cacheToEncryptedFile, boolean shouldDeleteCacheFiles) throws InterruptedException {
+        if (shouldDeleteCacheFiles) {
+            deleteCacheFiles();
         }
 
         new EppoClient.Builder()
@@ -107,6 +112,7 @@ public class EppoClientTest {
     @After
     public void teardown() {
         this.mockServer.stop();
+        deleteCacheFiles();
     }
 
     private void setupMockRacServer() {
@@ -118,11 +124,18 @@ public class EppoClientTest {
 
     @Test
     public void testAssignments()  {
+        runTestCases();
+    }
+
+    private void runTestCases() {
         try {
+            int testsRan = 0;
             AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
             for (String path : assets.list("assignment-v2")) {
-                runTestCaseFileStream(assets.open("assignment-v2/" + path));
+                testsRan += runTestCaseFileStream(assets.open("assignment-v2/" + path));
             }
+            System.out.println("We ran this many tests: " + testsRan);
+            assertTrue("Did not run any test cases", testsRan > 0);
         } catch (Exception e) {
             fail();
         }
@@ -133,13 +146,13 @@ public class EppoClientTest {
             initClient(HOST, false, useEncryptedFile, true); // ensure cache is populated
             initClient(INVALID_HOST, false, useEncryptedFile, false); // invalid port to force to use cache
 
-            AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
-            for (String path : assets.list("assignment-v2")) {
-                runTestCaseFileStream(assets.open("assignment-v2/" + path));
-            }
+            // wait for a bit since file is loaded asynchronously
+            System.out.println("Sleeping for a bit to wait for cache population to complete");
+            Thread.sleep(1000);
         } catch (Exception e) {
             fail();
         }
+        runTestCases();
     }
 
     @Test
@@ -152,12 +165,12 @@ public class EppoClientTest {
         testCachedAssignments(true);
     }
 
-    private void runTestCaseFileStream(InputStream testCaseStream) throws IOException {
+    private int runTestCaseFileStream(InputStream testCaseStream) throws IOException {
         String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
         AssignmentTestCase testCase = gson.fromJson(json, AssignmentTestCase.class);
         List<String> assignments = getAssignments(testCase);
         assertEquals(testCase.expectedAssignments, assignments);
-        Log.i(TAG, "Evaluated " + assignments.size() + " assignments");
+        return assignments.size();
     }
 
     private List<String> getAssignments(AssignmentTestCase testCase) {
