@@ -5,12 +5,9 @@ import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import androidx.security.crypto.EncryptedFile;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import java.io.File;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -34,12 +31,12 @@ public class ConfigurationStore {
             .create();
     private final Set<String> flagConfigsToSaveToPrefs = new HashSet<>();
     private final SharedPreferences sharedPrefs;
+    private final ConfigCacheFile cacheFile;
 
     private ConcurrentHashMap<String, FlagConfig> flags;
-    private ConfigCacheFile cacheFile;
 
-    public ConfigurationStore(Application application, boolean useEncryptedCacheFileIfPossible) {
-        cacheFile = new ConfigCacheFile(application, useEncryptedCacheFileIfPossible);
+    public ConfigurationStore(Application application) {
+        cacheFile = new ConfigCacheFile(application);
         this.sharedPrefs = Utils.getSharedPrefs(application);
     }
 
@@ -81,12 +78,14 @@ public class ConfigurationStore {
 
         if (!flagConfigsToSaveToPrefs.isEmpty()) {
             SharedPreferences.Editor editor = sharedPrefs.edit();
-            for (String flagKey : flagConfigsToSaveToPrefs) {
-                FlagConfig flagConfig = getFlag(flagKey);
+            for (String plaintextFlagKey : flagConfigsToSaveToPrefs) {
+                FlagConfig flagConfig = getFlag(plaintextFlagKey);
                 if (flagConfig == null) {
                     continue;
                 }
-                writeFlagToSharedPrefs(flagKey, flagConfig, editor);
+
+                String hashedFlagKey = Utils.getMD5Hex(plaintextFlagKey);
+                writeFlagToSharedPrefs(hashedFlagKey, flagConfig, editor);
             }
             editor.apply();
             flagConfigsToSaveToPrefs.clear();
@@ -97,16 +96,16 @@ public class ConfigurationStore {
 
     private void updateConfigsInSharedPrefs() {
         SharedPreferences.Editor editor = sharedPrefs.edit();
-        for (String flagKey : flags.keySet()) {
-            if (sharedPrefs.contains(flagKey)) {
-                writeFlagToSharedPrefs(flagKey, flags.get(flagKey), editor);
+        for (String hashedFlagKey : flags.keySet()) {
+            if (sharedPrefs.contains(hashedFlagKey)) {
+                writeFlagToSharedPrefs(hashedFlagKey, flags.get(hashedFlagKey), editor);
             }
         }
         editor.apply();
     }
 
-    private void writeFlagToSharedPrefs(String flagKey, FlagConfig config, SharedPreferences.Editor editor) {
-        editor.putString(flagKey, gson.toJson(config));
+    private void writeFlagToSharedPrefs(String hashedFlagKey, FlagConfig config, SharedPreferences.Editor editor) {
+        editor.putString(hashedFlagKey, gson.toJson(config));
     }
 
     private void writeConfigToFile(RandomizationConfigResponse config) {
@@ -123,9 +122,9 @@ public class ConfigurationStore {
         });
     }
 
-    private FlagConfig getFlagFromSharedPrefs(String flagKey) {
+    private FlagConfig getFlagFromSharedPrefs(String hashedFlagKey) {
         try {
-            return gson.fromJson(sharedPrefs.getString(flagKey, null), FlagConfig.class);
+            return gson.fromJson(sharedPrefs.getString(hashedFlagKey, null), FlagConfig.class);
         } catch (Exception e) {
             Log.e(TAG, "Unable to load flag from prefs", e);
         }
@@ -133,14 +132,15 @@ public class ConfigurationStore {
     }
 
     public FlagConfig getFlag(String flagKey) {
+        String hashedFlagKey = Utils.getMD5Hex(flagKey);
         if (flags == null) {
-            FlagConfig flagFromSharedPrefs = getFlagFromSharedPrefs(flagKey);
+            FlagConfig flagFromSharedPrefs = getFlagFromSharedPrefs(hashedFlagKey);
             if (flagFromSharedPrefs != null) {
                 return flagFromSharedPrefs;
             }
             flagConfigsToSaveToPrefs.add(flagKey);
             return null;
         }
-        return flags.get(flagKey);
+        return flags.get(hashedFlagKey);
     }
 }
