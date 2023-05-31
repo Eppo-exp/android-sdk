@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "0.2.1"
+version = "0.3.0"
 
 android {
     compileSdk 33
@@ -72,8 +72,6 @@ dependencies {
 
     implementation("com.google.code.gson:gson:${versions.gson}")
     implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
-
-    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
 }
 
 publishing {

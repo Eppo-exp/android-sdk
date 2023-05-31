@@ -4,12 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import static cloud.eppo.android.ConfigCacheFile.ENC_CACHE_FILE_NAME;
-import static cloud.eppo.android.ConfigCacheFile.PT_CACHE_FILE_NAME;
+import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
 
 import android.content.res.AssetManager;
-import android.util.Log;
-
 import androidx.test.core.app.ApplicationProvider;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -64,11 +61,10 @@ public class EppoClientTest {
     }
 
     private void deleteCacheFiles() {
-        deleteFileIfExists(ENC_CACHE_FILE_NAME);
-        deleteFileIfExists(PT_CACHE_FILE_NAME);
+        deleteFileIfExists(CACHE_FILE_NAME);
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean cacheToEncryptedFile, boolean shouldDeleteCacheFiles) throws InterruptedException {
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles) throws InterruptedException {
         if (shouldDeleteCacheFiles) {
             deleteCacheFiles();
         }
@@ -77,7 +73,6 @@ public class EppoClientTest {
             .application(ApplicationProvider.getApplicationContext())
             .apiKey("mock-api-key")
             .host(host)
-            .useEncryptedCacheFile(cacheToEncryptedFile)
             .callback(new InitializationCallback() {
                 @Override
                 public void onCompleted() {
@@ -102,7 +97,7 @@ public class EppoClientTest {
         setupMockRacServer();
 
         try {
-            initClient(HOST, true, true, true);
+            initClient(HOST, true, true);
         } catch (InterruptedException e) {
             e.printStackTrace();
             fail();
@@ -141,10 +136,11 @@ public class EppoClientTest {
         }
     }
 
-    private void testCachedAssignments(boolean useEncryptedFile) {
+    @Test
+    public void testCachedAssignments() {
         try {
-            initClient(HOST, false, useEncryptedFile, true); // ensure cache is populated
-            initClient(INVALID_HOST, false, useEncryptedFile, false); // invalid port to force to use cache
+            initClient(HOST, false, true); // ensure cache is populated
+            initClient(INVALID_HOST, false, false); // invalid port to force to use cache
 
             // wait for a bit since file is loaded asynchronously
             System.out.println("Sleeping for a bit to wait for cache population to complete");
@@ -153,16 +149,6 @@ public class EppoClientTest {
             fail();
         }
         runTestCases();
-    }
-
-    @Test
-    public void testCachedAssignmentsPlaintextFile() {
-        testCachedAssignments(false);
-    }
-
-    @Test
-    public void testCachedAssignmentsEncryptedFile() {
-        testCachedAssignments(true);
     }
 
     private int runTestCaseFileStream(InputStream testCaseStream) throws IOException {
@@ -197,7 +183,7 @@ public class EppoClientTest {
 
     private static String getMockRandomizedAssignmentResponse() {
         try {
-            InputStream in = ApplicationProvider.getApplicationContext().getAssets().open("rac-experiments-v2.json");
+            InputStream in = ApplicationProvider.getApplicationContext().getAssets().open("rac-experiments-v2-hashed-keys.json");
             return IOUtils.toString(in, Charsets.toCharset("UTF8"));
         } catch (IOException e) {
             throw new RuntimeException("Error reading mock RAC data", e);
