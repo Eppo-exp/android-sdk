@@ -2,11 +2,12 @@ package cloud.eppo.android.dto;
 
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
 
 public class FlagConfig {
     private int subjectShards;
     private boolean enabled;
-    private Map<String, String> overrides;
+    private Map<String, String> typedOverrides = new HashMap<>();
     private List<TargetingRule> rules;
     private Map<String, Allocation> allocations;
 
@@ -18,8 +19,8 @@ public class FlagConfig {
         return enabled;
     }
 
-    public Map<String, String> getOverrides() {
-        return overrides;
+    public Map<String, String> getTypedOverrides() {
+        return typedOverrides;
     }
 
     public Map<String, Allocation> getAllocations() {

@@ -5,5 +5,6 @@ public enum EppoValueType {
     String,
     Boolean,
     Null,
-    ArrayOfStrings
+    ArrayOfStrings,
+    JSON
 }

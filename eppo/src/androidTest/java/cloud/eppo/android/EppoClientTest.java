@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.util.Converter;
 
 public class EppoClientTest {
     private static final String TAG = EppoClientTest.class.getSimpleName();
@@ -48,6 +49,7 @@ public class EppoClientTest {
 
     static class AssignmentTestCase {
         String experiment;
+        String valueType = "string";
         List<SubjectWithAttributes> subjectsWithAttributes;
         List<String> subjects;
         List<String> expectedAssignments;
@@ -64,30 +66,31 @@ public class EppoClientTest {
         deleteFileIfExists(CACHE_FILE_NAME);
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles) throws InterruptedException {
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles)
+            throws InterruptedException {
         if (shouldDeleteCacheFiles) {
             deleteCacheFiles();
         }
 
         new EppoClient.Builder()
-            .application(ApplicationProvider.getApplicationContext())
-            .apiKey("mock-api-key")
-            .host(host)
-            .callback(new InitializationCallback() {
-                @Override
-                public void onCompleted() {
-                    lock.countDown();
-                }
-
-                @Override
-                public void onError(String errorMessage) {
-                    if (throwOnCallackError) {
-                        throw new RuntimeException("Unable to initialize");
+                .application(ApplicationProvider.getApplicationContext())
+                .apiKey("mock-api-key")
+                .host(host)
+                .callback(new InitializationCallback() {
+                    @Override
+                    public void onCompleted() {
+                        lock.countDown();
                     }
-                    lock.countDown();
-                }
-            })
-            .buildAndInit();
+
+                    @Override
+                    public void onError(String errorMessage) {
+                        if (throwOnCallackError) {
+                            throw new RuntimeException("Unable to initialize");
+                        }
+                        lock.countDown();
+                    }
+                })
+                .buildAndInit();
 
         lock.await(2000, TimeUnit.MILLISECONDS);
     }
@@ -114,11 +117,12 @@ public class EppoClientTest {
         this.mockServer = new WireMockServer(TEST_PORT);
         this.mockServer.start();
         String racResponseJson = getMockRandomizedAssignmentResponse();
-        this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*")).willReturn(WireMock.okJson(racResponseJson)));
+        this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
+                .willReturn(WireMock.okJson(racResponseJson)));
     }
 
     @Test
-    public void testAssignments()  {
+    public void testAssignments() {
         runTestCases();
     }
 
@@ -154,18 +158,48 @@ public class EppoClientTest {
     private int runTestCaseFileStream(InputStream testCaseStream) throws IOException {
         String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
         AssignmentTestCase testCase = gson.fromJson(json, AssignmentTestCase.class);
-        List<String> assignments = getAssignments(testCase);
-        assertEquals(testCase.expectedAssignments, assignments);
-        return assignments.size();
+        switch (testCase.valueType) {
+            case "numeric":
+                List<Double> expectedDoubleAssignments = Converter.convertToDecimal(testCase.expectedAssignments);
+                List<Double> actualDoubleAssignments = this.getDoubleAssignments(testCase);
+                assertEquals(expectedDoubleAssignments, actualDoubleAssignments);
+                return actualDoubleAssignments.size();
+            case "boolean":
+                List<Boolean> expectedBooleanAssignments = Converter.convertToBoolean(testCase.expectedAssignments);
+                List<Boolean> actualBooleanAssignments = this.getBooleanAssignments(testCase);
+                assertEquals(expectedBooleanAssignments, actualBooleanAssignments);
+                return actualBooleanAssignments.size();
+            case "json":
+                List<String> actualJSONAssignments = this.getJSONAssignments(testCase);
+                assertEquals(testCase.expectedAssignments, actualJSONAssignments);
+                return actualJSONAssignments.size();
+            default:
+                List<String> actualStringAssignments = this.getStringAssignments(testCase);
+                assertEquals(testCase.expectedAssignments, actualStringAssignments);
+                return actualStringAssignments.size();
+        }
     }
 
-    private List<String> getAssignments(AssignmentTestCase testCase) {
+    private List<?> getAssignments(AssignmentTestCase testCase, String valueType) {
         EppoClient client = EppoClient.getInstance();
         if (testCase.subjectsWithAttributes != null) {
             return testCase.subjectsWithAttributes.stream()
                     .map(subject -> {
                         try {
-                            return client.getAssignment(subject.subjectKey, testCase.experiment, subject.subjectAttributes);
+                            switch (valueType) {
+                                case "numeric":
+                                    return client.getDoubleAssignment(subject.subjectKey, testCase.experiment,
+                                            subject.subjectAttributes);
+                                case "boolean":
+                                    return client.getBooleanAssignment(subject.subjectKey, testCase.experiment,
+                                            subject.subjectAttributes);
+                                case "json":
+                                    return client.getJSONAssignment(subject.subjectKey, testCase.experiment,
+                                            subject.subjectAttributes);
+                                default:
+                                    return client.getStringAssignment(subject.subjectKey, testCase.experiment,
+                                            subject.subjectAttributes);
+                            }
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
@@ -174,16 +208,42 @@ public class EppoClientTest {
         return testCase.subjects.stream()
                 .map(subject -> {
                     try {
-                        return client.getAssignment(subject, testCase.experiment);
+                        switch (valueType) {
+                            case "numeric":
+                                return client.getDoubleAssignment(subject, testCase.experiment);
+                            case "boolean":
+                                return client.getBooleanAssignment(subject, testCase.experiment);
+                            case "json":
+                                return client.getJSONAssignment(subject, testCase.experiment);
+                            default:
+                                return client.getStringAssignment(subject, testCase.experiment);
+                        }
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
                 }).collect(Collectors.toList());
     }
 
+    private List<String> getStringAssignments(AssignmentTestCase testCase) {
+        return (List<String>) this.getAssignments(testCase, "string");
+    }
+
+    private List<Double> getDoubleAssignments(AssignmentTestCase testCase) {
+        return (List<Double>) this.getAssignments(testCase, "numeric");
+    }
+
+    private List<Boolean> getBooleanAssignments(AssignmentTestCase testCase) {
+        return (List<Boolean>) this.getAssignments(testCase, "boolean");
+    }
+
+    private List<String> getJSONAssignments(AssignmentTestCase testCase) {
+        return (List<String>) this.getAssignments(testCase, "json");
+    }
+
     private static String getMockRandomizedAssignmentResponse() {
         try {
-            InputStream in = ApplicationProvider.getApplicationContext().getAssets().open("rac-experiments-v2-hashed-keys.json");
+            InputStream in = ApplicationProvider.getApplicationContext().getAssets()
+                    .open("rac-experiments-v3-hashed-keys.json");
             return IOUtils.toString(in, Charsets.toCharset("UTF8"));
         } catch (IOException e) {
             throw new RuntimeException("Error reading mock RAC data", e);

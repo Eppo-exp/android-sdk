@@ -13,13 +13,15 @@ import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import cloud.eppo.android.dto.EppoValue;
 
 public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerializer<EppoValue> {
     @Override
-    public EppoValue deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+    public EppoValue deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+            throws JsonParseException {
         if (json.isJsonArray()) {
             List<String> array = new ArrayList<>();
             for (JsonElement element : json.getAsJsonArray()) {
@@ -34,8 +36,9 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerial
 
         if (json.isJsonPrimitive()) {
             try {
-                return EppoValue.valueOf(json.getAsInt());
-            } catch (Exception ignored) {}
+                return EppoValue.valueOf(json.getAsDouble());
+            } catch (Exception ignored) {
+            }
 
             try {
                 String stringValue = json.getAsString();
@@ -43,15 +46,17 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerial
                     return EppoValue.valueOf();
                 }
                 return EppoValue.valueOf(stringValue);
-            } catch (Exception ignored) {}
-
-            try {
-                return EppoValue.valueOf(json.getAsLong());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
 
             try {
                 return EppoValue.valueOf(json.getAsBoolean());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
+        }
+
+        if (!json.isJsonNull()) {
+            return EppoValue.valueOf(json);
         }
 
         return EppoValue.valueOf();
@@ -74,11 +79,16 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerial
         if (src.isNumeric()) {
             try {
                 return new JsonPrimitive(src.doubleValue());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
 
         if (src.isNumeric()) {
             return null;
+        }
+
+        if (src.isJSON()) {
+            return src.jsonValue();
         }
 
         return new JsonPrimitive(src.stringValue());

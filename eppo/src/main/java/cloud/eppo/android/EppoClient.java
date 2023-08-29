@@ -12,6 +12,7 @@ import java.util.List;
 
 import cloud.eppo.android.dto.Allocation;
 import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.android.dto.EppoValueType;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.TargetingRule;
@@ -42,7 +43,8 @@ public class EppoClient {
         return init(application, apiKey, DEFAULT_HOST, null, null);
     }
 
-    public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback, AssignmentLogger assignmentLogger) {
+    public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback,
+            AssignmentLogger assignmentLogger) {
         if (application == null) {
             throw new MissingApplicationException();
         }
@@ -70,18 +72,20 @@ public class EppoClient {
 
     private EppoValue getSubjectVariationOverride(String subjectKey, FlagConfig flagConfig) {
         String subjectHash = Utils.getMD5Hex(subjectKey);
-        if (flagConfig.getOverrides().containsKey(subjectHash)) {
-            return EppoValue.valueOf(flagConfig.getOverrides().get(subjectHash));
+        if (flagConfig.getTypedOverrides().containsKey(subjectHash)) {
+            return EppoValue.valueOf(flagConfig.getTypedOverrides().get(subjectHash));
         }
         return EppoValue.valueOf();
     }
 
-    private boolean isInExperimentSample(String subjectKey, String experimentKey, int subjectShards, float percentageExposure) {
+    private boolean isInExperimentSample(String subjectKey, String experimentKey, int subjectShards,
+            float percentageExposure) {
         int shard = Utils.getShard("exposure-" + subjectKey + "-" + experimentKey, subjectShards);
         return shard <= percentageExposure * subjectShards;
     }
 
-    private Variation getAssignedVariation(String subjectKey, String experimentKey, int subjectShards, List<Variation> variations) {
+    private Variation getAssignedVariation(String subjectKey, String experimentKey, int subjectShards,
+            List<Variation> variations) {
         int shard = Utils.getShard("assignment-" + subjectKey + "-" + experimentKey, subjectShards);
 
         for (Variation variation : variations) {
@@ -92,11 +96,11 @@ public class EppoClient {
         return null;
     }
 
-    public String getAssignment(String subjectKey, String flagKey) {
+    public EppoValue getAssignment(String subjectKey, String flagKey) {
         return getAssignment(subjectKey, flagKey, new SubjectAttributes());
     }
 
-    public String getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+    public EppoValue getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
 
@@ -108,7 +112,7 @@ public class EppoClient {
 
         EppoValue subjectVariationOverride = getSubjectVariationOverride(subjectKey, flag);
         if (!subjectVariationOverride.isNull()) {
-            return subjectVariationOverride.stringValue();
+            return subjectVariationOverride;
         }
 
         if (!flag.isEnabled()) {
@@ -128,17 +132,72 @@ public class EppoClient {
             return null;
         }
 
-        Variation assignedVariation = getAssignedVariation(subjectKey, flagKey, flag.getSubjectShards(), allocation.getVariations());
+        Variation assignedVariation = getAssignedVariation(subjectKey, flagKey, flag.getSubjectShards(),
+                allocation.getVariations());
         if (assignedVariation == null) {
             return null;
         }
 
-        if (assignmentLogger != null) {
-            Assignment assignment = new Assignment(flagKey, assignedVariation.getValue(), subjectKey, Utils.getISODate(new Date()), subjectAttributes);
-            assignmentLogger.logAssignment(assignment);
+         if (assignmentLogger != null) {
+         Assignment assignment = new Assignment(flagKey,
+         assignedVariation.getTypedValue().stringValue(), subjectKey,
+         Utils.getISODate(new Date()), subjectAttributes);
+         assignmentLogger.logAssignment(assignment);
+         }
+
+         return assignedVariation.getTypedValue();
+    }
+
+    public String getStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        if (value == null) {
+            return null;
         }
 
-        return assignedVariation.getValue();
+        return value.stringValue();
+    }
+
+    public String getStringAssignment(String subjectKey, String flagKey) {
+        return this.getStringAssignment(subjectKey, flagKey, new SubjectAttributes());
+    }
+
+    public Boolean getBooleanAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        if (value == null) {
+            return null;
+        }
+
+        return value.boolValue();
+    }
+
+    public Boolean getBooleanAssignment(String subjectKey, String flagKey) {
+        return this.getBooleanAssignment(subjectKey, flagKey, new SubjectAttributes());
+    }
+
+    public Double getDoubleAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        if (value == null) {
+            return null;
+        }
+
+        return value.doubleValue();
+    }
+
+    public Double getDoubleAssignment(String subjectKey, String flagKey) {
+        return this.getDoubleAssignment(subjectKey, flagKey, new SubjectAttributes());
+    }
+
+    public String getJSONAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        if (value == null) {
+            return null;
+        }
+
+        return value.jsonValue().toString();
+    }
+
+    public String getJSONAssignment(String subjectKey, String flagKey) {
+        return this.getJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
     }
 
     public static EppoClient getInstance() throws NotInitializedException {
@@ -186,4 +245,3 @@ public class EppoClient {
         }
     }
 }
-
