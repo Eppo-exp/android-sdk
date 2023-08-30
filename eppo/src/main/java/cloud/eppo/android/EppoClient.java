@@ -96,11 +96,7 @@ public class EppoClient {
         return null;
     }
 
-    public EppoValue getAssignment(String subjectKey, String flagKey) {
-        return getAssignment(subjectKey, flagKey, new SubjectAttributes());
-    }
-
-    public EppoValue getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+    private EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
 
@@ -138,18 +134,26 @@ public class EppoClient {
             return null;
         }
 
-         if (assignmentLogger != null) {
-         Assignment assignment = new Assignment(flagKey,
-         assignedVariation.getTypedValue().stringValue(), subjectKey,
-         Utils.getISODate(new Date()), subjectAttributes);
-         assignmentLogger.logAssignment(assignment);
-         }
+        if (assignmentLogger != null) {
+            Assignment assignment = new Assignment(flagKey,
+                    assignedVariation.getTypedValue().stringValue(), subjectKey,
+                    Utils.getISODate(new Date()), subjectAttributes);
+            assignmentLogger.logAssignment(assignment);
+        }
 
-         return assignedVariation.getTypedValue();
+        return assignedVariation.getTypedValue();
+    }
+
+    public String getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+        return this.getStringAssignment(subjectKey, flagKey, subjectAttributes);
+    }
+
+    public String getAssignment(String subjectKey, String flagKey) {
+        return this.getStringAssignment(subjectKey, flagKey);
     }
 
     public String getStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
         if (value == null) {
             return null;
         }
@@ -162,7 +166,7 @@ public class EppoClient {
     }
 
     public Boolean getBooleanAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
         if (value == null) {
             return null;
         }
@@ -175,7 +179,7 @@ public class EppoClient {
     }
 
     public Double getDoubleAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
         if (value == null) {
             return null;
         }
@@ -188,7 +192,7 @@ public class EppoClient {
     }
 
     public String getJSONAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getAssignment(subjectKey, flagKey, subjectAttributes);
+        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
         if (value == null) {
             return null;
         }
