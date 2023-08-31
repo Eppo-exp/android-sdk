@@ -17,10 +17,10 @@ public class EppoValueDeserializerTest {
     
 
     @Test
-    public void testDeserializingInteger() throws Exception {
+    public void testDeserializingDouble() throws Exception {
         JsonElement object = JsonParser.parseString("1");
         EppoValue value = adapter.deserialize(object, EppoValue.class, null);
-        assertEquals(value.intValue(), 1);
+        assertEquals(value.doubleValue(), 1, 0.001);
     }
 
     @Test

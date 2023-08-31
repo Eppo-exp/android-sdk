@@ -1,6 +1,5 @@
 package cloud.eppo.androidexample;
 
-
 import static cloud.eppo.androidexample.Constants.INITIAL_FLAG_KEY;
 import static cloud.eppo.androidexample.Constants.INITIAL_SUBJECT_ID;
 

@@ -1,11 +1,15 @@
 package cloud.eppo.android.dto;
 
+import com.google.gson.JsonElement;
+
 import java.util.List;
 
 public class EppoValue {
     private String value;
     private EppoValueType type = EppoValueType.Null;
     private List<String> array;
+
+    private JsonElement json;
 
     public EppoValue() {}
 
@@ -23,12 +27,14 @@ public class EppoValue {
         this.type = type;
     }
 
-    public static EppoValue valueOf(String value) {
-        return new EppoValue(value, EppoValueType.String);
+    public EppoValue(JsonElement json) {
+        this.json = json;
+        this.value = json.toString();
+        this.type = EppoValueType.JSON;
     }
 
-    public static EppoValue valueOf(int value) {
-        return new EppoValue(Integer.toString(value), EppoValueType.Number);
+    public static EppoValue valueOf(String value) {
+        return new EppoValue(value, EppoValueType.String);
     }
 
     public static EppoValue valueOf(double value) {
@@ -41,6 +47,10 @@ public class EppoValue {
 
     public static EppoValue valueOf(List<String> value) {
         return  new EppoValue(value);
+    }
+
+    public static EppoValue valueOf(JsonElement json) {
+        return new EppoValue(json);
     }
 
     public static EppoValue valueOf() {
@@ -71,6 +81,10 @@ public class EppoValue {
         return  array;
     }
 
+    public JsonElement jsonValue() {
+        return this.json;
+    }
+
     public boolean isNumeric() {
         try {
             Long.parseLong(value, 10);
@@ -90,6 +104,10 @@ public class EppoValue {
 
     public boolean isNull() {
         return type == EppoValueType.Null;
+    }
+
+    public boolean isJSON() {
+        return type == EppoValueType.JSON;
     }
 
     @Override
