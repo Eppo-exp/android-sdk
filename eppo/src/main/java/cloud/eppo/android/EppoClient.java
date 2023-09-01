@@ -122,7 +122,8 @@ public class EppoClient {
             return null;
         }
 
-        Allocation allocation = flag.getAllocations().get(rule.getAllocationKey());
+        String allocationKey = rule.getAllocationKey();
+        Allocation allocation = flag.getAllocations().get(allocationKey);
         if (!isInExperimentSample(subjectKey, flagKey, flag.getSubjectShards(), allocation.getPercentExposure())) {
             Log.i(TAG, "no assigned variation. The subject is not part of the sample population");
             return null;
@@ -135,9 +136,10 @@ public class EppoClient {
         }
 
         if (assignmentLogger != null) {
-            Assignment assignment = new Assignment(flagKey,
-                    assignedVariation.getTypedValue().stringValue(), subjectKey,
-                    Utils.getISODate(new Date()), subjectAttributes);
+            String experimentKey = Utils.generateExperimentKey(flagKey, allocationKey);
+            Assignment assignment = new Assignment(experimentKey,
+                    flagKey, allocationKey, assignedVariation.getTypedValue().stringValue(),
+                    subjectKey, Utils.getISODate(new Date()), subjectAttributes);
             assignmentLogger.logAssignment(assignment);
         }
 

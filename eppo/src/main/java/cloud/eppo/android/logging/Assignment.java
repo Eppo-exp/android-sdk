@@ -4,13 +4,25 @@ import cloud.eppo.android.dto.SubjectAttributes;
 
 public class Assignment {
     private String experiment;
+    private String featureFlag;
+    private String allocation;
     private String variation;
     private String subject;
     private String timestamp;
     private SubjectAttributes subjectAttributes;
 
-    public Assignment(String experiment, String variation, String subject, String timestamp, SubjectAttributes subjectAttributes) {
+    public Assignment(
+            String experiment,
+            String featureFlag,
+            String allocation,
+            String variation,
+            String subject,
+            String timestamp,
+            SubjectAttributes subjectAttributes
+    ) {
         this.experiment = experiment;
+        this.featureFlag = featureFlag;
+        this.allocation = allocation;
         this.variation = variation;
         this.subject = subject;
         this.timestamp = timestamp;
