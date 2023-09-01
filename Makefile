@@ -54,6 +54,8 @@ test: test-data
 .PHONY: test-github-wf
 test-github-wf: test-data
 	# $(INFO)Running tests(END)
+	echo "MAVEN_USERNAME=test" >> ./gradle.properties
+	echo "MAVEN_PASSWORD=test" >> ./gradle.properties
 	./gradlew runEppoTests
 
 .PHONY: publish-release
