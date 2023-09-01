@@ -50,6 +50,12 @@ test: test-data
 	# $(INFO)Running tests(END)
 	./gradlew runEppoTests
 
+## test
+.PHONY: test-github-wf
+test-github-wf: test-data
+	# $(INFO)Running tests(END)
+	./gradlew runEppoTests
+
 .PHONY: publish-release
 publish-release: test
 		# $(INFO)Checking required gradle configuration(END)
