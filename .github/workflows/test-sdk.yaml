@@ -20,30 +20,6 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
 
-      - name: 'Set up GCP SDK'
-        uses: 'google-github-actions/setup-gcloud@v0'
-
-      - name: Gradle cache
-        uses: gradle/gradle-build-action@v2
-
-      - name: AVD cache
-        uses: actions/cache@v3
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ env.ANDROID_API_LEVEL }}
-
-      - name: create AVD and generate snapshot for caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ env.ANDROID_API_LEVEL }}
-          force-avd-creation: false
-          disable-animations: false
-          script: echo "Generated AVD snapshot for caching."
-
       - name: Run tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
