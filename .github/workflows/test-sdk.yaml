@@ -20,6 +20,11 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
 
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: 7.4
+
       - name: Run tests
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
@@ -28,3 +33,6 @@ jobs:
           arch: x86_64
           disable-animations: true
           script: make test-github-wf
+        env:
+          MAVEN_USERNAME: test
+          MAVEN_PASSWORD: test
