@@ -46,7 +46,7 @@ test-data:
 .PHONY: test
 test: test-data
 	# $(INFO)Uninstalling old version of test app(END)
-	# adb uninstall cloud.eppo.android.test
+	adb uninstall cloud.eppo.android.test
 	# $(INFO)Running tests(END)
 	./gradlew runEppoTests
 
