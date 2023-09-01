@@ -4,11 +4,13 @@ on:
     paths:
       - '**/*'
 
+env:
+  ANDROID_API_LEVEL: 33
+
 jobs:
   lint-test-sdk:
     runs-on: macos-latest
-    strategy:
-      android-api-level: 33
+
     steps:
       - uses: actions/checkout@v3
 
@@ -31,13 +33,13 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ android-api-level }}
+          key: avd-${{ env.ANDROID_API_LEVEL }}
 
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ android-api-level }}
+          api-level: ${{ env.ANDROID_API_LEVEL }}
           force-avd-creation: false
           disable-animations: false
           script: echo "Generated AVD snapshot for caching."
