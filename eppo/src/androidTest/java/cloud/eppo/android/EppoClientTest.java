@@ -41,7 +41,7 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 public class EppoClientTest {
     private static final String TAG = EppoClientTest.class.getSimpleName();
     private static final int TEST_PORT = 4001;
-    private static final String HOST = "http://localhost:" + TEST_PORT;
+    private String HOST;
     private static final String INVALID_HOST = "http://localhost:" + (TEST_PORT + 1);
     private WireMockServer mockServer;
     private Gson gson = new GsonBuilder()
@@ -122,6 +122,10 @@ public class EppoClientTest {
         }
     }
 
+    private void setHost(String url) {
+        HOST = url;
+    }
+
     private void deleteCacheFiles() {
         deleteFileIfExists(CACHE_FILE_NAME);
     }
@@ -176,6 +180,7 @@ public class EppoClientTest {
     private void setupMockRacServer() {
         this.mockServer = new WireMockServer(TEST_PORT);
         this.mockServer.start();
+        this.setHost(this.mockServer.baseUrl());
         String racResponseJson = getMockRandomizedAssignmentResponse();
         this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
                 .willReturn(WireMock.okJson(racResponseJson)));
