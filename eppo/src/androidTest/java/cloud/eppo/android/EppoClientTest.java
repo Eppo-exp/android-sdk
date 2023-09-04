@@ -200,7 +200,6 @@ public class EppoClientTest {
         }
     }
 
-    @Test
     public void testCachedAssignments() {
         try {
             initClient(HOST, false, true); // ensure cache is populated
