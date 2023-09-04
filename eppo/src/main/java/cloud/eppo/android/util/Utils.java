@@ -63,15 +63,6 @@ public class Utils {
     }
 
     public static String generateExperimentKey(String featureFlagKey, String allocationKey) {
-        String encodedAllocationKey = "";
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            encodedAllocationKey = Base64.getEncoder().encodeToString(allocationKey.getBytes());
-        } else {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.FROYO) {
-                encodedAllocationKey =  android.util.Base64.encodeToString(allocationKey.getBytes(), android.util.Base64.DEFAULT);
-            }
-        }
-
-        return featureFlagKey + '|' + encodedAllocationKey;
+        return featureFlagKey + '-' + allocationKey;
     }
 }
