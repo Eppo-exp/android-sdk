@@ -24,7 +24,7 @@ jobs:
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 34
-          target: google_apis
+          profile: Pixel 3a
           arch: x86_64
           disable-animations: true
           script: make test-github-wf
