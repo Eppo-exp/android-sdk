@@ -1,8 +1,7 @@
 name: Publish Android SDK
 on:
-  pull_request:
-    paths:
-      - '**/*'
+  release:
+    types: [published]
 
 env:
   ANDROID_API_LEVEL: 33
