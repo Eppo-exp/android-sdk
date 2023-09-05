@@ -66,6 +66,7 @@ check-maven-credentials-and-publish:
 .PHONY: publish-release
 publish-release: test check-maven-credentials-and-publish
 
+# todo: remove this command when test workflow is ready and use publish-release instead
 .PHONY: publish-release-without-test
 publish-release-without-test:check-maven-credentials-and-publish
 
