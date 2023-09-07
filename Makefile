@@ -50,9 +50,8 @@ test: test-data
 	# $(INFO)Running tests(END)
 	./gradlew runEppoTests
 
-.PHONY: publish-release
-publish-release: test
-		# $(INFO)Checking required gradle configuration(END)
+check-maven-credentials-and-publish:
+	# $(INFO)Checking required gradle configuration(END)
 		@for required_property in "MAVEN_USERNAME" "MAVEN_PASSWORD"; do \
 				cat ~/.gradle/gradle.properties | grep -q $$required_property; \
 				if [ $$? != 0 ]; then \
@@ -64,4 +63,10 @@ publish-release: test
 		# $(INFO)Publishing release(END)
 		./gradlew :eppo:publishReleasePublicationToMavenRepository
 
+.PHONY: publish-release
+publish-release: test check-maven-credentials-and-publish
+
+# todo: remove this command when test workflow is ready and use publish-release instead
+.PHONY: publish-release-without-test
+publish-release-without-test:check-maven-credentials-and-publish
 
