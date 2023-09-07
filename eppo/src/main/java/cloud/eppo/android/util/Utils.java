@@ -2,12 +2,14 @@ package cloud.eppo.android.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Base64;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -58,5 +60,9 @@ public class Utils {
 
     public static SharedPreferences getSharedPrefs(Context context) {
         return context.getSharedPreferences("eppo", Context.MODE_PRIVATE);
+    }
+
+    public static String generateExperimentKey(String featureFlagKey, String allocationKey) {
+        return featureFlagKey + '-' + allocationKey;
     }
 }
