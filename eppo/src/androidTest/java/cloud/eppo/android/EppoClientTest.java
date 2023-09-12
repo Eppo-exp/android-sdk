@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -230,9 +229,12 @@ public class EppoClientTest {
                 assertEquals(expectedBooleanAssignments, actualBooleanAssignments);
                 return actualBooleanAssignments.size();
             case JSON:
-                List<String> actualJSONAssignments = this.getJSONAssignments(testCase);
-                assertEquals(testCase.expectedAssignments, actualJSONAssignments);
-                return actualJSONAssignments.size();
+                // test parsed json
+                List<JsonElement> actualParsedJSONAssignments = this.getJSONAssignments(testCase);
+                List<String> actualJSONStringAssignments = actualParsedJSONAssignments.stream().map(x -> x.toString()).collect(Collectors.toList());
+
+                assertEquals(testCase.expectedAssignments, actualJSONStringAssignments);
+                return actualParsedJSONAssignments.size();
             default:
                 List<String> actualStringAssignments = this.getStringAssignments(testCase);
                 assertEquals(testCase.expectedAssignments, actualStringAssignments);
@@ -254,7 +256,7 @@ public class EppoClientTest {
                                     return client.getBooleanAssignment(subject.subjectKey, testCase.experiment,
                                             subject.subjectAttributes);
                                 case JSON:
-                                    return client.getJSONAssignment(subject.subjectKey, testCase.experiment,
+                                    return client.getParsedJSONAssignment(subject.subjectKey, testCase.experiment,
                                             subject.subjectAttributes);
                                 default:
                                     return client.getStringAssignment(subject.subjectKey, testCase.experiment,
@@ -274,7 +276,7 @@ public class EppoClientTest {
                             case BOOLEAN:
                                 return client.getBooleanAssignment(subject, testCase.experiment);
                             case JSON:
-                                return client.getJSONAssignment(subject, testCase.experiment);
+                                return client.getParsedJSONAssignment(subject, testCase.experiment);
                             default:
                                 return client.getStringAssignment(subject, testCase.experiment);
                         }
@@ -296,8 +298,8 @@ public class EppoClientTest {
         return (List<Boolean>) this.getAssignments(testCase, AssignmentValueType.BOOLEAN);
     }
 
-    private List<String> getJSONAssignments(AssignmentTestCase testCase) {
-        return (List<String>) this.getAssignments(testCase, AssignmentValueType.JSON);
+    private List<JsonElement> getJSONAssignments(AssignmentTestCase testCase) {
+        return (List<JsonElement>) this.getAssignments(testCase, AssignmentValueType.JSON);
     }
 
     private static String getMockRandomizedAssignmentResponse() {

@@ -7,12 +7,13 @@ import android.app.Application;
 import android.os.Build;
 import android.util.Log;
 
+import com.google.gson.JsonElement;
+
 import java.util.Date;
 import java.util.List;
 
 import cloud.eppo.android.dto.Allocation;
 import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.EppoValueType;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.TargetingRule;
@@ -193,17 +194,25 @@ public class EppoClient {
         return this.getDoubleAssignment(subjectKey, flagKey, new SubjectAttributes());
     }
 
-    public String getJSONAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+    public String getJSONStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+        return this.getParsedJSONAssignment(subjectKey, flagKey, subjectAttributes).toString();
+    }
+
+    public String getJSONStringAssignment(String subjectKey, String flagKey) {
+        return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes()).toString();
+    }
+
+    public JsonElement getParsedJSONAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
         EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
         if (value == null) {
             return null;
         }
 
-        return value.jsonValue().toString();
+        return value.jsonValue();
     }
 
-    public String getJSONAssignment(String subjectKey, String flagKey) {
-        return this.getJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
+    public JsonElement getParsedJSONAssignment(String subjectKey, String flagKey) {
+        return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
     }
 
     public static EppoClient getInstance() throws NotInitializedException {
