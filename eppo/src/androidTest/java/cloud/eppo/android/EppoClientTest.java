@@ -1,12 +1,16 @@
 package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
 
 import android.content.res.AssetManager;
+import android.util.Log;
+
 import androidx.test.core.app.ApplicationProvider;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -17,6 +21,11 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
+
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
@@ -125,7 +134,7 @@ public class EppoClientTest {
         deleteFileIfExists(CACHE_FILE_NAME);
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles)
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode)
             throws InterruptedException {
         if (shouldDeleteCacheFiles) {
             deleteCacheFiles();
@@ -134,6 +143,7 @@ public class EppoClientTest {
         new EppoClient.Builder()
                 .application(ApplicationProvider.getApplicationContext())
                 .apiKey("mock-api-key")
+                .isGracefulMode(isGracefulMode)
                 .host(host)
                 .callback(new InitializationCallback() {
                     @Override
@@ -159,7 +169,7 @@ public class EppoClientTest {
         setupMockRacServer();
 
         try {
-            initClient(HOST, true, true);
+            initClient(HOST, true, true, true);
         } catch (InterruptedException e) {
             e.printStackTrace();
             fail();
@@ -185,6 +195,45 @@ public class EppoClientTest {
         runTestCases();
     }
 
+    @Test
+    public void testGracefulModeOn() {
+        try {
+            initClient(HOST, false, true, true);
+            System.out.println("Sleeping for a bit to wait for cache population to complete");
+            Thread.sleep(1000);
+
+            EppoClient realClient = EppoClient.getInstance();
+            EppoClient spyClient = spy(realClient);
+            doThrow(new RuntimeException("Exception thrown by mock"))
+                .when(spyClient)
+                .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
+
+            assertNull(spyClient.getBooleanAssignment("subject1", "experiment1"));
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
+    @Test
+    public void testGracefulModeOff() {
+        try {
+            initClient(HOST, false, true, false);
+            Log.d(TAG, "Sleeping for a bit to wait for cache population to complete");
+            Thread.sleep(1000);
+
+            EppoClient realClient = EppoClient.getInstance();
+            EppoClient spyClient = spy(realClient);
+            doThrow(new RuntimeException("Exception thrown by mock"))
+                .when(spyClient)
+                .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
+
+            assertThrows(RuntimeException.class,
+                    () -> spyClient.getBooleanAssignment("subject1", "experiment1"));
+        } catch (Exception e) {
+            fail();
+        }
+    }
+
     private void runTestCases() {
         try {
             int testsRan = 0;
@@ -202,8 +251,8 @@ public class EppoClientTest {
     @Test
     public void testCachedAssignments() {
         try {
-            initClient(HOST, false, true); // ensure cache is populated
-            initClient(INVALID_HOST, false, false); // invalid port to force to use cache
+            initClient(HOST, false, true, true); // ensure cache is populated
+            initClient(INVALID_HOST, false, false, true); // invalid port to force to use cache
 
             // wait for a bit since file is loaded asynchronously
             System.out.println("Sleeping for a bit to wait for cache population to complete");

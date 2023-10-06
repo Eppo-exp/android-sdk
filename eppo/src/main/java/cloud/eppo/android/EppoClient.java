@@ -100,7 +100,7 @@ public class EppoClient {
         return null;
     }
 
-    private EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+    protected EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
 
