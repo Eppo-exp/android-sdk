@@ -208,7 +208,23 @@ public class EppoClientTest {
                 .when(spyClient)
                 .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
 
+            assertNull(spyClient.getAssignment("subject1", "experiment1"));
+            assertNull(spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
+
             assertNull(spyClient.getBooleanAssignment("subject1", "experiment1"));
+            assertNull(spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertNull(spyClient.getDoubleAssignment("subject1", "experiment1"));
+            assertNull(spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertNull(spyClient.getStringAssignment("subject1", "experiment1"));
+            assertNull(spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1"));
+            assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1"));
+            assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
         } catch (Exception e) {
             fail();
         }
@@ -227,8 +243,23 @@ public class EppoClientTest {
                 .when(spyClient)
                 .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
 
-            assertThrows(RuntimeException.class,
-                    () -> spyClient.getBooleanAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+            assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1"));
+            assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
         } catch (Exception e) {
             fail();
         }
