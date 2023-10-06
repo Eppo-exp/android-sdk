@@ -28,24 +28,27 @@ import cloud.eppo.android.util.Utils;
 public class EppoClient {
     private static final String TAG = EppoClient.class.getCanonicalName();
     private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
+    private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
 
     private final ConfigurationRequestor requestor;
     private final AssignmentLogger assignmentLogger;
+    private boolean isGracefulMode;
     private static EppoClient instance;
 
-    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger) {
+    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger, boolean isGracefulMode) {
         EppoHttpClient httpClient = new EppoHttpClient(host, apiKey);
         ConfigurationStore configStore = new ConfigurationStore(application);
         requestor = new ConfigurationRequestor(configStore, httpClient);
+        this.isGracefulMode = isGracefulMode;
         this.assignmentLogger = assignmentLogger;
     }
 
     public static EppoClient init(Application application, String apiKey) {
-        return init(application, apiKey, DEFAULT_HOST, null, null);
+        return init(application, apiKey, DEFAULT_HOST, null, null, DEFAULT_IS_GRACEFUL_MODE);
     }
 
     public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback,
-            AssignmentLogger assignmentLogger) {
+            AssignmentLogger assignmentLogger, boolean isGracefulMode) {
         if (application == null) {
             throw new MissingApplicationException();
         }
@@ -60,7 +63,7 @@ public class EppoClient {
         }
 
         if (shouldCreateInstance) {
-            instance = new EppoClient(application, apiKey, host, assignmentLogger);
+            instance = new EppoClient(application, apiKey, host, assignmentLogger, isGracefulMode);
             instance.refreshConfiguration(callback);
         }
 
@@ -148,71 +151,167 @@ public class EppoClient {
     }
 
     public String getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        return this.getStringAssignment(subjectKey, flagKey, subjectAttributes);
+        try {
+            return this.getStringAssignment(subjectKey, flagKey, subjectAttributes);
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public String getAssignment(String subjectKey, String flagKey) {
-        return this.getStringAssignment(subjectKey, flagKey);
+        try {
+            return this.getStringAssignment(subjectKey, flagKey);
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public String getStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-        if (value == null) {
-            return null;
-        }
+        try {
+            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
+            if (value == null) {
+                return null;
+            }
 
-        return value.stringValue();
+            return value.stringValue();
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public String getStringAssignment(String subjectKey, String flagKey) {
-        return this.getStringAssignment(subjectKey, flagKey, new SubjectAttributes());
+        try {
+            return this.getStringAssignment(subjectKey, flagKey, new SubjectAttributes());
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public Boolean getBooleanAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-        if (value == null) {
-            return null;
-        }
+        try {
+            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
+            if (value == null) {
+                return null;
+            }
 
-        return value.boolValue();
+            return value.boolValue();
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public Boolean getBooleanAssignment(String subjectKey, String flagKey) {
-        return this.getBooleanAssignment(subjectKey, flagKey, new SubjectAttributes());
+        try {
+            return this.getBooleanAssignment(subjectKey, flagKey, new SubjectAttributes());
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public Double getDoubleAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-        if (value == null) {
-            return null;
-        }
+        try {
+            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
+            if (value == null) {
+                return null;
+            }
 
-        return value.doubleValue();
+            return value.doubleValue();
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public Double getDoubleAssignment(String subjectKey, String flagKey) {
-        return this.getDoubleAssignment(subjectKey, flagKey, new SubjectAttributes());
+        try {
+            return this.getDoubleAssignment(subjectKey, flagKey, new SubjectAttributes());
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public String getJSONStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        return this.getParsedJSONAssignment(subjectKey, flagKey, subjectAttributes).toString();
+        try {
+            return this.getParsedJSONAssignment(subjectKey, flagKey, subjectAttributes).toString();
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public String getJSONStringAssignment(String subjectKey, String flagKey) {
-        return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes()).toString();
+        try {
+            return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes()).toString();
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public JsonElement getParsedJSONAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-        if (value == null) {
-            return null;
-        }
+        try {
+            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
+            if (value == null) {
+                return null;
+            }
 
-        return value.jsonValue();
+            return value.jsonValue();
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public JsonElement getParsedJSONAssignment(String subjectKey, String flagKey) {
-        return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
+        try {
+            return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
+        } catch (Exception e) {
+            if (this.isGracefulMode) {
+                Log.i(TAG, "error getting assignment value: " + e.getMessage());
+                return null;
+            }
+            throw e;
+        }
     }
 
     public static EppoClient getInstance() throws NotInitializedException {
@@ -229,6 +328,7 @@ public class EppoClient {
         private String host = DEFAULT_HOST;
         private InitializationCallback callback;
         private AssignmentLogger assignmentLogger;
+        private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
 
         public Builder apiKey(String apiKey) {
             this.apiKey = apiKey;
@@ -255,8 +355,13 @@ public class EppoClient {
             return this;
         }
 
+        public Builder isGracefulMode(boolean isGracefulMode) {
+            this.isGracefulMode = isGracefulMode;
+            return this;
+        }
+
         public EppoClient buildAndInit() {
-            return EppoClient.init(application, apiKey, host, callback, assignmentLogger);
+            return EppoClient.init(application, apiKey, host, callback, assignmentLogger, isGracefulMode);
         }
     }
 }
