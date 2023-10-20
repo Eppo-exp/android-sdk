@@ -10,13 +10,8 @@ android {
     compileSdk 33
 
     defaultConfig {
-        gradle.startParameter.taskNames.each {
-            if (it.contains("AndroidTest")) {
-                minSdk 33 // required to use wiremock in tests
-            } else {
-                minSdk 21
-            }
-        }
+        //testInstrumentationRunnerArguments minSdkVersion: '33'
+        minSdk 33
         targetSdk 33
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -47,7 +42,12 @@ android {
         unitTests.returnDefaultValues = true
     }
     packagingOptions {
-        exclude("META-INF/**")
+        jniLibs {
+            excludes += ['META-INF/**']
+        }
+        resources {
+            excludes += ['META-INF/**']
+        }
     }
 }
 
