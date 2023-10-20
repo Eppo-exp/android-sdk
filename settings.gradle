@@ -12,6 +12,6 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "Eppo Example"
+rootProject.name = "Eppo SDK"
 include ':example'
 include ':eppo'
