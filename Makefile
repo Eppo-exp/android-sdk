@@ -42,11 +42,15 @@ test-data:
 	cp -r ${gitDataDir}/assignment-v2 ${testDataDir}
 	rm -rf ${tempDir}
 
-## test
-.PHONY: test
-test: test-data
-	# $(INFO)Running tests(END)
-	./gradlew runEppoTests
+## instrumentation-test
+.PHONY: instrumentation-test
+instrumentation-test: test-data
+	./gradlew connectedCheck
+
+## unit-test
+.PHONY: unit-test
+unit-test:
+	./gradlew test
 
 check-maven-credentials-and-publish:
 	# $(INFO)Checking required gradle configuration(END)

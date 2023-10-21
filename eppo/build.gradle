@@ -120,10 +120,3 @@ publishing {
         }
     }
 }
-
-task runEppoTests(type: GradleBuild) {
-    tasks = [
-        ':eppo:testDebugUnitTest',
-        ':eppo:connectedDebugAndroidTest'
-    ]
-}
