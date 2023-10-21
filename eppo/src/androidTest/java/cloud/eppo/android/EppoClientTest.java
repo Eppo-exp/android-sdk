@@ -7,6 +7,8 @@ import static org.junit.Assert.fail;
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
 
 import android.content.res.AssetManager;
+import android.util.Log;
+
 import androidx.test.core.app.ApplicationProvider;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
@@ -40,8 +42,7 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 public class EppoClientTest {
     private static final String TAG = EppoClientTest.class.getSimpleName();
     private static final int TEST_PORT = 4001;
-    private static final String HOST = "http://localhost:" + TEST_PORT;
-    private static final String INVALID_HOST = "http://localhost:" + (TEST_PORT + 1);
+    private String HOST;
     private WireMockServer mockServer;
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
@@ -144,6 +145,7 @@ public class EppoClientTest {
                     @Override
                     public void onError(String errorMessage) {
                         if (throwOnCallackError) {
+                            Log.e(TAG, "initClient onError: " + errorMessage);
                             throw new RuntimeException("Unable to initialize");
                         }
                         lock.countDown();
@@ -175,6 +177,10 @@ public class EppoClientTest {
     private void setupMockRacServer() {
         this.mockServer = new WireMockServer(TEST_PORT);
         this.mockServer.start();
+
+        this.HOST = this.mockServer.baseUrl(); // this includes the port
+        Log.i(TAG, "host:" + this.HOST);
+
         String racResponseJson = getMockRandomizedAssignmentResponse();
         this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
                 .willReturn(WireMock.okJson(racResponseJson)));
