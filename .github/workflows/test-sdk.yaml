@@ -121,6 +121,7 @@ jobs:
 
       - name: run tests
         uses: reactivecircus/android-emulator-runner@v2
+        continue-on-error: true # IMPORTANT: allow pipeline to continue to Android Test Report step
         with:
           api-level: ${{ matrix.api-level }}
           profile: 29 # pixel 7
@@ -129,4 +130,20 @@ jobs:
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
-          script: make instrumentation-test
+          script: |
+            adb logcat -c                             # clear logs
+            touch app/emulator.log                    # create log file
+            chmod 777 app/emulator.log                # allow writing to log file
+            adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
+            make instrumentation-test                 # here run our tests   
+
+      - name: Upload Failing Test Report Log
+        if: steps.testing.outcome != 'success'        # upload the generated log on failure of the tests job
+        uses: actions/upload-artifact@v2
+        with:
+          name: logs
+          path: app/emulator.log # path to where the log is
+
+      - name: Raise error on test fail # set a red tick on the workflow run if the tests failed
+        if: steps.testing.outcome != 'success'
+        run: exit 1
