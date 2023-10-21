@@ -35,14 +35,10 @@ jobs:
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" > ~/.gradle/gradle.properties
           echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
-      - name: Run test-data
-        run: make test-data
-      - name: Spin up emulator
+      - name: Run tests on emulator
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 33
           target: google_apis
           arch: x86_64
-          script: ./gradlew connectedCheck
-      - name: Run tests
-        run: make test
+          script: make test
