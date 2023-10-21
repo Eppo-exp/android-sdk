@@ -10,6 +10,8 @@ android {
     compileSdk 33
 
     defaultConfig {
+        namespace "cloud.eppo.android"
+
         gradle.startParameter.taskNames.each {
             if (it.contains("AndroidTest")) {
                 minSdk 33 // required to use wiremock in tests
