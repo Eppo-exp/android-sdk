@@ -11,9 +11,6 @@ on:
 jobs:
   test-android-sdk:
     runs-on: macos-latest
-    strategy:
-      matrix:
-        api-level: [ 33 ]
     env:
       ANDROID_API_LEVEL: 33
     steps:
@@ -50,13 +47,13 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ matrix.api-level }}
+          key: avd
 
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: ${{ matrix.api-level }}
+          api-level: 33
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
