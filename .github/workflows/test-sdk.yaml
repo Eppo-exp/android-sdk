@@ -1,0 +1,74 @@
+name: Test SDK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: #TODO: remove this before merge
+    paths:
+      - '**/*'
+
+jobs:
+  test-android-sdk:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        api-level: [ 33 ]
+    env:
+      ANDROID_API_LEVEL: 33
+    steps:
+      - name: Check out Android SDK
+        uses: actions/checkout@v3
+        with:
+          repository: 'Eppo-exp/android-sdk'
+
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'adopt'
+      - name: 'Set up GCP SDK'
+        uses: 'google-github-actions/setup-gcloud@v0'
+      - name: Restore gradle.properties
+        env:
+          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }} #TODO: populate
+          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }} #TODO: populate
+        shell: bash
+        run: |
+          mkdir -p ~/.gradle/
+          echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
+          echo "MAVEN_USERNAME=${MAVEN_USERNAME}" > ~/.gradle/gradle.properties
+          echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
+
+      - name: Gradle cache
+        uses: gradle/gradle-build-action@v2
+
+      - name: AVD cache
+        uses: actions/cache@v3
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ matrix.api-level }}
+
+      - name: create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "Generated AVD snapshot for caching."
+
+      - name: Run tests on emulator
+        uses: ReactiveCircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: make test
