@@ -185,6 +185,21 @@ public class EppoClientTest {
         runTestCases();
     }
 
+//    @Test
+//    public void testCachedAssignments() {
+//        try {
+//            initClient(HOST, false, true); // ensure cache is populated
+//            initClient(INVALID_HOST, false, false); // invalid port to force to use cache
+//
+//            // wait for a bit since file is loaded asynchronously
+//            System.out.println("Sleeping for a bit to wait for cache population to complete");
+//            Thread.sleep(1000);
+//        } catch (Exception e) {
+//            fail();
+//        }
+//        runTestCases();
+//    }
+
     private void runTestCases() {
         try {
             int testsRan = 0;
@@ -197,21 +212,6 @@ public class EppoClientTest {
         } catch (Exception e) {
             fail();
         }
-    }
-
-    @Test
-    public void testCachedAssignments() {
-        try {
-            initClient(HOST, false, true); // ensure cache is populated
-            initClient(INVALID_HOST, false, false); // invalid port to force to use cache
-
-            // wait for a bit since file is loaded asynchronously
-            System.out.println("Sleeping for a bit to wait for cache population to complete");
-            Thread.sleep(1000);
-        } catch (Exception e) {
-            fail();
-        }
-        runTestCases();
     }
 
     private int runTestCaseFileStream(InputStream testCaseStream) throws IOException {
