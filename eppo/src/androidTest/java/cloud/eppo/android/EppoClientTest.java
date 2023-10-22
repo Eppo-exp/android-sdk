@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -42,7 +43,8 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final int TEST_PORT = 4001;
-    private String HOST;
+    private String HOST = Optional.ofNullable(System.getenv("WIREMOCK_BASE_URL")).orElse("http://localhost:") + TEST_PORT;
+
     private WireMockServer mockServer;
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
@@ -178,9 +180,6 @@ public class EppoClientTest {
     private void setupMockRacServer() {
         this.mockServer = new WireMockServer(TEST_PORT);
         this.mockServer.start();
-
-        this.HOST = this.mockServer.baseUrl(); // this includes the port
-        Log.i(LoggingTag, "setupMockRacServer host:" + this.HOST);
 
         String racResponseJson = getMockRandomizedAssignmentResponse();
         this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
