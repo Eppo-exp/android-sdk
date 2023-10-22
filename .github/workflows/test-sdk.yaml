@@ -131,12 +131,12 @@ jobs:
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: true
           script: |
-            adb logcat -c                             # clear logs
-            mkdir -p app/                             # create directory
-            touch app/emulator.log                    # create log file
-            chmod 777 app/emulator.log                # allow writing to log file
-            adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
-            make instrumentation-test                 # here run our tests   
+            adb logcat -c                                       # clear logs
+            mkdir -p app/                                       # create directory
+            touch app/emulator.log                              # create log file
+            chmod 777 app/emulator.log                          # allow writing to log file
+            adb logcat cloud.eppo:D *:S >> app/emulator.log &   # pipe all logcat messages into log file as a background process
+            make instrumentation-test                           # run our tests   
 
       - name: Upload Failing Test Report Log
         if: steps.testing.outcome != 'success'        # upload the generated log on failure of the tests job

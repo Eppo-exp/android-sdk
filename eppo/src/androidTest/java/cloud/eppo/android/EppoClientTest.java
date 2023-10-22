@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
+import static cloud.eppo.android.Constants.LoggingTag;
 
 import android.content.res.AssetManager;
 import android.util.Log;
@@ -40,7 +41,6 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
-    private static final String TAG = EppoClientTest.class.getSimpleName();
     private static final int TEST_PORT = 4001;
     private String HOST;
     private WireMockServer mockServer;
@@ -145,7 +145,7 @@ public class EppoClientTest {
                     @Override
                     public void onError(String errorMessage) {
                         if (throwOnCallackError) {
-                            Log.e(TAG, "initClient onError: " + errorMessage);
+                            Log.e(LoggingTag, "initClient onError: " + errorMessage);
                             throw new RuntimeException("Unable to initialize");
                         }
                         lock.countDown();
@@ -179,7 +179,7 @@ public class EppoClientTest {
         this.mockServer.start();
 
         this.HOST = this.mockServer.baseUrl(); // this includes the port
-        Log.i(TAG, "host:" + this.HOST);
+        Log.i(LoggingTag, "host:" + this.HOST);
 
         String racResponseJson = getMockRandomizedAssignmentResponse();
         this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
