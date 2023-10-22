@@ -1,5 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.Constants.LoggingTag;
+
 import android.util.Log;
 
 import java.io.IOException;
@@ -37,6 +39,7 @@ public class EppoHttpClient {
                 .build();
 
         Request request = new Request.Builder().url(httpUrl).build();
+        Log.d(LoggingTag, "Attempting to request from baseUrl: " + baseUrl);
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onResponse(Call call, Response response) {
@@ -49,9 +52,9 @@ public class EppoHttpClient {
                             break;
                         default:
                             if (BuildConfig.DEBUG) {
-                                Log.e(EppoHttpClient.class.getCanonicalName(), "Fetch failed with status code: " + response.code());
+                                Log.e(LoggingTag, "Fetch failed with status code: " + response.code());
                             }
-                            callback.onFailure("Unable to fetch from URL");
+                            callback.onFailure("Unable to fetch from URL with baseUrl: " + baseUrl);
                     }
                 }
                 response.close();
