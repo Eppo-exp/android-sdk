@@ -132,6 +132,7 @@ public class EppoClientTest {
             deleteCacheFiles();
         }
 
+        Log.d(LoggingTag, "initializing client with host: " + host);
         new EppoClient.Builder()
                 .application(ApplicationProvider.getApplicationContext())
                 .apiKey("mock-api-key")
@@ -179,7 +180,7 @@ public class EppoClientTest {
         this.mockServer.start();
 
         this.HOST = this.mockServer.baseUrl(); // this includes the port
-        Log.i(LoggingTag, "host:" + this.HOST);
+        Log.i(LoggingTag, "setupMockRacServer host:" + this.HOST);
 
         String racResponseJson = getMockRandomizedAssignmentResponse();
         this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
