@@ -1,5 +1,7 @@
 package cloud.eppo.androidexample;
 
+import static cloud.eppo.android.Constants.LoggingTag;
+
 import android.app.Application;
 import android.util.Log;
 
@@ -7,7 +9,6 @@ import cloud.eppo.android.EppoClient;
 import cloud.eppo.android.InitializationCallback;
 
 public class EppoApplication extends Application {
-    private static final String TAG = EppoApplication.class.getSimpleName();
     private static final String API_KEY = "REPLACE WITH YOUR API KEY";
 
     @Override
@@ -22,7 +23,7 @@ public class EppoApplication extends Application {
             .callback(new InitializationCallback() {
                 @Override
                 public void onCompleted() {
-                    Log.d(TAG, "Eppo SDK initialized");
+                    Log.d(LoggingTag, "Eppo SDK initialized");
                 }
 
                 @Override
