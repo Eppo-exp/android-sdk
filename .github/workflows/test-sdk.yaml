@@ -122,8 +122,6 @@ jobs:
       - name: run tests
         uses: reactivecircus/android-emulator-runner@v2
         continue-on-error: true # IMPORTANT: allow pipeline to continue to Android Test Report step
-        env:
-          WIREMOCK_BASE_URL: 10.0.2.2
         with:
           api-level: ${{ matrix.api-level }}
           profile: 29 # pixel 7

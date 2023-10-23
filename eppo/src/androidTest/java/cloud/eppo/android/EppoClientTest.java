@@ -20,19 +20,16 @@ import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
-
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -43,7 +40,7 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final int TEST_PORT = 4001;
-    private String HOST = "10.0.2.2:" + TEST_PORT; //Optional.ofNullable(System.getenv("WIREMOCK_BASE_URL")).orElse("http://localhost:") + TEST_PORT;
+    private String HOST = "http://127.0.0.1:" + 4001;
 
     private WireMockServer mockServer;
     private Gson gson = new GsonBuilder()
