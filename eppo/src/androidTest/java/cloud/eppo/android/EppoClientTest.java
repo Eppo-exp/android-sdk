@@ -43,7 +43,7 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final int TEST_PORT = 4001;
-    private String HOST = Optional.ofNullable(System.getenv("WIREMOCK_BASE_URL")).orElse("http://localhost:") + TEST_PORT;
+    private String HOST = "10.0.2.2:" + TEST_PORT; //Optional.ofNullable(System.getenv("WIREMOCK_BASE_URL")).orElse("http://localhost:") + TEST_PORT;
 
     private WireMockServer mockServer;
     private Gson gson = new GsonBuilder()
