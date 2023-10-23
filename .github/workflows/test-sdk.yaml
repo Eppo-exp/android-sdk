@@ -74,7 +74,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          repository: github.com/Eppo-exp/sdk-test-data
+          repository: Eppo-exp/sdk-test-data
           path: test-data
 
       # the macos github action images have docker installed but the daemon is not
@@ -93,7 +93,7 @@ jobs:
       - name: Check out Android SDK
         uses: actions/checkout@v3
         with:
-          repository: github.com/Eppo-exp/android-sdk
+          repository: Eppo-exp/android-sdk
           path: android-sdk
 
       - name: Set up JDK 11
