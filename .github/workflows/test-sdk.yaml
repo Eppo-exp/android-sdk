@@ -74,8 +74,8 @@ jobs:
       # the macos github action images have docker installed but the daemon is not
       # automatically started. this means we cannot use services since those run
       # before the steps.
-      - name: Start Docker
-        run: open --background -a Docker && while ! docker info > /dev/null 2>&1; do sleep 1; done
+      - name: Set up Docker
+        uses: crazy-max/ghaction-setup-docker@v1
 
       - name: Start nginx container
         run: |

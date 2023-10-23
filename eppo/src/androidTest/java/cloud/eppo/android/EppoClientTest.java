@@ -40,7 +40,7 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final int TEST_PORT = 8080;
-    private String HOST = "http://10.0.2.2:" + TEST_PORT;
+    private String HOST = "http://localhost:" + TEST_PORT;
 
     private WireMockServer mockServer;
     private Gson gson = new GsonBuilder()
