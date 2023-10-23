@@ -70,14 +70,17 @@ jobs:
       fail-fast: false
       matrix:
         api-level: [ 34 ]
-    services:
-      nginx:
-        image: nginx:latest
-        ports:
-          - 80:80
-        volumes:
-          - ${{ github.workspace }}/test-data:/usr/share/nginx/html:ro
     steps:
+      # the macos github action images have docker installed but the daemon is not
+      # automatically started. this means we cannot use services since those run
+      # before the steps.
+      - name: Start Docker
+        run: open --background -a Docker && while ! docker info > /dev/null 2>&1; do sleep 1; done
+
+      - name: Start nginx container
+        run: |
+          docker run -d -p 8080:80 -v ${{ github.workspace }}/test-data:/usr/share/nginx/html:ro nginx:latest
+
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
@@ -85,7 +88,7 @@ jobs:
           path: test-data
 
       - name: Test with curl
-        run: curl http://nginx/rac-experiments-v3.json
+        run: curl http://localhost:8080/rac-experiments-v3.json
 
       - name: Check out Android SDK
         uses: actions/checkout@v3
