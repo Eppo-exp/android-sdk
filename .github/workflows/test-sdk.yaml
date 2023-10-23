@@ -70,9 +70,28 @@ jobs:
       fail-fast: false
       matrix:
         api-level: [ 34 ]
+    services:
+      nginx:
+        image: nginx:latest
+        ports:
+          - 80:80
+        volumes:
+          - ${{ github.workspace }}/test-data:/usr/share/nginx/html:ro
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          repository: github.com/Eppo-exp/sdk-test-data
+          path: test-data
+
+      - name: Test with curl
+        run: curl http://nginx/rac-experiments-v3.json
+
       - name: Check out Android SDK
         uses: actions/checkout@v3
+        with:
+          repository: github.com/Eppo-exp/android-sdk
+          path: android-sdk
 
       - name: Set up JDK 11
         uses: actions/setup-java@v3
