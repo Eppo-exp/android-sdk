@@ -47,8 +47,14 @@ jobs:
           script: |
             echo "Emulator started" 
             ./gradlew connectedCheck
+      - name: Upload Failing Test Report Log
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: emulator logs
+          path: app/emulator.log # path to where the log is
       - name: Upload logs
-        if: always() # This ensures the logs are uploaded even if previous step fails
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: report
