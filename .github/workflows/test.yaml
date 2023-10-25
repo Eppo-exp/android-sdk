@@ -48,16 +48,14 @@ jobs:
             echo "Emulator started" 
             adb logcat -c                                       # clear logs
             mkdir -p app/                                       # create directory
-            touch app/emulator.log                              # create log file
-            chmod 777 app/emulator.log                          # allow writing to log file
-            adb logcat EppoSDK:D "*:S" >> app/emulator.log &    # pipe all logcat messages into log file as a background process
+            adb logcat > emulator_logs.txt &                    # pipe all logcat messages into log file as a background process
             ./gradlew connectedCheck                            # run tests
       - name: Upload Failing Test Report Log
         if: always()
         uses: actions/upload-artifact@v2
         with:
           name: emulator logs
-          path: app/emulator.log # path to where the log is
+          path: emulator_logs.txt # path to where the log is
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v2
