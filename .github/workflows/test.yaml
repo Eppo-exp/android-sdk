@@ -46,7 +46,6 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8
           script: |
             echo "Emulator started" 
-            script: |
             adb logcat -c                                       # clear logs
             mkdir -p app/                                       # create directory
             touch app/emulator.log                              # create log file
