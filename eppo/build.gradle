@@ -63,17 +63,16 @@ ext.versions = [
     "androidx_runner": "1.5.2",
     "gson": "2.9.1",
     "okhttp": "4.10.0",
-    "wiremock": "2.34.0"
+    "commonsio": "2.14.0"
 ]
 
 
 dependencies {
     testImplementation "junit:junit:${versions.junit}"
-    androidTestImplementation "com.github.tomakehurst:wiremock-jre8:${versions.wiremock}"
     androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"
     androidTestImplementation "androidx.test:core:${versions.androidx_core}"
     androidTestImplementation "androidx.test:runner:${versions.androidx_runner}"
-
+    androidTestImplementation "commons-io:commons-io:${versions.commonsio}"
     implementation("com.google.code.gson:gson:${versions.gson}")
     implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
 }

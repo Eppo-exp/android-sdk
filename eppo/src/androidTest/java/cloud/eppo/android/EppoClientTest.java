@@ -9,8 +9,9 @@ import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
 import android.content.res.AssetManager;
 import androidx.test.core.app.ApplicationProvider;
 
-import com.github.tomakehurst.wiremock.WireMockServer;
-import com.github.tomakehurst.wiremock.client.WireMock;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -18,8 +19,6 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,10 +38,8 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final String TAG = EppoClientTest.class.getSimpleName();
-    private static final int TEST_PORT = 4001;
-    private static final String HOST = "http://localhost:" + TEST_PORT;
-    private static final String INVALID_HOST = "http://localhost:" + (TEST_PORT + 1);
-    private WireMockServer mockServer;
+    private static final String TEST_HOST = "http://us-central1-eppo-prod-312905.cloudfunctions.net/serveGithubRacTestFile";
+    private static final String INVALID_HOST = "http://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
@@ -156,10 +153,8 @@ public class EppoClientTest {
 
     @Before
     public void init() {
-        setupMockRacServer();
-
         try {
-            initClient(HOST, true, true);
+            initClient(TEST_HOST, true, true);
         } catch (InterruptedException e) {
             e.printStackTrace();
             fail();
@@ -168,16 +163,7 @@ public class EppoClientTest {
 
     @After
     public void teardown() {
-        this.mockServer.stop();
         deleteCacheFiles();
-    }
-
-    private void setupMockRacServer() {
-        this.mockServer = new WireMockServer(TEST_PORT);
-        this.mockServer.start();
-        String racResponseJson = getMockRandomizedAssignmentResponse();
-        this.mockServer.stubFor(WireMock.get(WireMock.urlMatching(".*randomized_assignment.*"))
-                .willReturn(WireMock.okJson(racResponseJson)));
     }
 
     @Test
@@ -202,7 +188,7 @@ public class EppoClientTest {
     @Test
     public void testCachedAssignments() {
         try {
-            initClient(HOST, false, true); // ensure cache is populated
+            initClient(TEST_HOST, false, true); // ensure cache is populated
             initClient(INVALID_HOST, false, false); // invalid port to force to use cache
 
             // wait for a bit since file is loaded asynchronously
