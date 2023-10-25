@@ -47,7 +47,9 @@ android {
         unitTests.returnDefaultValues = true
     }
     packagingOptions {
-        exclude("META-INF/**")
+        resources {
+            excludes += "META-INF/**"
+        }
     }
 }
 
