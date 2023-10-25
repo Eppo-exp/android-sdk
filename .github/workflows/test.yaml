@@ -38,6 +38,7 @@ jobs:
       - name: Set up test data
         run: make test-data
       - name: Spin up emulator
+        id: testing
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
           api-level: 33
@@ -52,13 +53,13 @@ jobs:
             adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
             ./gradlew connectedCheck                  # run tests
       - name: Upload Failing Test Report Log
-        if: always()
+        if: steps.testing.outcome != 'success'
         uses: actions/upload-artifact@v2
         with:
           name: emulator logs
           path: emulator_logs.txt # path to where the log is
       - name: Upload logs
-        if: always()
+        if: steps.testing.outcome != 'success'
         uses: actions/upload-artifact@v2
         with:
           name: report
