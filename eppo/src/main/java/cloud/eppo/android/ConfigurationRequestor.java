@@ -1,5 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.Constants.LoggingTag;
+
 import android.util.Log;
 
 import com.google.gson.JsonIOException;
@@ -10,8 +12,6 @@ import java.io.Reader;
 import cloud.eppo.android.dto.FlagConfig;
 
 public class ConfigurationRequestor {
-    private static final String TAG = ConfigurationRequestor.class.getCanonicalName();
-
     private EppoHttpClient client;
     private ConfigurationStore configurationStore;
 
@@ -29,7 +29,7 @@ public class ConfigurationRequestor {
                 try {
                     configurationStore.setFlags(response);
                 } catch (JsonSyntaxException | JsonIOException e) {
-                    Log.e(TAG, "Error loading configuration response", e);
+                    Log.e(LoggingTag, "Error loading configuration response", e);
                     if (callback != null && !usedCache) {
                         callback.onError("Unable to load configuration from network");
                     }
@@ -43,7 +43,7 @@ public class ConfigurationRequestor {
 
             @Override
             public void onFailure(String errorMessage) {
-                Log.e(TAG, errorMessage);
+                Log.e(LoggingTag, errorMessage);
                 if (callback != null && !usedCache) {
                     callback.onError(errorMessage);
                 }

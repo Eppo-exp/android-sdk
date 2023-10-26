@@ -37,7 +37,6 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
-    private static final String TAG = EppoClientTest.class.getSimpleName();
     private static final String TEST_HOST = "http://us-central1-eppo-prod-312905.cloudfunctions.net/serveGithubRacTestFile";
     private static final String INVALID_HOST = "http://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()

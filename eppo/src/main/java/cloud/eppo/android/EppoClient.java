@@ -1,5 +1,6 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.Constants.LoggingTag;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
 import android.app.ActivityManager;
@@ -26,7 +27,6 @@ import cloud.eppo.android.logging.AssignmentLogger;
 import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
-    private static final String TAG = EppoClient.class.getCanonicalName();
     private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
 
     private final ConfigurationRequestor requestor;
@@ -103,7 +103,7 @@ public class EppoClient {
 
         FlagConfig flag = requestor.getConfiguration(flagKey);
         if (flag == null) {
-            Log.w(TAG, "no configuration found for key: " + flagKey);
+            Log.w(LoggingTag, "no configuration found for key: " + flagKey);
             return null;
         }
 
@@ -113,20 +113,20 @@ public class EppoClient {
         }
 
         if (!flag.isEnabled()) {
-            Log.i(TAG, "no assigned variation because the experiment or feature flag is disabled: " + flagKey);
+            Log.i(LoggingTag, "no assigned variation because the experiment or feature flag is disabled: " + flagKey);
             return null;
         }
 
         TargetingRule rule = RuleEvaluator.findMatchingRule(subjectAttributes, flag.getRules());
         if (rule == null) {
-            Log.i(TAG, "no assigned variation. The subject attributes did not match any targeting rules");
+            Log.i(LoggingTag, "no assigned variation. The subject attributes did not match any targeting rules");
             return null;
         }
 
         String allocationKey = rule.getAllocationKey();
         Allocation allocation = flag.getAllocations().get(allocationKey);
         if (!isInExperimentSample(subjectKey, flagKey, flag.getSubjectShards(), allocation.getPercentExposure())) {
-            Log.i(TAG, "no assigned variation. The subject is not part of the sample population");
+            Log.i(LoggingTag, "no assigned variation. The subject is not part of the sample population");
             return null;
         }
 

@@ -1,5 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.Constants.LoggingTag;
+
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -22,9 +24,6 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
-
-    private static final String TAG = ConfigurationStore.class.getSimpleName();
-
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
@@ -54,7 +53,7 @@ public class ConfigurationStore {
                     flags = configResponse.getFlags();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error loading from local cache", e);
+                Log.e(LoggingTag, "Error loading from local cache", e);
                 cacheFile.delete();
 
                 if (callback != null) {
@@ -117,7 +116,7 @@ public class ConfigurationStore {
                     writer.close();
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Unable to cache config to file", e);
+                Log.e(LoggingTag, "Unable to cache config to file", e);
             }
         });
     }
@@ -126,7 +125,7 @@ public class ConfigurationStore {
         try {
             return gson.fromJson(sharedPrefs.getString(hashedFlagKey, null), FlagConfig.class);
         } catch (Exception e) {
-            Log.e(TAG, "Unable to load flag from prefs", e);
+            Log.e(LoggingTag, "Unable to load flag from prefs", e);
         }
         return null;
     }
