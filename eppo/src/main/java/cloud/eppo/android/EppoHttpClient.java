@@ -1,6 +1,6 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.Constants.LoggingTag;
+import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
 
@@ -17,6 +17,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 public class EppoHttpClient {
+    private static final String TAG = logTag(EppoHttpClient.class);
+
     private final OkHttpClient client = new OkHttpClient().newBuilder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
@@ -43,7 +45,7 @@ public class EppoHttpClient {
             @Override
             public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
-                    Log.d(LoggingTag, "Fetch successfull");
+                    Log.d(TAG, "Fetch successfull");
                     callback.onSuccess(response.body().charStream());
                 } else {
                     switch (response.code()) {
@@ -52,7 +54,7 @@ public class EppoHttpClient {
                             break;
                         default:
                             if (BuildConfig.DEBUG) {
-                                Log.e(LoggingTag, "Fetch failed with status code: " + response.code());
+                                Log.e(TAG, "Fetch failed with status code: " + response.code());
                             }
                             callback.onFailure("Bad response from URL "+httpUrl);
                     }

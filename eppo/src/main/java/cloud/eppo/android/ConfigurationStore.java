@@ -1,6 +1,6 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.Constants.LoggingTag;
+import static cloud.eppo.android.util.Utils.logTag;
 
 import android.app.Application;
 import android.content.SharedPreferences;
@@ -24,6 +24,9 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
+
+    private static final String TAG = logTag(ConfigurationStore.class);
+
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
@@ -41,12 +44,12 @@ public class ConfigurationStore {
 
     public boolean loadFromCache(InitializationCallback callback) {
         if (flags != null || !cacheFile.exists()) {
-            Log.d(LoggingTag, "Not loading from cache ("+(flags == null ? "null flags" : "non-null flags")+")");
+            Log.d(TAG, "Not loading from cache ("+(flags == null ? "null flags" : "non-null flags")+")");
             return false;
         }
 
         AsyncTask.execute(() -> {
-            Log.d(LoggingTag, "Loading from cache");
+            Log.d(TAG, "Loading from cache");
             try {
                 synchronized (cacheFile) {
                     InputStreamReader reader = cacheFile.getInputReader();
@@ -54,9 +57,9 @@ public class ConfigurationStore {
                     reader.close();
                     flags = configResponse.getFlags();
                 }
-                Log.d(LoggingTag, "Cache loaded successfully");
+                Log.d(TAG, "Cache loaded successfully");
             } catch (Exception e) {
-                Log.e(LoggingTag, "Error loading from local cache", e);
+                Log.e(TAG, "Error loading from local cache", e);
                 cacheFile.delete();
 
                 if (callback != null) {
@@ -119,7 +122,7 @@ public class ConfigurationStore {
                     writer.close();
                 }
             } catch (Exception e) {
-                Log.e(LoggingTag, "Unable to cache config to file", e);
+                Log.e(TAG, "Unable to cache config to file", e);
             }
         });
     }
@@ -128,7 +131,7 @@ public class ConfigurationStore {
         try {
             return gson.fromJson(sharedPrefs.getString(hashedFlagKey, null), FlagConfig.class);
         } catch (Exception e) {
-            Log.e(LoggingTag, "Unable to load flag from prefs", e);
+            Log.e(TAG, "Unable to load flag from prefs", e);
         }
         return null;
     }

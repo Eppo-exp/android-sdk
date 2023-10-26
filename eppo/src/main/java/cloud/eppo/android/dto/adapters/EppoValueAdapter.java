@@ -1,6 +1,6 @@
 package cloud.eppo.android.dto.adapters;
 
-import static cloud.eppo.android.Constants.LoggingTag;
+import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
 
@@ -15,12 +15,13 @@ import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import cloud.eppo.android.dto.EppoValue;
 
 public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerializer<EppoValue> {
+    public static final String TAG = logTag(EppoValueAdapter.class);
+
     @Override
     public EppoValue deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
@@ -30,7 +31,7 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerial
                 try {
                     array.add(element.getAsString());
                 } catch (Exception e) {
-                    Log.e(LoggingTag, "only Strings are supported");
+                    Log.e(TAG, "only Strings are supported");
                 }
             }
             return EppoValue.valueOf(array);
