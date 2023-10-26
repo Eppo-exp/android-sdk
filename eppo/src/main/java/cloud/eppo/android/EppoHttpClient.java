@@ -67,6 +67,7 @@ public class EppoHttpClient {
                 if (BuildConfig.DEBUG) {
                     e.printStackTrace();
                 }
+                Log.e(TAG, "Http request failure", e);
                 callback.onFailure("Unable to fetch from URL "+httpUrl);
             }
         });
