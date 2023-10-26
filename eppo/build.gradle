@@ -10,8 +10,10 @@ android {
     compileSdk 33
 
     defaultConfig {
+        namespace "cloud.eppo.android"
+
         gradle.startParameter.taskNames.each {
-            if (it.contains("AndroidTest")) {
+            if (it.contains("AndroidTest") || it.contains('connectedCheck')) {
                 minSdk 33 // required to use wiremock in tests
             } else {
                 minSdk 21
@@ -47,7 +49,9 @@ android {
         unitTests.returnDefaultValues = true
     }
     packagingOptions {
-        exclude("META-INF/**")
+        resources {
+            excludes += "META-INF/**"
+        }
     }
 }
 

@@ -7,7 +7,8 @@ android {
 
     defaultConfig {
         applicationId "cloud.eppo.androidexample"
-        minSdk 21
+        namespace "com.geteppo.androidexample"
+        minSdk 33
         targetSdk 33
         versionCode 1
         versionName "1.0"
