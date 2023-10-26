@@ -41,10 +41,12 @@ public class ConfigurationStore {
 
     public boolean loadFromCache(InitializationCallback callback) {
         if (flags != null || !cacheFile.exists()) {
+            Log.d(LoggingTag, "Not loading from cache ("+(flags == null ? "null flags" : "non-null flags")+")");
             return false;
         }
 
         AsyncTask.execute(() -> {
+            Log.d(LoggingTag, "Loading from cache");
             try {
                 synchronized (cacheFile) {
                     InputStreamReader reader = cacheFile.getInputReader();
@@ -52,6 +54,7 @@ public class ConfigurationStore {
                     reader.close();
                     flags = configResponse.getFlags();
                 }
+                Log.d(LoggingTag, "Cache loaded successfully");
             } catch (Exception e) {
                 Log.e(LoggingTag, "Error loading from local cache", e);
                 cacheFile.delete();

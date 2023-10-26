@@ -150,16 +150,6 @@ public class EppoClientTest {
         lock.await(2000, TimeUnit.MILLISECONDS);
     }
 
-    @Before
-    public void init() {
-        try {
-            initClient(TEST_HOST, true, true);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            fail();
-        }
-    }
-
     @After
     public void teardown() {
         deleteCacheFiles();
@@ -167,6 +157,11 @@ public class EppoClientTest {
 
     @Test
     public void testAssignments() {
+        try {
+            initClient(TEST_HOST, true, true);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         runTestCases();
     }
 
@@ -188,11 +183,12 @@ public class EppoClientTest {
     public void testCachedAssignments() {
         try {
             initClient(TEST_HOST, false, true); // ensure cache is populated
-            initClient(INVALID_HOST, false, false); // invalid port to force to use cache
 
             // wait for a bit since file is loaded asynchronously
             System.out.println("Sleeping for a bit to wait for cache population to complete");
             Thread.sleep(1000);
+
+            initClient(INVALID_HOST, false, false); // invalid port to force to use cache
         } catch (Exception e) {
             fail();
         }
