@@ -1,5 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.util.Utils.logTag;
+
 import android.util.Log;
 
 import com.google.gson.JsonIOException;
@@ -10,7 +12,7 @@ import java.io.Reader;
 import cloud.eppo.android.dto.FlagConfig;
 
 public class ConfigurationRequestor {
-    private static final String TAG = ConfigurationRequestor.class.getCanonicalName();
+    private static final String TAG = logTag(ConfigurationRequestor.class);
 
     private EppoHttpClient client;
     private ConfigurationStore configurationStore;

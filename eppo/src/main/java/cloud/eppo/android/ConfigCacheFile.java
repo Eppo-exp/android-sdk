@@ -10,7 +10,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 
 public class ConfigCacheFile {
-    private static final String TAG = ConfigCacheFile.class.getSimpleName();
     static final String CACHE_FILE_NAME = "eppo-sdk-config-v2.json";
     private final File filesDir;
     private final File cacheFile;

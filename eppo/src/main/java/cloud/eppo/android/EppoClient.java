@@ -1,5 +1,6 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
 import android.app.ActivityManager;
@@ -26,7 +27,7 @@ import cloud.eppo.android.logging.AssignmentLogger;
 import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
-    private static final String TAG = EppoClient.class.getCanonicalName();
+    private static final String TAG = logTag(EppoClient.class);
     private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
     private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
 
