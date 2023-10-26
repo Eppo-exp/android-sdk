@@ -182,33 +182,33 @@ public class EppoClientTest {
             initClient(TEST_HOST, false, true, true);
             System.out.println("Sleeping for a bit to wait for cache population to complete");
             Thread.sleep(1000);
-
-            EppoClient realClient = EppoClient.getInstance();
-            EppoClient spyClient = spy(realClient);
-            doThrow(new RuntimeException("Exception thrown by mock"))
-                .when(spyClient)
-                .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
-
-            assertNull(spyClient.getAssignment("subject1", "experiment1"));
-            assertNull(spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertNull(spyClient.getBooleanAssignment("subject1", "experiment1"));
-            assertNull(spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertNull(spyClient.getDoubleAssignment("subject1", "experiment1"));
-            assertNull(spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertNull(spyClient.getStringAssignment("subject1", "experiment1"));
-            assertNull(spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1"));
-            assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1"));
-            assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
-        } catch (Exception e) {
-            fail();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+
+        EppoClient realClient = EppoClient.getInstance();
+        EppoClient spyClient = spy(realClient);
+        doThrow(new RuntimeException("Exception thrown by mock"))
+            .when(spyClient)
+            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
+
+        assertNull(spyClient.getAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertNull(spyClient.getBooleanAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertNull(spyClient.getDoubleAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertNull(spyClient.getStringAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
     }
 
     @Test
@@ -217,33 +217,33 @@ public class EppoClientTest {
             initClient(TEST_HOST, false, true, false);
             Log.d(TAG, "Sleeping for a bit to wait for cache population to complete");
             Thread.sleep(1000);
-
-            EppoClient realClient = EppoClient.getInstance();
-            EppoClient spyClient = spy(realClient);
-            doThrow(new RuntimeException("Exception thrown by mock"))
-                .when(spyClient)
-                .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
-
-            assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1"));
-            assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1"));
-            assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1"));
-            assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1"));
-            assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1"));
-            assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-            assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1"));
-            assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
-        } catch (Exception e) {
-            fail();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
+
+        EppoClient realClient = EppoClient.getInstance();
+        EppoClient spyClient = spy(realClient);
+        doThrow(new RuntimeException("Exception thrown by mock"))
+            .when(spyClient)
+            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
+
+        assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+
+        assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
     }
 
     private void runTestCases() {
@@ -256,7 +256,7 @@ public class EppoClientTest {
             System.out.println("We ran this many tests: " + testsRan);
             assertTrue("Did not run any test cases", testsRan > 0);
         } catch (Exception e) {
-            fail();
+            throw new RuntimeException(e);
         }
     }
 
@@ -270,8 +270,8 @@ public class EppoClientTest {
             Thread.sleep(1000);
 
             initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
-        } catch (Exception e) {
-            fail();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
         runTestCases();
     }
