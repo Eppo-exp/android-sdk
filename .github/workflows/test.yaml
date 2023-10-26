@@ -18,13 +18,16 @@ jobs:
         uses: actions/checkout@v3
         with:
           repository: 'Eppo-exp/android-sdk'
+
       - name: Set up JDK 11
         uses: actions/setup-java@v3
         with:
           java-version: '11'
           distribution: 'adopt'
+
       - name: 'Set up GCP SDK'
         uses: 'google-github-actions/setup-gcloud@v0'
+
       - name: Restore gradle.properties
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
@@ -36,14 +39,33 @@ jobs:
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" > ~/.gradle/gradle.properties
           echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
       - name: Gradle cache
-        uses: actions/cache@v2
+        uses: gradle/gradle-build-action@v2
+
+      - name: AVD cache
+        uses: actions/cache@v3
+        id: avd-cache
         with:
           path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-v2-${{ runner.os }}-${{ hashFiles('**/*.gradle*') }}-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}-${{ hashFiles('**/buildSrc/**/*.kt') }}
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ matrix.api-level }}
+
+      - name: create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          profile: 29 # pixel 7
+          target: google_apis
+          arch: x86_64
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "Generated AVD snapshot for caching."
+
       - name: Set up test data
         run: make test-data
+
       - name: Spin up emulator and run tests
         id: testing
         uses: ReactiveCircus/android-emulator-runner@v2
@@ -54,18 +76,20 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8
           script: |
             echo "Emulator started" 
-            adb logcat -c                             # clear logs
-            mkdir -p app/                             # create directory
-            touch app/emulator.log                    # create log file
-            chmod 777 app/emulator.log                # allow writing to log file
-            adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
-            ./gradlew connectedCheck                  # run tests
+            adb logcat -c                                     # clear logs
+            mkdir -p app/                                     # create directory
+            touch app/emulator.log                            # create log file
+            chmod 777 app/emulator.log                        # allow writing to log file
+            adb logcat EppoSDK:D "*:S" >> app/emulator.log &  # pipe all logcat messages into log file as a background process
+            ./gradlew connectedCheck                          # run tests
+
       - name: Upload Failing Test Report Log
         if: always()
         uses: actions/upload-artifact@v2
         with:
           name: emulator logs
           path: app/emulator_logs.txt
+
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v2
