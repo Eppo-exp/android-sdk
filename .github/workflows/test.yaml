@@ -41,28 +41,6 @@ jobs:
       - name: Gradle cache
         uses: gradle/gradle-build-action@v2
 
-      - name: AVD cache
-        uses: actions/cache@v3
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-33
-
-      - name: create AVD and generate snapshot for caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 33
-          profile: 33
-          target: google_apis
-          arch: x86_64
-          force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8
-          disable-animations: true
-          script: echo "Generated AVD snapshot for caching."
-
       - name: Set up test data
         run: make test-data
 
