@@ -65,7 +65,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: emulator logs
-          path: emulator_logs.txt
+          path: app/emulator_logs.txt
       - name: Upload logs
         if: always()
         uses: actions/upload-artifact@v2
