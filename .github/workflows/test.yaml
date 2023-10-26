@@ -48,6 +48,7 @@ jobs:
           script: |
             echo "Emulator started" 
             adb logcat -c                             # clear logs
+            mkdir -p app/                             # create directory
             touch app/emulator.log                    # create log file
             chmod 777 app/emulator.log                # allow writing to log file
             adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
