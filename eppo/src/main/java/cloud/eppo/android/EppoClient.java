@@ -155,11 +155,7 @@ public class EppoClient {
         try {
             return this.getStringAssignment(subjectKey, flagKey, subjectAttributes);
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -167,11 +163,7 @@ public class EppoClient {
         try {
             return this.getStringAssignment(subjectKey, flagKey);
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -184,11 +176,7 @@ public class EppoClient {
 
             return value.stringValue();
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -196,11 +184,7 @@ public class EppoClient {
         try {
             return this.getStringAssignment(subjectKey, flagKey, new SubjectAttributes());
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -213,11 +197,7 @@ public class EppoClient {
 
             return value.boolValue();
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -225,11 +205,7 @@ public class EppoClient {
         try {
             return this.getBooleanAssignment(subjectKey, flagKey, new SubjectAttributes());
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -242,11 +218,7 @@ public class EppoClient {
 
             return value.doubleValue();
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -254,11 +226,7 @@ public class EppoClient {
         try {
             return this.getDoubleAssignment(subjectKey, flagKey, new SubjectAttributes());
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -266,11 +234,7 @@ public class EppoClient {
         try {
             return this.getParsedJSONAssignment(subjectKey, flagKey, subjectAttributes).toString();
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -278,11 +242,7 @@ public class EppoClient {
         try {
             return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes()).toString();
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -295,11 +255,7 @@ public class EppoClient {
 
             return value.jsonValue();
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
     }
 
@@ -307,12 +263,16 @@ public class EppoClient {
         try {
             return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
         } catch (Exception e) {
-            if (this.isGracefulMode) {
-                Log.i(TAG, "error getting assignment value: " + e.getMessage());
-                return null;
-            }
-            throw e;
+            return throwIfNotGraceful(e);
         }
+    }
+
+    private <T> T throwIfNotGraceful(Exception e) {
+        if (this.isGracefulMode) {
+            Log.i(TAG, "error getting assignment value: " + e.getMessage());
+            return null;
+        }
+        throw new RuntimeException(e);
     }
 
     public static EppoClient getInstance() throws NotInitializedException {
