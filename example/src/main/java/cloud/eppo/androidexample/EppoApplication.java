@@ -17,7 +17,7 @@ public class EppoApplication extends Application {
             .application(this)
             .apiKey(API_KEY)
             .assignmentLogger(assignment -> {
-                Log.d(EppoApplication.class.getSimpleName(), assignment.getExperiment() + "-> subject: " + assignment.getSubject() + " assigned to " + assignment.getExperiment());
+                Log.d(TAG, assignment.getExperiment() + "-> subject: " + assignment.getSubject() + " assigned to " + assignment.getExperiment());
             })
             .callback(new InitializationCallback() {
                 @Override
