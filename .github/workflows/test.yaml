@@ -11,8 +11,6 @@ on:
 jobs:
   test-android-sdk:
     runs-on: macos-latest
-    env:
-      ANDROID_API_LEVEL: 33
     steps:
       - name: Check out Java SDK
         uses: actions/checkout@v3
