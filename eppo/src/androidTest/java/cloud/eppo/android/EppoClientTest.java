@@ -169,7 +169,7 @@ public class EppoClientTest {
     @Test
     public void testAssignments() {
         try {
-            initClient(TEST_HOST, true, true, true);
+            initClient(TEST_HOST, true, true, false);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -177,7 +177,7 @@ public class EppoClientTest {
     }
 
     @Test
-    public void testGracefulModeOn() {
+    public void testErrorGracefulModeOn() {
         try {
             initClient(TEST_HOST, false, true, true);
             System.out.println("Sleeping for a bit to wait for cache population to complete");
@@ -212,7 +212,7 @@ public class EppoClientTest {
     }
 
     @Test
-    public void testGracefulModeOff() {
+    public void testErrorGracefulModeOff() {
         try {
             initClient(TEST_HOST, false, true, false);
             Log.d(TAG, "Sleeping for a bit to wait for cache population to complete");
