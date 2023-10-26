@@ -66,7 +66,13 @@ public class Utils {
 
     public static String logTag(Class loggingClass) {
         // Common prefix can make filtering logs easier
+        String logTag = ("EppoSDK:"+loggingClass.getSimpleName());
+
         // Android prefers keeping log tags 23 characters or less
-        return ("EppoSDK:"+loggingClass.getSimpleName()).substring(0, 23);
+        if (logTag.length() > 23) {
+            logTag = logTag.substring(0, 23);
+        }
+
+        return logTag;
     }
 }
