@@ -59,14 +59,14 @@ jobs:
             adb logcat | grep EppoSDK >> app/emulator.log &   # pipe all logcat messages into log file as a background process
             ./gradlew connectedCheck                          # run tests
 
-      - name: Upload Failing Test Report Log
+      - name: Upload Emulator Logs
         if: always()
         uses: actions/upload-artifact@v2
         with:
           name: emulator logs
           path: app/emulator.log
 
-      - name: Upload logs
+      - name: Upload Test Report
         if: always()
         uses: actions/upload-artifact@v2
         with:
