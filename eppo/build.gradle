@@ -11,14 +11,7 @@ android {
 
     defaultConfig {
         namespace "cloud.eppo.android"
-
-        gradle.startParameter.taskNames.each {
-            if (it.contains("AndroidTest") || it.contains('connectedCheck')) {
-                minSdk 33 // required to use wiremock in tests
-            } else {
-                minSdk 21
-            }
-        }
+        minSdk 21
         targetSdk 33
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
