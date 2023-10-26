@@ -54,13 +54,13 @@ jobs:
             adb logcat >> app/emulator.log &          # pipe all logcat messages into log file as a background process
             ./gradlew connectedCheck                  # run tests
       - name: Upload Failing Test Report Log
-        if: steps.testing.outcome != 'success'
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: emulator logs
-          path: emulator_logs.txt # path to where the log is
+          path: emulator_logs.txt
       - name: Upload logs
-        if: steps.testing.outcome != 'success'
+        if: always()
         uses: actions/upload-artifact@v2
         with:
           name: report
