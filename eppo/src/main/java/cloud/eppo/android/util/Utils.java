@@ -2,14 +2,12 @@ package cloud.eppo.android.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Base64;
 import java.util.Date;
 import java.util.TimeZone;
 
@@ -64,5 +62,17 @@ public class Utils {
 
     public static String generateExperimentKey(String featureFlagKey, String allocationKey) {
         return featureFlagKey + '-' + allocationKey;
+    }
+
+    public static String logTag(Class loggingClass) {
+        // Common prefix can make filtering logs easier
+        String logTag = ("EppoSDK:"+loggingClass.getSimpleName());
+
+        // Android prefers keeping log tags 23 characters or less
+        if (logTag.length() > 23) {
+            logTag = logTag.substring(0, 23);
+        }
+
+        return logTag;
     }
 }

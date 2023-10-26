@@ -1,5 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.util.Utils.logTag;
+
 import android.app.Application;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -23,7 +25,7 @@ import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
 
-    private static final String TAG = ConfigurationStore.class.getSimpleName();
+    private static final String TAG = logTag(ConfigurationStore.class);
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
@@ -42,10 +44,12 @@ public class ConfigurationStore {
 
     public boolean loadFromCache(InitializationCallback callback) {
         if (flags != null || !cacheFile.exists()) {
+            Log.d(TAG, "Not loading from cache ("+(flags == null ? "null flags" : "non-null flags")+")");
             return false;
         }
 
         AsyncTask.execute(() -> {
+            Log.d(TAG, "Loading from cache");
             try {
                 synchronized (cacheFile) {
                     InputStreamReader reader = cacheFile.getInputReader();
@@ -53,6 +57,7 @@ public class ConfigurationStore {
                     reader.close();
                     flags = configResponse.getFlags();
                 }
+                Log.d(TAG, "Cache loaded successfully");
             } catch (Exception e) {
                 Log.e(TAG, "Error loading from local cache", e);
                 cacheFile.delete();
