@@ -133,9 +133,6 @@ public class EppoClientTest {
             deleteCacheFiles();
         }
 
-        // Android may struggle with IPV6 on GitHub Actions
-        EppoHttpClient.setIpV4Only(true);
-
         new EppoClient.Builder()
                 .application(ApplicationProvider.getApplicationContext())
                 .apiKey("mock-api-key")

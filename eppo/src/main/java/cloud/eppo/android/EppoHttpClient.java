@@ -31,7 +31,6 @@ public class EppoHttpClient {
 
     private final String baseUrl;
     private final String apiKey;
-    private static boolean ipV4Only = false;
 
     public EppoHttpClient(String baseUrl, String apiKey) {
         this.baseUrl = baseUrl;
@@ -44,29 +43,7 @@ public class EppoHttpClient {
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(10, TimeUnit.SECONDS);
 
-        if (EppoHttpClient.ipV4Only) {
-            Log.d(TAG, "Setting Http Client to be IPV4 Only");
-            builder.dns(buildIpV4OnlyDns());
-        }
-
         return builder.build();
-    }
-
-    private static Dns buildIpV4OnlyDns() {
-        return new Dns() {
-            @NotNull
-            @Override
-            public List<InetAddress> lookup(@NotNull String hostname) throws UnknownHostException {
-                List<InetAddress> allAddresses = Dns.SYSTEM.lookup(hostname);
-                List<InetAddress> ipv4Addresses = new ArrayList<>();
-                for (InetAddress address : allAddresses) {
-                    if (address.getAddress().length == 4) {
-                        ipv4Addresses.add(address);
-                    }
-                }
-                return ipv4Addresses;
-            }
-        };
     }
 
     public void get(String path, RequestCallback callback) {
@@ -105,10 +82,6 @@ public class EppoHttpClient {
                 callback.onFailure("Unable to fetch from URL "+httpUrl);
             }
         });
-    }
-
-    public static void setIpV4Only(boolean ipV4Only) {
-        EppoHttpClient.ipV4Only = ipV4Only;
     }
 }
 
