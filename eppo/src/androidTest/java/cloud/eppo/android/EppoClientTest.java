@@ -148,7 +148,7 @@ public class EppoClientTest {
                     @Override
                     public void onError(String errorMessage) {
                         if (throwOnCallackError) {
-                            throw new RuntimeException("Unable to initialize");
+                            throw new RuntimeException("Unable to initialize: "+errorMessage);
                         }
                         lock.countDown();
                     }
