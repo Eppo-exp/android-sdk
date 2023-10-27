@@ -46,7 +46,7 @@ public class EppoHttpClient {
             @Override
             public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
-                    Log.d(TAG, "Fetch successfull");
+                    Log.d(TAG, "Fetch successful");
                     callback.onSuccess(response.body().charStream());
                 } else {
                     switch (response.code()) {
