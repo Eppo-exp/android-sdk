@@ -7,6 +7,7 @@ import android.util.Log;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.HttpURLConnection;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
@@ -64,10 +65,7 @@ public class EppoHttpClient {
 
             @Override
             public void onFailure(Call call, IOException e) {
-                if (BuildConfig.DEBUG) {
-                    e.printStackTrace();
-                }
-                Log.e(TAG, "Http request failure", e);
+                Log.e(TAG, "Http request failure: "+e.getMessage()+" "+Arrays.toString(e.getStackTrace()), e);
                 callback.onFailure("Unable to fetch from URL "+httpUrl);
             }
         });
