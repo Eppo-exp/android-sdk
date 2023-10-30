@@ -40,6 +40,20 @@ jobs:
       - name: Set up test data
         run: make test-data
 
+      - name: Wait for mock RAC DNS to resolve
+        run: |
+          for i in {1..15}
+          do
+            ip=$(dig +short us-central1-eppo-prod-312905.cloudfunctions.net)
+            if [[ -n "$ip" ]]; then
+              echo "Domain resolved to $ip after $i seconds"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Failed to resolve after 15 seconds"
+          exit 1
+
       - name: Spin up emulator and run tests
         id: testing
         uses: ReactiveCircus/android-emulator-runner@v2

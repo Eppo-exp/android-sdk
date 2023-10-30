@@ -4,13 +4,21 @@ import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
+import okhttp3.Dns;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -19,10 +27,7 @@ import okhttp3.Response;
 public class EppoHttpClient {
     private static final String TAG = logTag(EppoHttpClient.class);
 
-    private final OkHttpClient client = new OkHttpClient().newBuilder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS)
-            .build();
+    private final OkHttpClient client;
 
     private final String baseUrl;
     private final String apiKey;
@@ -30,6 +35,15 @@ public class EppoHttpClient {
     public EppoHttpClient(String baseUrl, String apiKey) {
         this.baseUrl = baseUrl;
         this.apiKey = apiKey;
+        this.client = buildOkHttpClient();
+    }
+
+    private static OkHttpClient buildOkHttpClient() {
+        OkHttpClient.Builder builder = new OkHttpClient().newBuilder()
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS);
+
+        return builder.build();
     }
 
     public void get(String path, RequestCallback callback) {
@@ -45,7 +59,7 @@ public class EppoHttpClient {
             @Override
             public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
-                    Log.d(TAG, "Fetch successfull");
+                    Log.d(TAG, "Fetch successful");
                     callback.onSuccess(response.body().charStream());
                 } else {
                     switch (response.code()) {
@@ -64,10 +78,7 @@ public class EppoHttpClient {
 
             @Override
             public void onFailure(Call call, IOException e) {
-                if (BuildConfig.DEBUG) {
-                    e.printStackTrace();
-                }
-                Log.e(TAG, "Http request failure", e);
+                Log.e(TAG, "Http request failure: "+e.getMessage()+" "+Arrays.toString(e.getStackTrace()), e);
                 callback.onFailure("Unable to fetch from URL "+httpUrl);
             }
         });

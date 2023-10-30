@@ -6,10 +6,8 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
-import static cloud.eppo.android.util.Utils.logTag;
 
 import android.content.res.AssetManager;
-import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -45,9 +43,8 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
-    private static final String TAG = logTag(EppoClientTest.class);
-    private static final String TEST_HOST = "http://us-central1-eppo-prod-312905.cloudfunctions.net/serveGithubRacTestFile";
-    private static final String INVALID_HOST = "http://thisisabaddomainforthistest.com";
+    private static final String TEST_HOST = "https://us-central1-eppo-prod-312905.cloudfunctions.net/serveGithubRacTestFile";
+    private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
@@ -150,14 +147,16 @@ public class EppoClientTest {
                     @Override
                     public void onError(String errorMessage) {
                         if (throwOnCallackError) {
-                            throw new RuntimeException("Unable to initialize");
+                            throw new RuntimeException("Unable to initialize: "+errorMessage);
                         }
                         lock.countDown();
                     }
                 })
                 .buildAndInit();
 
-        lock.await(2000, TimeUnit.MILLISECONDS);
+        if(!lock.await(10000, TimeUnit.MILLISECONDS)) {
+            throw new RuntimeException("Request for RAC did not complete within timeout");
+        }
     }
 
     @After
@@ -179,8 +178,6 @@ public class EppoClientTest {
     public void testErrorGracefulModeOn() {
         try {
             initClient(TEST_HOST, false, true, true);
-            System.out.println("Sleeping for a bit to wait for cache population to complete");
-            Thread.sleep(1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -214,8 +211,6 @@ public class EppoClientTest {
     public void testErrorGracefulModeOff() {
         try {
             initClient(TEST_HOST, false, true, false);
-            Log.d(TAG, "Sleeping for a bit to wait for cache population to complete");
-            Thread.sleep(1000);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -262,12 +257,14 @@ public class EppoClientTest {
     @Test
     public void testCachedAssignments() {
         try {
+            // First initialize successfully
             initClient(TEST_HOST, false, true, false); // ensure cache is populated
 
-            // wait for a bit since file is loaded asynchronously
+            // wait for a bit since cache file is loaded asynchronously
             System.out.println("Sleeping for a bit to wait for cache population to complete");
-            Thread.sleep(1000);
+            Thread.sleep(2000);
 
+            // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
             initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
