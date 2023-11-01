@@ -43,7 +43,7 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
-    private static final String TEST_HOST = "https://us-central1-eppo-prod-312905.cloudfunctions.net/serveGithubRacTestFile";
+    private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
@@ -262,7 +262,7 @@ public class EppoClientTest {
 
             // wait for a bit since cache file is loaded asynchronously
             System.out.println("Sleeping for a bit to wait for cache population to complete");
-            Thread.sleep(2000);
+            Thread.sleep(5000);
 
             // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
             initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache

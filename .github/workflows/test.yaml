@@ -61,7 +61,7 @@ jobs:
           api-level: 33
           target: google_apis
           arch: x86_64
-          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -dns-server 8.8.8.8
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim -netdelay none -netspeed full -dns-server 8.8.8.8
           script: |
             echo "Emulator started" 
             adb logcat -c                                     # clear logs
