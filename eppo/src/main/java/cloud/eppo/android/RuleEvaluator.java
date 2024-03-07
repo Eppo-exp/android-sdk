@@ -1,9 +1,10 @@
 package cloud.eppo.android;
 
+import com.github.zafarkhaja.semver.Version;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
@@ -15,10 +16,6 @@ interface IConditionFunc<T> {
 }
 
 class Compare {
-    public static boolean compareNumber(double a, double b, IConditionFunc<Double> conditionFunc) {
-        return conditionFunc.check(a, b);
-    }
-
     public static boolean compareRegex(String a, Pattern pattern) {
         return pattern.matcher(a).matches();
     }
@@ -48,21 +45,57 @@ public class RuleEvaluator {
         return !conditionEvaluations.contains(false);
     }
 
+
+
     private static boolean evaluateCondition(SubjectAttributes subjectAttributes, TargetingCondition condition
     ) {
         if (subjectAttributes.containsKey(condition.getAttribute())) {
             EppoValue value = subjectAttributes.get(condition.getAttribute());
+            Boolean isValueSemVer = Version.isValid(value.stringValue());
+            Boolean isConditionSemVer = Version.isValid(condition.getValue().stringValue());
+
             try {
                 switch (condition.getOperator()) {
                     case GreaterThanEqualTo:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue()
-                                , (a, b) -> a >= b);
+                        if (value.isNumeric() && condition.getValue().isNumeric()) {
+                            return value.doubleValue() >= condition.getValue().doubleValue();
+                        }
+
+                        if (isValueSemVer && isConditionSemVer) {
+                            return Version.parse(value.stringValue()).isHigherThanOrEquivalentTo(Version.parse(condition.getValue().stringValue()));
+                        }
+
+                        return false;
                     case GreaterThan:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a > b);
+                        if (value.isNumeric() && condition.getValue().isNumeric()) {
+                            return value.doubleValue() > condition.getValue().doubleValue();
+                        }
+
+                        if (isValueSemVer && isConditionSemVer) {
+                            return Version.parse(value.stringValue()).isHigherThan(Version.parse(condition.getValue().stringValue()));
+                        }
+
+                        return false;
                     case LessThanEqualTo:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a <= b);
+                        if (value.isNumeric() && condition.getValue().isNumeric()) {
+                            return value.doubleValue() <= condition.getValue().doubleValue();
+                        }
+
+                        if (isValueSemVer && isConditionSemVer) {
+                            return Version.parse(value.stringValue()).isLowerThanOrEquivalentTo(Version.parse(condition.getValue().stringValue()));
+                        }
+
+                        return false;
                     case LessThan:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a < b);
+                        if (value.isNumeric() && condition.getValue().isNumeric()) {
+                            return value.doubleValue() < condition.getValue().doubleValue();
+                        }
+
+                        if (isValueSemVer && isConditionSemVer) {
+                            return Version.parse(value.stringValue()).isLowerThan(Version.parse(condition.getValue().stringValue()));
+                        }
+
+                        return false;
                     case Matches:
                         return Compare.compareRegex(value.stringValue(), Pattern.compile(condition.getValue().stringValue()));
                     case OneOf:
