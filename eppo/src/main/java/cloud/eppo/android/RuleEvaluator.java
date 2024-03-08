@@ -1,24 +1,17 @@
 package cloud.eppo.android;
 
+import com.github.zafarkhaja.semver.Version;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 
-interface IConditionFunc<T> {
-    boolean check(T a, T b);
-}
-
 class Compare {
-    public static boolean compareNumber(double a, double b, IConditionFunc<Double> conditionFunc) {
-        return conditionFunc.check(a, b);
-    }
-
     public static boolean compareRegex(String a, Pattern pattern) {
         return pattern.matcher(a).matches();
     }
@@ -52,17 +45,72 @@ public class RuleEvaluator {
     ) {
         if (subjectAttributes.containsKey(condition.getAttribute())) {
             EppoValue value = subjectAttributes.get(condition.getAttribute());
+            if (value == null) {
+                return false;
+            }
+
+            boolean numericComparison = value.isNumeric() && condition.getValue().isNumeric();
+
+            // Android API version 21 does not have access to the java.util.Optional class.
+            // Version.tryParse returns a Optional<Version> would be ideal.
+            // Instead use Version.parse which throws an exception if the string is not a valid SemVer.
+            // We front-load the parsing here so many evaluation of gte, gt, lte, lt operations
+            // more straight-forward.
+            Version valueSemVer = null;
+            Version conditionSemVer = null;
+            try {
+                valueSemVer =  Version.parse(value.stringValue());
+                conditionSemVer = Version.parse(condition.getValue().stringValue());
+            } catch (Exception e) {
+                // no-op
+            }
+
+            // Performing this check satisfies the compiler that the possibly
+            // null value can be safely accessed later.
+            boolean semVerComparison = valueSemVer != null && conditionSemVer != null;
+
             try {
                 switch (condition.getOperator()) {
                     case GreaterThanEqualTo:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue()
-                                , (a, b) -> a >= b);
+                        if (numericComparison) {
+                            return value.doubleValue() >= condition.getValue().doubleValue();
+                        }
+
+                        if (semVerComparison) {
+                            return valueSemVer.isHigherThanOrEquivalentTo(conditionSemVer);
+                        }
+
+                        return false;
                     case GreaterThan:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a > b);
+                        if (numericComparison) {
+                            return value.doubleValue() > condition.getValue().doubleValue();
+                        }
+
+                        if (semVerComparison) {
+                            return valueSemVer.isHigherThan(conditionSemVer);
+                        }
+
+                        return false;
                     case LessThanEqualTo:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a <= b);
+                        if (numericComparison) {
+                            return value.doubleValue() <= condition.getValue().doubleValue();
+                        }
+
+                        if (semVerComparison) {
+                            return valueSemVer.isLowerThanOrEquivalentTo(conditionSemVer);
+                        }
+
+                        return false;
                     case LessThan:
-                        return Compare.compareNumber(value.doubleValue(), condition.getValue().doubleValue(), (a, b) -> a < b);
+                        if (numericComparison) {
+                            return value.doubleValue() < condition.getValue().doubleValue();
+                        }
+
+                        if (semVerComparison) {
+                            return valueSemVer.isLowerThan(conditionSemVer);
+                        }
+
+                        return false;
                     case Matches:
                         return Compare.compareRegex(value.stringValue(), Pattern.compile(condition.getValue().stringValue()));
                     case OneOf:

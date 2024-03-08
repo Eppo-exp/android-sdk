@@ -43,6 +43,21 @@ public class RuleEvaluatorTest {
         addConditionToRule(TargetingRule, condition2);
     }
 
+    public void addSemVerConditionToRule(TargetingRule TargetingRule) {
+        TargetingCondition condition1 = new TargetingCondition();
+        condition1.setValue(EppoValue.valueOf("1.5.0"));
+        condition1.setAttribute("appVersion");
+        condition1.setOperator(OperatorType.GreaterThanEqualTo);
+
+        TargetingCondition condition2 = new TargetingCondition();
+        condition2.setValue(EppoValue.valueOf("2.2.0"));
+        condition2.setAttribute("appVersion");
+        condition2.setOperator(OperatorType.LessThan);
+
+        addConditionToRule(TargetingRule, condition1);
+        addConditionToRule(TargetingRule, condition2);
+    }
+
     public void addRegexConditionToRule(TargetingRule TargetingRule) {
         TargetingCondition condition = new TargetingCondition();
         condition.setValue(EppoValue.valueOf("[a-z]+"));
@@ -131,6 +146,18 @@ public class RuleEvaluatorTest {
         assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
     }
 
+    @Test
+    public void testMatchesAnyRuleWhenRuleMatchesWithSemVer() {
+        List<TargetingRule> targetingRules = new ArrayList<>();
+        TargetingRule targetingRule = createRule(new ArrayList<>());
+        addSemVerConditionToRule(targetingRule);
+        targetingRules.add(targetingRule);
+
+        SubjectAttributes subjectAttributes = new SubjectAttributes();
+        subjectAttributes.put("appVersion", "1.15.5");
+
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+    }
     
     @Test
     public void testMatchesAnyRuleWhenThrowInvalidSubjectAttribute() {

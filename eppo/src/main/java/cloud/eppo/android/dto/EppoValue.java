@@ -57,16 +57,8 @@ public class EppoValue {
         return  new EppoValue(EppoValueType.Null);
     }
 
-    public int intValue() {
-        return Integer.parseInt(value, 10);
-    }
-
     public double doubleValue() {
         return Double.parseDouble(value);
-    }
-
-    public long longValue() {
-        return Long.parseLong(value, 10);
     }
 
     public String stringValue() {
@@ -87,7 +79,7 @@ public class EppoValue {
 
     public boolean isNumeric() {
         try {
-            Long.parseLong(value, 10);
+            Double.parseDouble(value);
             return true;
         } catch (Exception e) {
             return false;

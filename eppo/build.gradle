@@ -71,6 +71,7 @@ dependencies {
     androidTestImplementation "commons-io:commons-io:${versions.commonsio}"
     implementation("com.google.code.gson:gson:${versions.gson}")
     implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
+    implementation("com.github.zafarkhaja:java-semver:0.10.2")
 }
 
 publishing {
