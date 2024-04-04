@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
@@ -55,11 +56,11 @@ public class ConfigurationStore {
                     InputStreamReader reader = cacheFile.getInputReader();
                     RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
                     reader.close();
-                    flags = configResponse.getFlags();
-                    if (flags == null) {
-                        // If flags are missing from configuration, initialize as an empty map
-                        flags = new ConcurrentHashMap();
+                    if (configResponse == null || configResponse.getFlags() == null) {
+                        // Invalid cached configuration, initialize as an empty map and delete file
+                        throw new JsonSyntaxException("Configuration file missing flags");
                     }
+                    flags = configResponse.getFlags();
                 }
                 Log.d(TAG, "Cache loaded successfully");
             } catch (Exception e) {
@@ -82,6 +83,7 @@ public class ConfigurationStore {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
         flags = config.getFlags();
         if (flags == null) {
+            Log.w(TAG, "Flags missing configuration response");
             flags = new ConcurrentHashMap<>();
         }
 

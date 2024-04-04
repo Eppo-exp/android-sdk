@@ -131,8 +131,7 @@ public class EppoClientTest {
         deleteFileIfExists(CACHE_FILE_NAME);
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode)
-            throws InterruptedException {
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode) {
         if (shouldDeleteCacheFiles) {
             deleteCacheFiles();
         }
@@ -158,8 +157,12 @@ public class EppoClientTest {
                 })
                 .buildAndInit();
 
-        if(!lock.await(10000, TimeUnit.MILLISECONDS)) {
-            throw new RuntimeException("Request for RAC did not complete within timeout");
+        try {
+            if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
+                throw new RuntimeException("Request for RAC did not complete within timeout");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -170,21 +173,13 @@ public class EppoClientTest {
 
     @Test
     public void testAssignments() {
-        try {
-            initClient(TEST_HOST, true, true, false);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        initClient(TEST_HOST, true, true, false);
         runTestCases();
     }
 
     @Test
     public void testErrorGracefulModeOn() {
-        try {
-            initClient(TEST_HOST, false, true, true);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        initClient(TEST_HOST, false, true, true);
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -213,11 +208,7 @@ public class EppoClientTest {
 
     @Test
     public void testErrorGracefulModeOff() {
-        try {
-            initClient(TEST_HOST, false, true, false);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        initClient(TEST_HOST, false, true, false);
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -253,26 +244,27 @@ public class EppoClientTest {
             }
             System.out.println("We ran this many tests: " + testsRan);
             assertTrue("Did not run any test cases", testsRan > 0);
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     @Test
     public void testCachedAssignments() {
+        // First initialize successfully
+        initClient(TEST_HOST, false, true, false); // ensure cache is populated
+
+        // wait for a bit since cache file is loaded asynchronously
+        System.out.println("Sleeping for a bit to wait for cache population to complete");
         try {
-            // First initialize successfully
-            initClient(TEST_HOST, false, true, false); // ensure cache is populated
-
-            // wait for a bit since cache file is loaded asynchronously
-            System.out.println("Sleeping for a bit to wait for cache population to complete");
             Thread.sleep(10000);
-
-            // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
-            initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+
+        // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
+        initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
+
         runTestCases();
     }
 
@@ -385,7 +377,7 @@ public class EppoClientTest {
 
 
             initClient(TEST_HOST, true, true, false);
-        } catch (InterruptedException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         } finally {
             if (httpClientOverrideField != null) {
@@ -400,5 +392,40 @@ public class EppoClientTest {
 
         String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
         assertNull(result);
+    }
+
+    @Test
+    public void testCachedBadResponseAllowsLaterFetching() {
+        // Populate the cache with a bad response
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext());
+        cacheFile.delete();
+        try {
+            cacheFile.getOutputWriter().write("{}");
+            cacheFile.getOutputWriter().close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        initClient(TEST_HOST, false, false, false);
+;
+        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
+        assertNull(result);
+        // Failure callback will have fired from cache read error, but configuration request will still be fired off on init
+        // Wait for the configuration request to load the configuration
+        long waitStart = System.currentTimeMillis();
+        long waitEnd = waitStart + 10 * 1000; // allow up to 10 seconds
+        String assignment = null;
+        try {
+            while (assignment == null) {
+                if (System.currentTimeMillis() > waitEnd) {
+                    throw new InterruptedException("Non-null assignment never received; assuming configuration not loaded");
+                }
+                assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
+                Thread.sleep(100);
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+        assertEquals("control", assignment);
     }
 }
