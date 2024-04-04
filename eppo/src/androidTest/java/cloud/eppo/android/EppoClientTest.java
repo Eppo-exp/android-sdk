@@ -21,7 +21,9 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -32,7 +34,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringReader;
 import java.lang.reflect.Type;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -360,13 +364,41 @@ public class EppoClientTest {
         return (List<JsonElement>) this.getAssignments(testCase, AssignmentValueType.JSON);
     }
 
-    private static String getMockRandomizedAssignmentResponse() {
+    @Test
+    public void testInvalidConfigJSON() {
+
+        // Create a mock instance of EppoHttpClient
+        EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+        doAnswer(invocation -> {
+            RequestCallback callback = invocation.getArgument(1);
+            callback.onSuccess(new StringReader("{}"));
+            return null; // doAnswer doesn't require a return value
+        }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
+
+        Field httpClientOverrideField = null;
         try {
-            InputStream in = ApplicationProvider.getApplicationContext().getAssets()
-                    .open("rac-experiments-v3-hashed-keys.json");
-            return IOUtils.toString(in, Charsets.toCharset("UTF8"));
-        } catch (IOException e) {
-            throw new RuntimeException("Error reading mock RAC data", e);
+            // Use reflection to set the httpClientOverride field
+            httpClientOverrideField = EppoClient.class.getDeclaredField("httpClientOverride");
+            httpClientOverrideField.setAccessible(true);
+            httpClientOverrideField.set(null, mockHttpClient);
+
+
+            initClient(TEST_HOST, true, true, false);
+        } catch (InterruptedException | NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (httpClientOverrideField != null) {
+                try {
+                    httpClientOverrideField.set(null, null);
+                } catch (IllegalAccessException e) {
+                    throw new RuntimeException(e);
+                }
+                httpClientOverrideField.setAccessible(false);
+            }
         }
+
+        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
+        assertNull(result);
     }
 }
