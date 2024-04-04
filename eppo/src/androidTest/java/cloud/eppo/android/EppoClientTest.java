@@ -255,12 +255,7 @@ public class EppoClientTest {
         initClient(TEST_HOST, false, true, false); // ensure cache is populated
 
         // wait for a bit since cache file is loaded asynchronously
-        System.out.println("Sleeping for a bit to wait for cache population to complete");
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        waitForNonNullAssignment();
 
         // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
         initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
@@ -411,21 +406,26 @@ public class EppoClientTest {
         assertNull(result);
         // Failure callback will have fired from cache read error, but configuration request will still be fired off on init
         // Wait for the configuration request to load the configuration
+        waitForNonNullAssignment();
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
+        assertEquals("control", assignment);
+    }
+
+    private void waitForNonNullAssignment() {
         long waitStart = System.currentTimeMillis();
-        long waitEnd = waitStart + 10 * 1000; // allow up to 10 seconds
+        long waitEnd = waitStart + 15 * 1000; // allow up to 15 seconds
         String assignment = null;
         try {
             while (assignment == null) {
                 if (System.currentTimeMillis() > waitEnd) {
                     throw new InterruptedException("Non-null assignment never received; assuming configuration not loaded");
                 }
+                // Uses third subject in test-case-0
                 assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
                 Thread.sleep(100);
             }
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
-
-        assertEquals("control", assignment);
     }
 }
