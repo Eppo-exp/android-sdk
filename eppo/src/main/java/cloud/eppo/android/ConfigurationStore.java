@@ -83,7 +83,7 @@ public class ConfigurationStore {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
         flags = config.getFlags();
         if (flags == null) {
-            Log.w(TAG, "Flags missing configuration response");
+            Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
         }
 
