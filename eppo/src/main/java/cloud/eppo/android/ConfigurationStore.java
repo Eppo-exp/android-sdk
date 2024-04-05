@@ -77,10 +77,6 @@ public class ConfigurationStore {
     public void setFlags(Reader response) {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
         flags = config.getFlags();
-        if (flags == null) {
-            Log.w(TAG, "Flags missing in configuration response");
-            flags = new ConcurrentHashMap<>();
-        }
 
         // update any existing flags already in shared prefs
         updateConfigsInSharedPrefs();
