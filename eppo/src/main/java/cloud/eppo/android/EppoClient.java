@@ -36,8 +36,11 @@ public class EppoClient {
     private boolean isGracefulMode;
     private static EppoClient instance;
 
+    // Useful for testing in situations where we want to mock the http client
+    private static EppoHttpClient httpClientOverride = null;
+
     private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger, boolean isGracefulMode) {
-        EppoHttpClient httpClient = new EppoHttpClient(host, apiKey);
+        EppoHttpClient httpClient = httpClientOverride == null ? new EppoHttpClient(host, apiKey) : httpClientOverride;
         ConfigurationStore configStore = new ConfigurationStore(application);
         requestor = new ConfigurationRequestor(configStore, httpClient);
         this.isGracefulMode = isGracefulMode;
