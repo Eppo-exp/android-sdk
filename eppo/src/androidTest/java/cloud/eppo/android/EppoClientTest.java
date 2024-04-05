@@ -7,6 +7,8 @@ import static org.junit.Assert.assertTrue;
 
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 
 import androidx.test.core.app.ApplicationProvider;
@@ -129,6 +131,8 @@ public class EppoClientTest {
 
     private void deleteCacheFiles() {
         deleteFileIfExists(CACHE_FILE_NAME);
+        SharedPreferences sharedPreferences = ApplicationProvider.getApplicationContext().getSharedPreferences("eppo", Context.MODE_PRIVATE);
+        sharedPreferences.edit().clear().commit();
     }
 
     private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode)
@@ -440,6 +444,27 @@ public class EppoClientTest {
                 long expectedMinimumSizeInBytes = 4000; // At time of writing cache size is 4354
                 cachePopulated = file.exists() && file.length() > expectedMinimumSizeInBytes;
                 if (!cachePopulated) {
+                    Thread.sleep(100);
+                }
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // TODO: useful?
+    private void waitForSharedPreferences() {
+        long waitStart = System.currentTimeMillis();
+        long waitEnd = waitStart + 5 * 1000; // allow up to 5 seconds
+        boolean sharedPrefsReady = false;
+        try {
+            while (!sharedPrefsReady) {
+                if (System.currentTimeMillis() > waitEnd) {
+                    throw new InterruptedException("Shared preferences never ready");
+                }
+                SharedPreferences sharedPreferences = ApplicationProvider.getApplicationContext().getSharedPreferences("eppo", Context.MODE_PRIVATE);
+                sharedPrefsReady = !sharedPreferences.getAll().isEmpty();
+                if (!sharedPrefsReady) {
                     Thread.sleep(100);
                 }
             }
