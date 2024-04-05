@@ -452,27 +452,6 @@ public class EppoClientTest {
         }
     }
 
-    // TODO: useful?
-    private void waitForSharedPreferences() {
-        long waitStart = System.currentTimeMillis();
-        long waitEnd = waitStart + 5 * 1000; // allow up to 5 seconds
-        boolean sharedPrefsReady = false;
-        try {
-            while (!sharedPrefsReady) {
-                if (System.currentTimeMillis() > waitEnd) {
-                    throw new InterruptedException("Shared preferences never ready");
-                }
-                SharedPreferences sharedPreferences = ApplicationProvider.getApplicationContext().getSharedPreferences("eppo", Context.MODE_PRIVATE);
-                sharedPrefsReady = !sharedPreferences.getAll().isEmpty();
-                if (!sharedPrefsReady) {
-                    Thread.sleep(100);
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void waitForNonNullAssignment() {
         long waitStart = System.currentTimeMillis();
         long waitEnd = waitStart + 15 * 1000; // allow up to 15 seconds

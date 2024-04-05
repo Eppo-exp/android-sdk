@@ -102,7 +102,7 @@ public class ConfigurationStore {
                 String hashedFlagKey = Utils.getMD5Hex(plaintextFlagKey);
                 writeFlagToSharedPrefs(hashedFlagKey, flagConfig, editor);
             }
-            editor.commit();
+            editor.apply();
             flagConfigsToSaveToPrefs.clear();
         }
 
@@ -116,7 +116,7 @@ public class ConfigurationStore {
                 writeFlagToSharedPrefs(hashedFlagKey, flags.get(hashedFlagKey), editor);
             }
         }
-        editor.commit();
+        editor.apply();
     }
 
     private void writeFlagToSharedPrefs(String hashedFlagKey, FlagConfig config, SharedPreferences.Editor editor) {
