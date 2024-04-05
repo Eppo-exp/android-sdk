@@ -1,5 +1,7 @@
 package cloud.eppo.android.dto;
 
+import com.google.gson.annotations.SerializedName;
+
 public class ShardRange {
     @SerializedName("start")
     private int start;

@@ -1,5 +1,7 @@
 package cloud.eppo.android.dto;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
