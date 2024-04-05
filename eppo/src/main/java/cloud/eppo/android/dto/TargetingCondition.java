@@ -1,8 +1,15 @@
 package cloud.eppo.android.dto;
 
+import com.google.gson.annotations.SerializedName;
+
 public class TargetingCondition {
+    @SerializedName("operator")
     private String operator;
+
+    @SerializedName("attribute")
     private String attribute;
+
+    @SerializedName("value")
     private EppoValue value;
 
     public OperatorType getOperator() {
@@ -29,4 +36,3 @@ public class TargetingCondition {
         this.value = value;
     }
 }
-
