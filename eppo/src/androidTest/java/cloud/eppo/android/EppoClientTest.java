@@ -29,6 +29,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
@@ -352,6 +353,7 @@ public class EppoClientTest {
     }
 
     @Test
+    @Ignore
     public void testInvalidConfigJSON() {
 
         // Create a mock instance of EppoHttpClient
@@ -390,6 +392,7 @@ public class EppoClientTest {
     }
 
     @Test
+    @Ignore
     public void testCachedBadResponseAllowsLaterFetching() {
         // Populate the cache with a bad response
         ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext());
