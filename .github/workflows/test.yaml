@@ -21,9 +21,6 @@ jobs:
           java-version: '11'
           distribution: 'adopt'
 
-      - name: Set up test data
-        run: make test-data
-
       - name: Restore gradle.properties
         env:
           MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
@@ -34,6 +31,9 @@ jobs:
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
           echo "MAVEN_USERNAME=${MAVEN_USERNAME}" > ~/.gradle/gradle.properties
           echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
+
+      - name: Set up test data
+        run: make test-data
 
       - name: Wait for mock RAC DNS to resolve
         run: |
@@ -72,6 +72,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 33
+          target: google_apis
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           disable-animations: false
@@ -83,6 +85,7 @@ jobs:
         with:
           api-level: 33
           target: google_apis
+          arch: x86_64
           force-avd-creation: false
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -netdelay none -netspeed full -dns-server 8.8.8.8
           disable-animations: true
