@@ -10,7 +10,7 @@ on:
 
 jobs:
   test-android-sdk:
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Check out Java SDK
         uses: actions/checkout@v3
