@@ -21,23 +21,18 @@ import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.lang.reflect.Type;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -132,7 +127,8 @@ public class EppoClientTest {
         deleteFileIfExists(CACHE_FILE_NAME);
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode) {
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode)
+            throws InterruptedException {
         if (shouldDeleteCacheFiles) {
             deleteCacheFiles();
         }
@@ -158,12 +154,8 @@ public class EppoClientTest {
                 })
                 .buildAndInit();
 
-        try {
-            if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
-                throw new RuntimeException("Request for RAC did not complete within timeout");
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+        if(!lock.await(10000, TimeUnit.MILLISECONDS)) {
+            throw new RuntimeException("Request for RAC did not complete within timeout");
         }
     }
 
@@ -174,13 +166,21 @@ public class EppoClientTest {
 
     @Test
     public void testAssignments() {
-        initClient(TEST_HOST, true, true, false);
+        try {
+            initClient(TEST_HOST, true, true, false);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         runTestCases();
     }
 
     @Test
     public void testErrorGracefulModeOn() {
-        initClient(TEST_HOST, false, true, true);
+        try {
+            initClient(TEST_HOST, false, true, true);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -209,7 +209,11 @@ public class EppoClientTest {
 
     @Test
     public void testErrorGracefulModeOff() {
-        initClient(TEST_HOST, false, true, false);
+        try {
+            initClient(TEST_HOST, false, true, false);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -245,7 +249,7 @@ public class EppoClientTest {
             }
             System.out.println("We ran this many tests: " + testsRan);
             assertTrue("Did not run any test cases", testsRan > 0);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -356,83 +360,13 @@ public class EppoClientTest {
         return (List<JsonElement>) this.getAssignments(testCase, AssignmentValueType.JSON);
     }
 
-    @Test
-    @Ignore
-    public void testInvalidConfigJSON() {
-
-        // Create a mock instance of EppoHttpClient
-        EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
-
-        doAnswer(invocation -> {
-            RequestCallback callback = invocation.getArgument(1);
-            callback.onSuccess(new StringReader("{}"));
-            return null; // doAnswer doesn't require a return value
-        }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
-
-        Field httpClientOverrideField = null;
+    private static String getMockRandomizedAssignmentResponse() {
         try {
-            // Use reflection to set the httpClientOverride field
-            httpClientOverrideField = EppoClient.class.getDeclaredField("httpClientOverride");
-            httpClientOverrideField.setAccessible(true);
-            httpClientOverrideField.set(null, mockHttpClient);
-
-
-            initClient(TEST_HOST, true, true, false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (httpClientOverrideField != null) {
-                try {
-                    httpClientOverrideField.set(null, null);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-                httpClientOverrideField.setAccessible(false);
-            }
-        }
-
-        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
-        assertNull(result);
-    }
-
-    @Test
-    @Ignore
-    public void testCachedBadResponseAllowsLaterFetching() {
-        // Populate the cache with a bad response
-        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext());
-        cacheFile.delete();
-        try {
-            cacheFile.getOutputWriter().write("{}");
-            cacheFile.getOutputWriter().close();
+            InputStream in = ApplicationProvider.getApplicationContext().getAssets()
+                    .open("rac-experiments-v3-hashed-keys.json");
+            return IOUtils.toString(in, Charsets.toCharset("UTF8"));
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        initClient(TEST_HOST, false, false, false);
-;
-        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
-        assertNull(result);
-        // Failure callback will have fired from cache read error, but configuration request will still be fired off on init
-        // Wait for the configuration request to load the configuration
-        waitForNonNullAssignment();
-        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
-        assertEquals("control", assignment);
-    }
-
-    private void waitForNonNullAssignment() {
-        long waitStart = System.currentTimeMillis();
-        long waitEnd = waitStart + 15 * 1000; // allow up to 15 seconds
-        String assignment = null;
-        try {
-            while (assignment == null) {
-                if (System.currentTimeMillis() > waitEnd) {
-                    throw new InterruptedException("Non-null assignment never received; assuming configuration not loaded");
-                }
-                // Uses third subject in test-case-0
-                assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
-                Thread.sleep(100);
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error reading mock RAC data", e);
         }
     }
 }
