@@ -252,15 +252,19 @@ public class EppoClientTest {
 
     @Test
     public void testCachedAssignments() {
-        // First initialize successfully
-        initClient(TEST_HOST, false, true, false); // ensure cache is populated
+        try {
+            // First initialize successfully
+            initClient(TEST_HOST, false, true, false); // ensure cache is populated
 
-        // wait for a bit since cache file is loaded asynchronously
-        waitForNonNullAssignment();
+            // wait for a bit since cache file is loaded asynchronously
+            System.out.println("Sleeping for a bit to wait for cache population to complete");
+            Thread.sleep(10000);
 
-        // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
-        initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
-
+            // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
+            initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         runTestCases();
     }
 
