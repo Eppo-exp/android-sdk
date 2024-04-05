@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out Java SDK
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           repository: 'Eppo-exp/android-sdk'
 
