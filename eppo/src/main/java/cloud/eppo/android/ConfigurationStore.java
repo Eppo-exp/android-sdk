@@ -56,6 +56,10 @@ public class ConfigurationStore {
                     RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
                     reader.close();
                     flags = configResponse.getFlags();
+                    if (flags == null) {
+                        // If flags are missing from configuration, initialize as an empty map
+                        flags = new ConcurrentHashMap();
+                    }
                 }
                 Log.d(TAG, "Cache loaded successfully");
             } catch (Exception e) {
@@ -77,6 +81,9 @@ public class ConfigurationStore {
     public void setFlags(Reader response) {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
         flags = config.getFlags();
+        if (flags == null) {
+            flags = new ConcurrentHashMap<>();
+        }
 
         // update any existing flags already in shared prefs
         updateConfigsInSharedPrefs();
