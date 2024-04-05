@@ -33,7 +33,7 @@ public class ConfigurationRequestor {
                 } catch (JsonSyntaxException | JsonIOException e) {
                     Log.e(TAG, "Error loading configuration response", e);
                     if (callback != null && !usedCache) {
-                        callback.onError("Unable to load configuration from network");
+                        callback.onError("Unable to load configuration");
                     }
                     return;
                 }
