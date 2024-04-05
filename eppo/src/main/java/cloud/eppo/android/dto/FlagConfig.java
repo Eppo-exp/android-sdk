@@ -5,10 +5,19 @@ import java.util.Map;
 import java.util.HashMap;
 
 public class FlagConfig {
+    @SerializedName("subjectShards")
     private int subjectShards;
+
+    @SerializedName("enabled")
     private boolean enabled;
+
+    @SerializedName("typedOverrides")
     private Map<String, String> typedOverrides = new HashMap<>();
+
+    @SerializedName("rules")
     private List<TargetingRule> rules;
+
+    @SerializedName("allocations")
     private Map<String, Allocation> allocations;
 
     public int getSubjectShards() {

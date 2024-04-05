@@ -1,7 +1,9 @@
 package cloud.eppo.android.dto;
 
 public class ShardRange {
+    @SerializedName("start")
     private int start;
+    @SerializedName("end")
     private int end;
 
     public int getStart() {
