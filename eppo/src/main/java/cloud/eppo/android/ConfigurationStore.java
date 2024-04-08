@@ -61,6 +61,7 @@ public class ConfigurationStore {
                         throw new JsonSyntaxException("Configuration file missing flags");
                     }
                     flags = configResponse.getFlags();
+                    updateConfigsInSharedPrefs();
                 }
                 Log.d(TAG, "Cache loaded successfully");
             } catch (Exception e) {
