@@ -6,10 +6,12 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
+import static cloud.eppo.android.util.Utils.logTag;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
+import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -49,13 +51,13 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
+    private static final String TAG = logTag(EppoClient.class);
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
             .create();
-    private CountDownLatch lock = new CountDownLatch(1);
 
     static class SubjectWithAttributes {
         String subjectKey;
@@ -135,11 +137,12 @@ public class EppoClientTest {
         sharedPreferences.edit().clear().commit();
     }
 
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode)
-            throws InterruptedException {
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode) {
         if (shouldDeleteCacheFiles) {
             deleteCacheFiles();
         }
+
+        CountDownLatch lock = new CountDownLatch(1);
 
         new EppoClient.Builder()
                 .application(ApplicationProvider.getApplicationContext())
@@ -149,11 +152,13 @@ public class EppoClientTest {
                 .callback(new InitializationCallback() {
                     @Override
                     public void onCompleted() {
+                        Log.w(TAG, "Test client onCompleted callback");
                         lock.countDown();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
+                        Log.w(TAG, "Test client onError callback");
                         if (throwOnCallackError) {
                             throw new RuntimeException("Unable to initialize: "+errorMessage);
                         }
@@ -162,8 +167,12 @@ public class EppoClientTest {
                 })
                 .buildAndInit();
 
-        if(!lock.await(10000, TimeUnit.MILLISECONDS)) {
-            throw new RuntimeException("Request for RAC did not complete within timeout");
+        try {
+            if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
+                throw new InterruptedException("Request for RAC did not complete within timeout");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -174,21 +183,13 @@ public class EppoClientTest {
 
     @Test
     public void testAssignments() {
-        try {
-            initClient(TEST_HOST, true, true, false);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        initClient(TEST_HOST, true, true, false);
         runTestCases();
     }
 
     @Test
     public void testErrorGracefulModeOn() {
-        try {
-            initClient(TEST_HOST, false, true, true);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        initClient(TEST_HOST, false, true, true);
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -217,11 +218,7 @@ public class EppoClientTest {
 
     @Test
     public void testErrorGracefulModeOff() {
-        try {
-            initClient(TEST_HOST, false, true, false);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        initClient(TEST_HOST, false, true, false);
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -264,18 +261,15 @@ public class EppoClientTest {
 
     @Test
     public void testCachedAssignments() {
-        try {
-            // First initialize successfully
-            initClient(TEST_HOST, false, true, false); // ensure cache is populated
+        // First initialize successfully
+        initClient(TEST_HOST, false, true, false); // ensure cache is populated
 
-            // wait for a bit since cache file is loaded asynchronously
-            waitForPopulatedCache();
+        // wait for a bit since cache file is loaded asynchronously
+        waitForPopulatedCache();
 
-            // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
-            initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
+        initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
+
         runTestCases();
     }
 
@@ -388,7 +382,7 @@ public class EppoClientTest {
 
 
             initClient(TEST_HOST, true, true, false);
-        } catch (InterruptedException | NoSuchFieldException | IllegalAccessException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         } finally {
             if (httpClientOverrideField != null) {
@@ -416,11 +410,8 @@ public class EppoClientTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        try {
-            initClient(TEST_HOST, false, false, false);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        };
+
+        initClient(TEST_HOST, false, false, false);
 
         String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
         assertNull(result);
