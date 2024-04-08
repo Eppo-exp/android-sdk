@@ -6,10 +6,12 @@ import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
 import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
+import static cloud.eppo.android.util.Utils.logTag;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
+import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 
@@ -49,13 +51,13 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
+    private static final String TAG = logTag(EppoClient.class);
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
             .create();
-    private CountDownLatch lock = new CountDownLatch(1);
 
     static class SubjectWithAttributes {
         String subjectKey;
@@ -141,6 +143,8 @@ public class EppoClientTest {
             deleteCacheFiles();
         }
 
+        CountDownLatch lock = new CountDownLatch(1);
+
         new EppoClient.Builder()
                 .application(ApplicationProvider.getApplicationContext())
                 .apiKey("mock-api-key")
@@ -149,11 +153,13 @@ public class EppoClientTest {
                 .callback(new InitializationCallback() {
                     @Override
                     public void onCompleted() {
+                        Log.w(TAG, "Test client onCompleted callback");
                         lock.countDown();
                     }
 
                     @Override
                     public void onError(String errorMessage) {
+                        Log.w(TAG, "Test client onError callback");
                         if (throwOnCallackError) {
                             throw new RuntimeException("Unable to initialize: "+errorMessage);
                         }
@@ -273,6 +279,9 @@ public class EppoClientTest {
 
             // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
             initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
+
+            // Wait for cache to be hydrated
+
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
