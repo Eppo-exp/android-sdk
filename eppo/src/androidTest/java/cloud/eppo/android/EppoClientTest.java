@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);

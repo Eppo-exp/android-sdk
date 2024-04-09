@@ -1,7 +1,6 @@
 package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.JsonElement;
@@ -10,11 +9,10 @@ import com.google.gson.JsonParser;
 import org.junit.Test;
 
 import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 
 public class EppoValueDeserializerTest {
     private EppoValueAdapter adapter = new EppoValueAdapter();
-    
 
     @Test
     public void testDeserializingDouble() throws Exception {

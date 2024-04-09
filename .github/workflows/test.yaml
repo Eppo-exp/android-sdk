@@ -65,7 +65,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-33
+          key: avd-api-33-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'

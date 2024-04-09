@@ -21,7 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.RandomizationConfigResponseDeserializer;
 import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
@@ -29,6 +30,7 @@ public class ConfigurationStore {
     private static final String TAG = logTag(ConfigurationStore.class);
 
     private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(RandomizationConfigResponse.class, new RandomizationConfigResponseDeserializer())
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
             .create();
@@ -43,10 +45,11 @@ public class ConfigurationStore {
         this.sharedPrefs = Utils.getSharedPrefs(application);
     }
 
-    public boolean loadFromCache(InitializationCallback callback) {
+    public void loadFromCache(CacheLoadCallback callback) {
         if (flags != null || !cacheFile.exists()) {
             Log.d(TAG, "Not loading from cache ("+(flags == null ? "null flags" : "non-null flags")+")");
-            return false;
+            callback.onCacheLoadFail();
+            return;
         }
 
         AsyncTask.execute(() -> {
@@ -57,35 +60,28 @@ public class ConfigurationStore {
                     RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
                     reader.close();
                     if (configResponse == null || configResponse.getFlags() == null) {
-                        // Invalid cached configuration, initialize as an empty map and delete file
                         throw new JsonSyntaxException("Configuration file missing flags");
                     }
                     flags = configResponse.getFlags();
                     updateConfigsInSharedPrefs();
                 }
                 Log.d(TAG, "Cache loaded successfully");
+                callback.onCacheLoadSuccess();
             } catch (Exception e) {
                 Log.e(TAG, "Error loading from local cache", e);
                 cacheFile.delete();
-
-                if (callback != null) {
-                    callback.onError("Unable to load config from cache");
-                }
-            }
-
-            if (callback != null) {
-                callback.onCompleted();
+                callback.onCacheLoadFail();
             }
         });
-        return true;
     }
 
     public void setFlags(Reader response) {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
-        flags = config.getFlags();
-        if (flags == null) {
+        if (config == null || config.getFlags() == null) {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
+        } else {
+            flags = config.getFlags();
         }
 
         // update any existing flags already in shared prefs

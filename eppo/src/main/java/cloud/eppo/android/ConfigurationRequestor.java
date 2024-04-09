@@ -8,6 +8,7 @@ import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
 import java.io.Reader;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloud.eppo.android.dto.FlagConfig;
 
@@ -23,7 +24,19 @@ public class ConfigurationRequestor {
     }
 
     public void load(InitializationCallback callback) {
-        boolean usedCache = configurationStore.loadFromCache(callback);
+        AtomicBoolean cachedUsed = new AtomicBoolean(false);
+        configurationStore.loadFromCache(new CacheLoadCallback() {
+            @Override
+            public void onCacheLoadSuccess() {
+                cachedUsed.set(true);
+                callback.onCompleted();
+            }
+
+            @Override
+            public void onCacheLoadFail() {
+                cachedUsed.set(false);
+            }
+        });
 
         client.get("/api/randomized_assignment/v3/config", new RequestCallback() {
             @Override
@@ -32,13 +45,13 @@ public class ConfigurationRequestor {
                     configurationStore.setFlags(response);
                 } catch (JsonSyntaxException | JsonIOException e) {
                     Log.e(TAG, "Error loading configuration response", e);
-                    if (callback != null && !usedCache) {
-                        callback.onError("Unable to load configuration");
+                    if (callback != null && !cachedUsed.get()) {
+                        callback.onError("Unable to request configuration");
                     }
                     return;
                 }
 
-                if (callback != null && !usedCache) {
+                if (callback != null && !cachedUsed.get()) {
                     callback.onCompleted();
                 }
             }
@@ -46,7 +59,7 @@ public class ConfigurationRequestor {
             @Override
             public void onFailure(String errorMessage) {
                 Log.e(TAG, errorMessage);
-                if (callback != null && !usedCache) {
+                if (callback != null && !cachedUsed.get()) {
                     callback.onError(errorMessage);
                 }
             }
