@@ -13,7 +13,6 @@ import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoValueDeserializerTest {
     private EppoValueAdapter adapter = new EppoValueAdapter();
-    
 
     @Test
     public void testDeserializingDouble() throws Exception {

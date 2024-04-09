@@ -7,19 +7,19 @@ public class Allocation {
 
     private List<Variation> variations;
 
-    public void setPercentExposure(float percentExposure) {
-        this.percentExposure = percentExposure;
-    }
-
     public float getPercentExposure() {
         return percentExposure;
     }
 
-    public void setVariations(List<Variation> variations) {
-        this.variations = variations;
+    public void setPercentExposure(float percentExposure) {
+        this.percentExposure = percentExposure;
     }
 
     public List<Variation> getVariations() {
         return variations;
+    }
+
+    public void setVariations(List<Variation> variations) {
+        this.variations = variations;
     }
 }

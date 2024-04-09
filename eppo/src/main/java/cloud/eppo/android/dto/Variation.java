@@ -7,19 +7,19 @@ public class Variation {
 
     private ShardRange shardRange;
 
-    public void setTypedValue(EppoValue typedValue) {
-        this.typedValue = typedValue;
-    }
-
     public EppoValue getTypedValue() {
         return typedValue;
     }
 
-    public void setShardRange(ShardRange shardRange) {
-        this.shardRange = shardRange;
+    public void setTypedValue(EppoValue typedValue) {
+        this.typedValue = typedValue;
     }
 
     public ShardRange getShardRange() {
         return shardRange;
+    }
+
+    public void setShardRange(ShardRange shardRange) {
+        this.shardRange = shardRange;
     }
 }
