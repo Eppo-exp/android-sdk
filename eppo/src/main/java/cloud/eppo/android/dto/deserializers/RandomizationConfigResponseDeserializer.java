@@ -27,7 +27,6 @@ import cloud.eppo.android.dto.ShardRange;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 /**
  *  Hand-rolled deserializer so that we don't rely on annotations and method names, which can be
@@ -61,7 +60,7 @@ public class RandomizationConfigResponseDeserializer implements JsonDeserializer
         for (Map.Entry<String, JsonElement> flagEntry : flagsObject.entrySet()) {
             String flagKey = flagEntry.getKey();
             FlagConfig flagConfig = deserializeFlag(flagEntry.getValue(), type, context);
-            flags.put(flagKey, flagConfig);
+            flags.put(flagKey, flagConfig); // Note this is adding to the map already plugged into configResponse
         }
 
         return configResponse;

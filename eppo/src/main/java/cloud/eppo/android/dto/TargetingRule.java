@@ -24,6 +24,4 @@ public class TargetingRule {
     public void setConditions(List<TargetingCondition> conditions) {
         this.conditions = conditions;
     }
-
-
 }

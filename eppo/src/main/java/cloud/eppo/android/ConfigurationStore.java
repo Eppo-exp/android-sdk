@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 import cloud.eppo.android.dto.deserializers.RandomizationConfigResponseDeserializer;
 import cloud.eppo.android.util.Utils;
 

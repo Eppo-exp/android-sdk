@@ -1,4 +1,4 @@
-package cloud.eppo.android.dto.adapters;
+package cloud.eppo.android.dto.deserializers;
 
 import static cloud.eppo.android.util.Utils.logTag;
 

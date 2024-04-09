@@ -1,7 +1,5 @@
 package cloud.eppo.android.dto;
 
-import com.google.gson.annotations.SerializedName;
-
 public class Variation {
     private EppoValue typedValue;
 

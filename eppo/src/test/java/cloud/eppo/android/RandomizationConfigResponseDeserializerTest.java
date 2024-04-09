@@ -25,7 +25,7 @@ import cloud.eppo.android.dto.ShardRange;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 import cloud.eppo.android.dto.deserializers.RandomizationConfigResponseDeserializer;
 
 public class RandomizationConfigResponseDeserializerTest {
