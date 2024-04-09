@@ -1,7 +1,5 @@
 package cloud.eppo.android.dto;
 
-import com.google.gson.annotations.SerializedName;
-
 public class TargetingCondition {
     private String operator;
 

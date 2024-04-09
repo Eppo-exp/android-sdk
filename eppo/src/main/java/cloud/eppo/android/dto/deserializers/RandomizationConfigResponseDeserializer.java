@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import cloud.eppo.android.EppoClient;
 import cloud.eppo.android.dto.Allocation;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
@@ -34,7 +33,7 @@ import cloud.eppo.android.dto.Variation;
  *  JSON-deserialization-related classes and annotations.
  */
 public class RandomizationConfigResponseDeserializer implements JsonDeserializer<RandomizationConfigResponse> {
-    private static final String TAG = logTag(EppoClient.class);
+    private static final String TAG = logTag(RandomizationConfigResponseDeserializer.class);
 
     private final EppoValueAdapter eppoValueAdapter = new EppoValueAdapter();
 
