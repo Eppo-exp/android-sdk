@@ -5,10 +5,11 @@ import android.util.Log;
 
 import cloud.eppo.android.EppoClient;
 import cloud.eppo.android.InitializationCallback;
+import com.geteppo.androidexample.BuildConfig;
 
 public class EppoApplication extends Application {
     private static final String TAG = EppoApplication.class.getSimpleName();
-    private static final String API_KEY = "DAXlGwLoDFYSskIUEDbyESt9lh8_1wG2uDMo9jvJo4I";
+    private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
 
     @Override
     public void onCreate() {

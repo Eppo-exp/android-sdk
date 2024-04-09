@@ -2,6 +2,12 @@ plugins {
     id 'com.android.application'
 }
 
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file('local.properties')
+if (localPropertiesFile.exists()) {
+    localProperties.load(new FileInputStream(localPropertiesFile))
+}
+
 android {
     compileSdk 33
 
@@ -14,6 +20,8 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField "String", "API_KEY", "\"" + (localProperties['cloud.eppo.apiKey'] ?: "need to set cloud.eppo.apiKey in local.properties") + "\""
     }
 
     buildTypes {
