@@ -13,6 +13,10 @@ public class TargetingRule {
         return allocationKey;
     }
 
+    public void setAllocationKey(String allocationKey) {
+        this.allocationKey = allocationKey;
+    }
+
     public List<TargetingCondition> getConditions() {
         return conditions;
     }
@@ -20,4 +24,6 @@ public class TargetingRule {
     public void setConditions(List<TargetingCondition> conditions) {
         this.conditions = conditions;
     }
+
+
 }

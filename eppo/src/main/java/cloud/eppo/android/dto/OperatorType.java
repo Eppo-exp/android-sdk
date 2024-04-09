@@ -15,6 +15,8 @@ public enum OperatorType {
         this.value = value;
     }
 
+
+    // TODO: does this work with obfuscation?
     public static OperatorType fromString(String value) {
         for (OperatorType type : OperatorType.values()) {
             if (type.value.equals(value)) {

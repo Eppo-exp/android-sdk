@@ -8,7 +8,7 @@ import cloud.eppo.android.InitializationCallback;
 
 public class EppoApplication extends Application {
     private static final String TAG = EppoApplication.class.getSimpleName();
-    private static final String API_KEY = "REPLACE WITH YOUR API KEY";
+    private static final String API_KEY = "DAXlGwLoDFYSskIUEDbyESt9lh8_1wG2uDMo9jvJo4I";
 
     @Override
     public void onCreate() {
