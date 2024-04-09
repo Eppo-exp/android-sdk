@@ -2,6 +2,7 @@ package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.google.gson.Gson;
@@ -53,6 +54,7 @@ public class RandomizationConfigResponseDeserializerTest {
         assertTrue(configResponse.getFlags().containsKey("rollout_with_holdout"));
 
         FlagConfig flagConfig = configResponse.getFlags().get("disabled_experiment_with_overrides");
+        assertNotNull(flagConfig);
         assertFalse(flagConfig.isEnabled());
         assertEquals(10000, flagConfig.getSubjectShards());
         Map<String, String> typedOverrides = flagConfig.getTypedOverrides();
@@ -67,6 +69,7 @@ public class RandomizationConfigResponseDeserializerTest {
         Map<String, Allocation> allocations = flagConfig.getAllocations();
         assertEquals(1, allocations.size());
         Allocation allocation = allocations.get("allocation-experiment-3");
+        assertNotNull(allocation);
         assertEquals(1.0, allocation.getPercentExposure(), 0.001);
 
         List<Variation> variations = allocation.getVariations();
@@ -78,7 +81,7 @@ public class RandomizationConfigResponseDeserializerTest {
         assertEquals(0, controlShardRange.getStart());
         assertEquals(5000, controlShardRange.getEnd());
 
-        Variation testVariation = variations.get(0);
+        Variation testVariation = variations.get(1);
         assertEquals("treatment", testVariation.getTypedValue().stringValue());
         ShardRange testShardRange = testVariation.getShardRange();
         assertEquals(5000, testShardRange.getStart());
@@ -86,6 +89,7 @@ public class RandomizationConfigResponseDeserializerTest {
 
         // Need another flag to check targeting rules
         flagConfig = configResponse.getFlags().get("targeting_rules_experiment");
+        assertNotNull(flagConfig);
         assertTrue(flagConfig.isEnabled());
         assertTrue(flagConfig.getTypedOverrides().isEmpty());
         targetingRules = flagConfig.getRules();
@@ -95,11 +99,12 @@ public class RandomizationConfigResponseDeserializerTest {
         assertEquals("allocation-experiment-4", rule.getAllocationKey());
         List<TargetingCondition> conditions = rule.getConditions();
         assertEquals(2, conditions.size());
+
         TargetingCondition condition = conditions.get(0);
         assertEquals("device", condition.getAttribute());
         assertEquals(OperatorType.OneOf,  condition.getOperator());
         assertEquals("iOS", condition.getValue().arrayValue().get(0));
-        assertEquals("iOS", condition.getValue().arrayValue().get(1));
+        assertEquals("Android", condition.getValue().arrayValue().get(1));
 
         condition = conditions.get(1);
         assertEquals("version", condition.getAttribute());
@@ -114,7 +119,8 @@ public class RandomizationConfigResponseDeserializerTest {
         condition = conditions.get(0);
         assertEquals("country", condition.getAttribute());
         assertEquals(OperatorType.NotOneOf,  condition.getOperator());
-        assertEquals("China", condition.getValue().stringValue());
+        assertEquals(1, condition.getValue().arrayValue().size());
+        assertEquals("China", condition.getValue().arrayValue().get(0));
 
         rule = targetingRules.get(2);
         assertEquals("allocation-experiment-4", rule.getAllocationKey());
