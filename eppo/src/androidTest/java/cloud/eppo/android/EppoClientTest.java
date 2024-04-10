@@ -167,6 +167,7 @@ public class EppoClientTest {
                 })
                 .buildAndInit();
 
+        // Wait for initialization to succeed or fail, up to 10 seconds, before continuing
         try {
             if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
                 throw new InterruptedException("Request for RAC did not complete within timeout");
