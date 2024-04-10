@@ -29,7 +29,9 @@ public class ConfigurationRequestor {
             @Override
             public void onCacheLoadSuccess() {
                 cachedUsed.set(true);
-                callback.onCompleted();
+                if (callback != null) {
+                    callback.onCompleted();
+                }
             }
 
             @Override
