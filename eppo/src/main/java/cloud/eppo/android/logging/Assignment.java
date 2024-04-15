@@ -1,6 +1,9 @@
 package cloud.eppo.android.logging;
 
 import cloud.eppo.android.dto.SubjectAttributes;
+import cloud.eppo.android.util.Utils;
+
+import java.util.Date;
 
 public class Assignment {
     private String experiment;
@@ -18,8 +21,7 @@ public class Assignment {
             String variation,
             String subject,
             String timestamp,
-            SubjectAttributes subjectAttributes
-    ) {
+            SubjectAttributes subjectAttributes) {
         this.experiment = experiment;
         this.featureFlag = featureFlag;
         this.allocation = allocation;
@@ -27,6 +29,17 @@ public class Assignment {
         this.subject = subject;
         this.timestamp = timestamp;
         this.subjectAttributes = subjectAttributes;
+    }
+
+    public static Assignment createWithCurrentDate(
+            String experiment,
+            String featureFlag,
+            String allocation,
+            String variation,
+            String subject,
+            SubjectAttributes subjectAttributes) {
+        return new Assignment(experiment, featureFlag, allocation, variation, subject,
+                Utils.getISODate(new Date()), subjectAttributes);
     }
 
     public String getExperiment() {

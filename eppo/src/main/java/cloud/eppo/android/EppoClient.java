@@ -39,7 +39,8 @@ public class EppoClient {
     // Useful for testing in situations where we want to mock the http client
     private static EppoHttpClient httpClientOverride = null;
 
-    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger, boolean isGracefulMode) {
+    private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger,
+            boolean isGracefulMode) {
         EppoHttpClient httpClient = httpClientOverride == null ? new EppoHttpClient(host, apiKey) : httpClientOverride;
         ConfigurationStore configStore = new ConfigurationStore(application);
         requestor = new ConfigurationRequestor(configStore, httpClient);
@@ -133,7 +134,7 @@ public class EppoClient {
         String allocationKey = rule.getAllocationKey();
         Allocation allocation = flag.getAllocations().get(allocationKey);
         if (allocation == null) {
-            Log.w(TAG, "unexpected unknown allocation key \""+allocationKey+"\"");
+            Log.w(TAG, "unexpected unknown allocation key \"" + allocationKey + "\"");
             return null;
         }
 
@@ -157,9 +158,14 @@ public class EppoClient {
                 variationToLog = typedValue.stringValue();
             }
 
-            Assignment assignment = new Assignment(experimentKey,
-                    flagKey, allocationKey, variationToLog,
-                    subjectKey, Utils.getISODate(new Date()), subjectAttributes);
+            Assignment assignment = Assignment.createWithCurrentDate(
+                experimentKey,
+                flagKey, 
+                allocationKey, 
+                variationToLog,
+                subjectKey, 
+                subjectAttributes
+            );
             assignmentLogger.logAssignment(assignment);
         }
 
