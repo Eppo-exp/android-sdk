@@ -6,10 +6,9 @@ import android.content.SharedPreferences;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.TimeZone;
+import java.util.Locale;
 
 import cloud.eppo.android.dto.ShardRange;
 
@@ -50,10 +49,9 @@ public class Utils {
     }
 
     public static String getISODate(Date date) {
-        TimeZone tz = TimeZone.getTimeZone("UTC");
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-        df.setTimeZone(tz);
-        return df.format(date);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+        dateFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+        return dateFormat.format(date);
     }
 
     public static SharedPreferences getSharedPrefs(Context context) {
