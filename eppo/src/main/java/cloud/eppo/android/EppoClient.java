@@ -10,7 +10,6 @@ import android.util.Log;
 
 import com.google.gson.JsonElement;
 
-import java.util.Date;
 import java.util.List;
 
 import cloud.eppo.android.dto.Allocation;
@@ -138,12 +137,12 @@ public class EppoClient {
             return null;
         }
 
-        if (!isInExperimentSample(subjectKey, flagKey, flag.getSubjectShards(), allocation.getPercentExposure())) {
+        if (!isInExperimentSample(subjectKey, flagKey, flag.getTotalShards(), allocation.getPercentExposure())) {
             Log.i(TAG, "no assigned variation. The subject is not part of the sample population");
             return null;
         }
 
-        Variation assignedVariation = getAssignedVariation(subjectKey, flagKey, flag.getSubjectShards(),
+        Variation assignedVariation = getAssignedVariation(subjectKey, flagKey, flag.getTotalShards(),
                 allocation.getVariations());
         if (assignedVariation == null) {
             Log.i(TAG, "no assigned variation. The subject was not bucketed to a variation.");

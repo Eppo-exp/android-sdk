@@ -21,7 +21,7 @@ import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.OperatorType;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
-import cloud.eppo.android.dto.ShardRange;
+import cloud.eppo.android.dto.Range;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
@@ -56,7 +56,7 @@ public class RandomizationConfigResponseDeserializerTest {
         FlagConfig flagConfig = configResponse.getFlags().get("disabled_experiment_with_overrides");
         assertNotNull(flagConfig);
         assertFalse(flagConfig.isEnabled());
-        assertEquals(10000, flagConfig.getSubjectShards());
+        assertEquals(10000, flagConfig.getTotalShards());
         Map<String, String> typedOverrides = flagConfig.getTypedOverrides();
         assertEquals("treatment", typedOverrides.get("0bcbfc2660c78c549b0fbf870e3dc3ea"));
         assertEquals("control", typedOverrides.get("50a681dcd4046400e5c675e85b69b4ac"));
@@ -77,13 +77,13 @@ public class RandomizationConfigResponseDeserializerTest {
 
         Variation controlVariation = variations.get(0);
         assertEquals("control", controlVariation.getTypedValue().stringValue());
-        ShardRange controlShardRange = controlVariation.getShardRange();
+        Range controlShardRange = controlVariation.getShardRange();
         assertEquals(0, controlShardRange.getStart());
         assertEquals(5000, controlShardRange.getEnd());
 
         Variation testVariation = variations.get(1);
         assertEquals("treatment", testVariation.getTypedValue().stringValue());
-        ShardRange testShardRange = testVariation.getShardRange();
+        Range testShardRange = testVariation.getShardRange();
         assertEquals(5000, testShardRange.getStart());
         assertEquals(10000, testShardRange.getEnd());
 

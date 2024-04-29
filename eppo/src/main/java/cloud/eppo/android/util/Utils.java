@@ -10,7 +10,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import cloud.eppo.android.dto.ShardRange;
+import cloud.eppo.android.dto.Range;
 
 public class Utils {
     public static String getMD5Hex(String input) {
@@ -38,7 +38,7 @@ public class Utils {
         return (int) (Long.parseLong(hashText.substring(0, 8), 16) % maxShardValue);
     }
 
-    public static boolean isShardInRange(int shard, ShardRange range) {
+    public static boolean isShardInRange(int shard, Range range) {
         return shard >= range.getStart() && shard < range.getEnd();
     }
 

@@ -4,12 +4,12 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import cloud.eppo.android.dto.ShardRange;
+import cloud.eppo.android.dto.Range;
 import cloud.eppo.android.util.Utils;
 
 public class ShardTest {
-    ShardRange createShardRange(int start, int end) {
-        ShardRange range = new ShardRange();
+    Range createShardRange(int start, int end) {
+        Range range = new Range();
         range.setStart(start);
         range.setEnd(end);
         return range;
@@ -17,13 +17,13 @@ public class ShardTest {
 
     @Test
     public void testIsShardInRangePositiveCase() {
-        ShardRange range = createShardRange(10, 20);
+        Range range = createShardRange(10, 20);
         assertTrue(Utils.isShardInRange(15, range));
     }
 
     @Test
     public void testIsShardInRangeNegativeCase() {
-        ShardRange range = createShardRange(10, 20);
+        Range range = createShardRange(10, 20);
         assertTrue(Utils.isShardInRange(15, range));
     }
 

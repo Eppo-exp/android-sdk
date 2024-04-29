@@ -11,6 +11,7 @@ public class EppoValue {
 
     private JsonElement json;
 
+    // TODO: come up with better name?!
     public EppoValue() {}
 
     public EppoValue(String value, EppoValueType type) {

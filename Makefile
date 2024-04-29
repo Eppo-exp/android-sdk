@@ -37,6 +37,8 @@ test-data:
 	git clone -b ${branchName} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
 	cp ${gitDataDir}/rac-experiments-v3.json ${testDataDir}
 	cp ${gitDataDir}/rac-experiments-v3-hashed-keys.json ${testDataDir}
+	cp ${gitDataDir}/ufc/flags-v1.json ${testDataDir}
+	cp ${gitDataDir}/ufc/flags-v1-obfuscated.json ${testDataDir}
 	cp -r ${gitDataDir}/assignment-v2 ${testDataDir}
 	rm -rf ${tempDir}
 

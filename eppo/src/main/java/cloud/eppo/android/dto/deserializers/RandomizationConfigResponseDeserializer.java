@@ -22,7 +22,7 @@ import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.OperatorType;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
-import cloud.eppo.android.dto.ShardRange;
+import cloud.eppo.android.dto.Range;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
@@ -75,7 +75,7 @@ public class RandomizationConfigResponseDeserializer implements JsonDeserializer
 
         FlagConfig flagConfig = new FlagConfig();
         flagConfig.setEnabled(enabled);
-        flagConfig.setSubjectShards(subjectShards);
+        flagConfig.setTotalShards(subjectShards);
         flagConfig.setTypedOverrides(typedOverrides);
         flagConfig.setRules(rules);
         flagConfig.setAllocations(allocations);
@@ -176,7 +176,7 @@ public class RandomizationConfigResponseDeserializer implements JsonDeserializer
             JsonObject shardRangeObject = variationObject.get("shardRange").getAsJsonObject();
             int shardRangeStart = shardRangeObject.get("start").getAsInt();
             int shardRangeEnd = shardRangeObject.get("end").getAsInt();
-            ShardRange shardRange = new ShardRange();
+            Range shardRange = new Range();
             shardRange.setStart(shardRangeStart);
             shardRange.setEnd(shardRangeEnd);
 

@@ -1,9 +1,18 @@
 package cloud.eppo.android.dto;
 
 public class Variation {
+
+    private String key;
+
     private EppoValue typedValue;
 
-    private ShardRange shardRange;
+    public String getKey() {
+        return this.key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
 
     public EppoValue getTypedValue() {
         return typedValue;
@@ -11,13 +20,5 @@ public class Variation {
 
     public void setTypedValue(EppoValue typedValue) {
         this.typedValue = typedValue;
-    }
-
-    public ShardRange getShardRange() {
-        return shardRange;
-    }
-
-    public void setShardRange(ShardRange shardRange) {
-        this.shardRange = shardRange;
     }
 }

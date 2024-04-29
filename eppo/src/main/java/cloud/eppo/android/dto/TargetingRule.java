@@ -1,25 +1,16 @@
 package cloud.eppo.android.dto;
 
-import java.util.List;
+import java.util.Set;
 
 public class TargetingRule {
-    private String allocationKey;
 
-    private List<TargetingCondition> conditions;
+    private Set<TargetingCondition> conditions;
 
-    public String getAllocationKey() {
-        return allocationKey;
-    }
-
-    public void setAllocationKey(String allocationKey) {
-        this.allocationKey = allocationKey;
-    }
-
-    public List<TargetingCondition> getConditions() {
+    public Set<TargetingCondition> getConditions() {
         return conditions;
     }
 
-    public void setConditions(List<TargetingCondition> conditions) {
+    public void setConditions(Set<TargetingCondition> conditions) {
         this.conditions = conditions;
     }
 }
