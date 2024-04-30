@@ -80,7 +80,7 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
         String key = flagObject.get("key").getAsString();
         boolean enabled = flagObject.get("enabled").getAsBoolean();
         int totalShards = flagObject.get("totalShards").getAsInt();
-        VariationType variationType = VariationType.valueOf(flagObject.get("variationType").getAsString());
+        VariationType variationType = VariationType.fromString(flagObject.get("variationType").getAsString());
         Map<String, Variation> variations = deserializeVariations(flagObject.get("variations"), type, context);
         List<Allocation> allocations = deserializeAllocations(flagObject.get("allocations"), type, context);
 
@@ -171,6 +171,7 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
                 condition.setAttribute(attribute);
                 condition.setOperator(operator);
                 condition.setValue(value);
+                conditions.add(condition);
             }
 
             TargetingRule targetingRule = new TargetingRule();
@@ -204,6 +205,7 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
             split.setVariationKey(variationKey);
             split.setShards(shards);
             split.setExtraLogging(extraLogging);
+            splits.add(split);
         }
 
         return splits;
@@ -232,6 +234,7 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
             Shard shard = new Shard();
             shard.setSalt(salt);
             shard.setRanges(ranges);
+            shards.add(shard);
         }
 
         return shards;
