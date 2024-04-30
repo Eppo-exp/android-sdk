@@ -8,13 +8,13 @@ public class Allocation {
 
     private String key;
 
-    private List<TargetingRule> rules;
+    private Set<TargetingRule> rules;
 
     private Date startAt;
 
     private Date endAt;
 
-    private Set<Split> splits;
+    private List<Split> splits;
 
     private boolean doLog;
 
@@ -26,11 +26,11 @@ public class Allocation {
         this.key = key;
     }
 
-    public List<TargetingRule> getRules() {
+    public Set<TargetingRule> getRules() {
         return rules;
     }
 
-    public void setRules(List<TargetingRule> rules) {
+    public void setRules(Set<TargetingRule> rules) {
         this.rules = rules;
     }
 
@@ -50,11 +50,11 @@ public class Allocation {
         this.endAt = endAt;
     }
 
-    public Set<Split> getSplits() {
+    public List<Split> getSplits() {
         return splits;
     }
 
-    public void setSplits(Set<Split> splits) {
+    public void setSplits(List<Split> splits) {
         this.splits = splits;
     }
 

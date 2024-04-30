@@ -152,7 +152,7 @@ public class EppoClient {
         if (assignmentLogger != null) {
             String experimentKey = Utils.generateExperimentKey(flagKey, allocationKey);
             String variationToLog = null;
-            EppoValue typedValue = assignedVariation.getTypedValue();
+            EppoValue typedValue = assignedVariation.getValue();
             if (typedValue != null) {
                 variationToLog = typedValue.stringValue();
             }
@@ -168,7 +168,7 @@ public class EppoClient {
             assignmentLogger.logAssignment(assignment);
         }
 
-        return assignedVariation.getTypedValue();
+        return assignedVariation.getValue();
     }
 
     public String getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {

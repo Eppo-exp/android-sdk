@@ -9,6 +9,8 @@ public enum OperatorType {
     OneOf("ONE_OF"),
     NotOneOf("NOT_ONE_OF");
 
+    // TODO add in null checks
+
     public String value;
 
     OperatorType(String value) {
@@ -17,6 +19,7 @@ public enum OperatorType {
 
     public static OperatorType fromString(String value) {
         for (OperatorType type : OperatorType.values()) {
+            // TODO: also check hashed version
             if (type.value.equals(value)) {
                 return type;
             }

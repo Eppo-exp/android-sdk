@@ -76,13 +76,13 @@ public class RandomizationConfigResponseDeserializerTest {
         assertEquals(2, variations.size());
 
         Variation controlVariation = variations.get(0);
-        assertEquals("control", controlVariation.getTypedValue().stringValue());
+        assertEquals("control", controlVariation.getValue().stringValue());
         Range controlShardRange = controlVariation.getShardRange();
         assertEquals(0, controlShardRange.getStart());
         assertEquals(5000, controlShardRange.getEnd());
 
         Variation testVariation = variations.get(1);
-        assertEquals("treatment", testVariation.getTypedValue().stringValue());
+        assertEquals("treatment", testVariation.getValue().stringValue());
         Range testShardRange = testVariation.getShardRange();
         assertEquals(5000, testShardRange.getStart());
         assertEquals(10000, testShardRange.getEnd());

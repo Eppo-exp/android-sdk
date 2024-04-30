@@ -16,6 +16,14 @@ public class FlagConfig {
 
     private List<Allocation> allocations;
 
+    public String getKey() {
+        return this.key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
+
     public int getTotalShards() {
         return totalShards;
     }
@@ -40,7 +48,7 @@ public class FlagConfig {
         this.variationType = variationType;
     }
 
-    public Map<String, Variation> setVariations() {
+    public Map<String, Variation> getVariations() {
         return variations;
     }
 

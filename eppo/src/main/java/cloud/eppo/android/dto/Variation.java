@@ -4,7 +4,7 @@ public class Variation {
 
     private String key;
 
-    private EppoValue typedValue;
+    private EppoValue value;
 
     public String getKey() {
         return this.key;
@@ -14,11 +14,11 @@ public class Variation {
         this.key = key;
     }
 
-    public EppoValue getTypedValue() {
-        return typedValue;
+    public EppoValue getValue() {
+        return value;
     }
 
-    public void setTypedValue(EppoValue typedValue) {
-        this.typedValue = typedValue;
+    public void setValue(EppoValue value) {
+        this.value = value;
     }
 }

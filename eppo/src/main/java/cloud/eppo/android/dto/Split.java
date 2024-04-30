@@ -7,7 +7,7 @@ public class Split {
 
     private String variationKey;
 
-    private Set<Range> shards;
+    private Set<Shard> shards;
 
     private Map<String, String> extraLogging;
 
@@ -19,11 +19,11 @@ public class Split {
         this.variationKey = variationKey;
     }
 
-    public Set<Range> getShards() {
+    public Set<Shard> getShards() {
         return shards;
     }
 
-    public void setShards(Set<Range> shards) {
+    public void setShards(Set<Shard> shards) {
         this.shards = shards;
     }
 
