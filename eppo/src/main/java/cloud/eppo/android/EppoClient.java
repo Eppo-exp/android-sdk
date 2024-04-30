@@ -78,20 +78,7 @@ public class EppoClient {
         requestor.load(callback);
     }
 
-    private EppoValue getSubjectVariationOverride(String subjectKey, FlagConfig flagConfig) {
-        String subjectHash = Utils.getMD5Hex(subjectKey);
-        if (flagConfig.getTypedOverrides().containsKey(subjectHash)) {
-            return EppoValue.valueOf(flagConfig.getTypedOverrides().get(subjectHash));
-        }
-        return EppoValue.valueOf();
-    }
-
-    private boolean isInExperimentSample(String subjectKey, String experimentKey, int subjectShards,
-            float percentageExposure) {
-        int shard = Utils.getShard("exposure-" + subjectKey + "-" + experimentKey, subjectShards);
-        return shard <= percentageExposure * subjectShards;
-    }
-
+    /*
     private Variation getAssignedVariation(String subjectKey, String experimentKey, int subjectShards,
             List<Variation> variations) {
         int shard = Utils.getShard("assignment-" + subjectKey + "-" + experimentKey, subjectShards);
@@ -103,7 +90,9 @@ public class EppoClient {
         }
         return null;
     }
+     */
 
+    //TODO: fix
     protected EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
@@ -114,16 +103,12 @@ public class EppoClient {
             return null;
         }
 
-        EppoValue subjectVariationOverride = getSubjectVariationOverride(subjectKey, flag);
-        if (!subjectVariationOverride.isNull()) {
-            return subjectVariationOverride;
-        }
-
         if (!flag.isEnabled()) {
             Log.i(TAG, "no assigned variation because the experiment or feature flag is disabled: " + flagKey);
             return null;
         }
 
+        /*
         TargetingRule rule = RuleEvaluator.findMatchingRule(subjectAttributes, flag.getRules());
         if (rule == null) {
             Log.i(TAG, "no assigned variation. The subject attributes did not match any targeting rules");
@@ -169,6 +154,8 @@ public class EppoClient {
         }
 
         return assignedVariation.getValue();
+         */
+        return null;
     }
 
     public String getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {

@@ -4,6 +4,7 @@ import com.github.zafarkhaja.semver.Version;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import cloud.eppo.android.dto.EppoValue;
@@ -128,7 +129,7 @@ public class RuleEvaluator {
         return false;
     }
 
-    private static List<Boolean> evaluateRuleConditions(SubjectAttributes subjectAttributes, List<TargetingCondition> conditions) {
+    private static List<Boolean> evaluateRuleConditions(SubjectAttributes subjectAttributes, Set<TargetingCondition> conditions) {
         List<Boolean> evaluations = new ArrayList<>();
         for (TargetingCondition condition : conditions) {
             evaluations.add(evaluateCondition(subjectAttributes, condition));

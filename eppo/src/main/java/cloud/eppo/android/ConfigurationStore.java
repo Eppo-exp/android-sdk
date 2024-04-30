@@ -20,8 +20,9 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
+import cloud.eppo.android.dto.FlagConfigResponse;
 import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
-import cloud.eppo.android.dto.deserializers.RandomizationConfigResponseDeserializer;
+import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
 import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
@@ -29,7 +30,7 @@ public class ConfigurationStore {
     private static final String TAG = logTag(ConfigurationStore.class);
 
     private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(RandomizationConfigResponse.class, new RandomizationConfigResponseDeserializer())
+            .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseDeserializer())
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
             .create();
@@ -56,12 +57,13 @@ public class ConfigurationStore {
             try {
                 synchronized (cacheFile) {
                     InputStreamReader reader = cacheFile.getInputReader();
-                    RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
+                    FlagConfigResponse configResponse = gson.fromJson(reader, FlagConfigResponse.class);
                     reader.close();
                     if (configResponse == null || configResponse.getFlags() == null) {
                         throw new JsonSyntaxException("Configuration file missing flags");
                     }
-                    flags = configResponse.getFlags();
+
+                    //flags = configResponse.getFlags();
                     updateConfigsInSharedPrefs();
                 }
                 Log.d(TAG, "Cache loaded successfully");
@@ -75,12 +77,13 @@ public class ConfigurationStore {
     }
 
     public void setFlags(Reader response) {
-        RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
+        FlagConfigResponse config = gson.fromJson(response, FlagConfigResponse.class);
         if (config == null || config.getFlags() == null) {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
         } else {
-            flags = config.getFlags();
+            //TODO
+            //flags = config.getFlags();
         }
 
         // update any existing flags already in shared prefs
@@ -118,7 +121,7 @@ public class ConfigurationStore {
         editor.putString(hashedFlagKey, gson.toJson(config));
     }
 
-    private void writeConfigToFile(RandomizationConfigResponse config) {
+    private void writeConfigToFile(FlagConfigResponse config) {
         AsyncTask.execute(() -> {
             try {
                 synchronized (cacheFile) {
