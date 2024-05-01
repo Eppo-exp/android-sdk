@@ -2,6 +2,12 @@ package cloud.eppo.android;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
+
+import static cloud.eppo.android.util.Utils.parseUtcISODateElement;
+
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -13,12 +19,27 @@ import cloud.eppo.android.util.Utils;
 public class UtilsTest {
 
     @Test
+    public void testParseUtcISODateElement() {
+        JsonElement object = JsonParser.parseString("\"2024-05-01T16:13:26.651Z\"");
+        Date parsedDate = parseUtcISODateElement(object);
+        Date expectedDate = new Date(1714580006651L);
+        assertEquals(expectedDate, parsedDate);
+
+        object = JsonParser.parseString("null");
+        parsedDate = parseUtcISODateElement(object);
+        assertNull(parsedDate);
+
+        parsedDate = parseUtcISODateElement(null);
+        assertNull(parsedDate);
+    }
+
+    @Test
     public void testGetISODate() {
         String isoDate = Utils.getISODate(new Date());
         assertNotNull("ISO date should not be null", isoDate);
 
         // Verify the format
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
         dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
         try {
             Date date = dateFormat.parse(isoDate);
@@ -47,7 +68,7 @@ public class UtilsTest {
             // Check if the date is in the correct ISO 8601 format
             // This is a simple regex check to see if the string follows the
             // YYYY-MM-DDTHH:MM:SSZ pattern
-            boolean isISO8601 = isoDate.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
+            boolean isISO8601 = isoDate.matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z");
 
             // Assert
             assertTrue("Date should be in ISO 8601 format", isISO8601);

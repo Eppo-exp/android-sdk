@@ -1,6 +1,7 @@
 package cloud.eppo.android.dto.deserializers;
 
 import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.parseUtcISODateElement;
 
 import android.util.Log;
 
@@ -238,22 +239,5 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
         }
 
         return shards;
-    }
-
-    private Date parseUtcISODateElement(JsonElement isoDateStringElement) {
-        if (isoDateStringElement == null) {
-            return null;
-        }
-        String isoDateString = isoDateStringElement.getAsString();
-        // Note: we don't use DateTimeFormatter.ISO_DATE so that this supports older Android versions
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
-        formatter.setTimeZone(TimeZone.getTimeZone("GMT"));
-        Date result = null;
-        try {
-            result = formatter.parse(isoDateString);
-        } catch (ParseException e) {
-            Log.w(TAG, "Date \"+isoDateString+\" not in ISO date format");
-        }
-        return result;
     }
 }

@@ -2,17 +2,27 @@ package cloud.eppo.android.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Log;
+
+import com.google.gson.JsonElement;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
 import cloud.eppo.android.dto.Range;
+import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
 
 public class Utils {
+
+    private static final String TAG = logTag(FlagConfigResponseDeserializer.class);
+
+    private static final SimpleDateFormat isoUtcDateFormat = buildUtcIsoDateFormat();
+
     public static String getMD5Hex(String input) {
         MessageDigest md;
         try {
@@ -48,18 +58,26 @@ public class Utils {
         }
     }
 
+    public static Date parseUtcISODateElement(JsonElement isoDateStringElement) {
+        if (isoDateStringElement == null || isoDateStringElement.isJsonNull()) {
+            return null;
+        }
+        String isoDateString = isoDateStringElement.getAsString();
+        Date result = null;
+        try {
+            result = isoUtcDateFormat.parse(isoDateString);
+        } catch (ParseException e) {
+            Log.w(TAG, "Date \"+isoDateString+\" not in ISO date format");
+        }
+        return result;
+    }
+
     public static String getISODate(Date date) {
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
-        dateFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-        return dateFormat.format(date);
+        return isoUtcDateFormat.format(date);
     }
 
     public static SharedPreferences getSharedPrefs(Context context) {
         return context.getSharedPreferences("eppo", Context.MODE_PRIVATE);
-    }
-
-    public static String generateExperimentKey(String featureFlagKey, String allocationKey) {
-        return featureFlagKey + '-' + allocationKey;
     }
 
     public static String logTag(Class loggingClass) {
@@ -72,5 +90,12 @@ public class Utils {
         }
 
         return logTag;
+    }
+
+    private static SimpleDateFormat buildUtcIsoDateFormat() {
+        // Note: we don't use DateTimeFormatter.ISO_DATE so that this supports older Android versions
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+        dateFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+        return dateFormat;
     }
 }
