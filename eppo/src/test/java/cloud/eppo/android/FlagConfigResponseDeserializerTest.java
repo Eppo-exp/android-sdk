@@ -67,11 +67,11 @@ public class FlagConfigResponseDeserializerTest {
         Variation onVariation = variations.get("on");
         assertNotNull(onVariation);
         assertEquals("on", onVariation.getKey());
-        assertTrue(onVariation.getValue().boolValue());
+        assertTrue(onVariation.getValue().booleanValue());
         Variation offVariation = variations.get("off");
         assertNotNull(offVariation);
         assertEquals("off", offVariation.getKey());
-        assertFalse(offVariation.getValue().boolValue());
+        assertFalse(offVariation.getValue().booleanValue());
 
         List<Allocation> allocations = flagConfig.getAllocations();
         assertEquals(3, allocations.size());

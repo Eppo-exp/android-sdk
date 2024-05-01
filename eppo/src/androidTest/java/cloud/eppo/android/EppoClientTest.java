@@ -219,7 +219,7 @@ public class EppoClientTest {
             // Depending on the variation type, we will need to change which assignment method we call and how we get the default value
             switch (testCase.getVariationType()) {
                 case BOOLEAN:
-                    boolean boolAssignment = eppoClient.getBooleanAssignment(flagKey, subjectKey, subjectAttributes, defaultValue.boolValue());
+                    boolean boolAssignment = eppoClient.getBooleanAssignment(flagKey, subjectKey, subjectAttributes, defaultValue.booleanValue());
                     assertAssignment(flagKey, subjectAssignment, boolAssignment);
                 case INTEGER:
                     int intAssignment = eppoClient.getIntegerAssignment(flagKey, subjectKey, subjectAttributes, Double.valueOf(defaultValue.doubleValue()).intValue());
@@ -255,7 +255,7 @@ public class EppoClientTest {
                 "\n  Received: "+assignment.toString();
 
         if (assignment instanceof Boolean) {
-            assertEquals(failureMessage, (Boolean)assignment, expectedSubjectAssignment.getAssignment().boolValue());
+            assertEquals(failureMessage, (Boolean)assignment, expectedSubjectAssignment.getAssignment().booleanValue());
         } else if (assignment instanceof Integer) {
             assertEquals(failureMessage, ((Integer)assignment).intValue(), Double.valueOf(expectedSubjectAssignment.getAssignment().doubleValue()).intValue());
         } else if (assignment instanceof Double) {

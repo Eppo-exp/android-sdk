@@ -2,7 +2,6 @@ package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
@@ -102,7 +101,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWithEmptyConditions() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         final TargetingRule targetingRuleWithEmptyConditions = createRule(new HashSet<>());
         targetingRules.add(targetingRuleWithEmptyConditions);
         SubjectAttributes subjectAttributes = new SubjectAttributes();
@@ -114,7 +113,7 @@ public class RuleEvaluatorTest {
     
     @Test
     public void testMatchesAnyRuleWithEmptyRules() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         addNameToSubjectAttribute(subjectAttributes);
 
@@ -123,7 +122,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWhenNoRuleMatches() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addNumericConditionToRule(targetingRule);
         targetingRules.add(targetingRule);
@@ -136,7 +135,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWhenRuleMatches() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addNumericConditionToRule(targetingRule);
         targetingRules.add(targetingRule);
@@ -149,7 +148,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWhenRuleMatchesWithSemVer() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addSemVerConditionToRule(targetingRule);
         targetingRules.add(targetingRule);
@@ -162,7 +161,7 @@ public class RuleEvaluatorTest {
     
     @Test
     public void testMatchesAnyRuleWhenThrowInvalidSubjectAttribute() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addNumericConditionToRule(targetingRule);
         targetingRules.add(targetingRule);
@@ -175,7 +174,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWithRegexCondition() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addRegexConditionToRule(targetingRule);
         targetingRules.add(targetingRule);
@@ -188,7 +187,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWithRegexConditionNotMatched() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addRegexConditionToRule(targetingRule);
         targetingRules.add(targetingRule);
@@ -201,7 +200,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWithNotOneOfRule() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addNotOneOfTargetingCondition(targetingRule);
         targetingRules.add(targetingRule);
@@ -214,7 +213,7 @@ public class RuleEvaluatorTest {
 
     @Test
     public void testMatchesAnyRuleWithNotOneOfRuleNotPassed() {
-        List<TargetingRule> targetingRules = new ArrayList<>();
+        Set<TargetingRule> targetingRules = new HashSet<>();
         TargetingRule targetingRule = createRule(new HashSet<>());
         addNotOneOfTargetingCondition(targetingRule);
         targetingRules.add(targetingRule);

@@ -25,7 +25,7 @@ public class EppoValueDeserializerTest {
     public void testDeserializingBoolean() throws Exception {
         JsonElement object = JsonParser.parseString("true");
         EppoValue value = adapter.deserialize(object, EppoValue.class, null);
-        assertEquals(value.boolValue(), true);
+        assertEquals(value.booleanValue(), true);
     }
 
     @Test

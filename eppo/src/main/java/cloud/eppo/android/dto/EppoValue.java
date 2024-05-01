@@ -66,7 +66,7 @@ public class EppoValue {
         return new EppoValue(jsonValue);
     }
 
-    public boolean boolValue() {
+    public boolean booleanValue() {
         return this.boolValue;
     }
 

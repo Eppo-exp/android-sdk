@@ -68,7 +68,7 @@ public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonS
         }
 
         if (src.isBoolean()) {
-            return new JsonPrimitive(src.boolValue());
+            return new JsonPrimitive(src.booleanValue());
         }
 
         if (src.isNumeric()) {
