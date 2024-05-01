@@ -1,4 +1,6 @@
 # Make settings - @see https://tech.davis-hansson.com/p/make/
+# Reminder: Make relies on the tab preceding commands; if your IDE replaces tabs spaces it could mess this up
+
 SHELL := bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
@@ -35,11 +37,9 @@ test-data:
 	rm -rf $(testDataDir)
 	mkdir -p $(tempDir)
 	git clone -b ${branchName} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
-	cp ${gitDataDir}/rac-experiments-v3.json ${testDataDir}
-	cp ${gitDataDir}/rac-experiments-v3-hashed-keys.json ${testDataDir}
 	cp ${gitDataDir}/ufc/flags-v1.json ${testDataDir}
 	cp ${gitDataDir}/ufc/flags-v1-obfuscated.json ${testDataDir}
-	cp -r ${gitDataDir}/assignment-v2 ${testDataDir}
+	cp -r ${gitDataDir}/ufc/tests ${testDataDir}
 	rm -rf ${tempDir}
 
 ## test
@@ -65,8 +65,3 @@ check-maven-credentials-and-publish:
 
 .PHONY: publish-release
 publish-release: test check-maven-credentials-and-publish
-
-# todo: remove this command when test workflow is ready and use publish-release instead
-.PHONY: publish-release-without-test
-publish-release-without-test:check-maven-credentials-and-publish
-

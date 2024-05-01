@@ -1,7 +1,7 @@
 package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
@@ -20,10 +20,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.google.gson.JsonDeserializationContext;
-import com.google.gson.JsonDeserializer;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -39,90 +36,22 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
-import java.lang.reflect.Type;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
+import cloud.eppo.android.helpers.AssignmentTestCase;
+import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(EppoValue.class, new EppoValueDeserializer())
-            .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
+            .registerTypeAdapter(AssignmentTestCase.class, new AssignmentTestCaseDeserializer())
             .create();
-
-    static class SubjectWithAttributes {
-        String subjectKey;
-        SubjectAttributes subjectAttributes;
-    }
-
-    enum AssignmentValueType {
-        STRING("string"),
-        BOOLEAN("boolean"),
-        JSON("json"),
-        NUMERIC("numeric");
-
-        private String strValue;
-
-        AssignmentValueType(String value) {
-            this.strValue = value;
-        }
-
-        String value() {
-            return this.strValue;
-        }
-
-        static AssignmentValueType getByString(String str) {
-            for (AssignmentValueType valueType : AssignmentValueType.values()) {
-                if (valueType.value().compareTo(str) == 0) {
-                    return valueType;
-                }
-            }
-            return null;
-        }
-    }
-
-    static class AssignmentValueTypeAdapter implements JsonDeserializer<AssignmentValueType> {
-        private AssignmentValueType defaultValue = null;
-
-        AssignmentValueTypeAdapter(AssignmentValueType defaultValue) {
-            this.defaultValue = defaultValue;
-        }
-
-        AssignmentValueTypeAdapter() {
-        }
-
-        @Override
-        public AssignmentValueType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-                throws JsonParseException {
-            if (json.isJsonNull()) {
-                return this.defaultValue;
-            }
-
-            AssignmentValueType value = AssignmentValueType.getByString(json.getAsString());
-            if (value == null) {
-                throw new RuntimeException("Invalid assignment value type");
-            }
-
-            return value;
-        }
-    }
-
-    static class AssignmentTestCase {
-        String experiment;
-        AssignmentValueType valueType = AssignmentValueType.STRING;
-        List<SubjectWithAttributes> subjectsWithAttributes;
-        List<String> subjects;
-        List<String> expectedAssignments;
-    }
 
     private void deleteFileIfExists(String fileName) {
         File file = new File(ApplicationProvider.getApplicationContext().getFilesDir(), fileName);
@@ -196,25 +125,27 @@ public class EppoClientTest {
         EppoClient spyClient = spy(realClient);
         doThrow(new RuntimeException("Exception thrown by mock"))
             .when(spyClient)
-            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
+            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class), any(EppoValue.class));
 
-        assertNull(spyClient.getAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertTrue(spyClient.getBooleanAssignment("experiment1", "subject1", true));
+        assertFalse(spyClient.getBooleanAssignment("experiment1", "subject1", new SubjectAttributes(), false));
 
-        assertNull(spyClient.getBooleanAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertEquals(10, spyClient.getIntegerAssignment("experiment1", "subject1", 10));
+        assertEquals(0, spyClient.getIntegerAssignment("experiment1", "subject1", new SubjectAttributes(), 0));
 
-        assertNull(spyClient.getDoubleAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertEquals(1.2345, spyClient.getDoubleAssignment("experiment1", "subject1", 1.2345), 0.0001);
+        assertEquals(0.0, spyClient.getDoubleAssignment("experiment1", "subject1", new SubjectAttributes(), 0.0), 0.0001);
 
-        assertNull(spyClient.getStringAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertEquals("default", spyClient.getStringAssignment("experiment1", "subject1", "default"));
+        assertEquals("", spyClient.getStringAssignment("experiment1", "subject1", new SubjectAttributes(), ""));
 
-        assertNull(spyClient.getJSONAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertEquals(JsonParser.parseString("{\"a\": 1, \"b\": false}"),
+                spyClient.getJSONAssignment("subject1", "experiment1", JsonParser.parseString("{\"a\": 1, \"b\": false}"))
+        );
 
-        assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertEquals(JsonParser.parseString("{}"),
+                spyClient.getJSONAssignment("subject1", "experiment1", new SubjectAttributes(), JsonParser.parseString("{}"))
+        );
     }
 
     @Test
@@ -225,33 +156,30 @@ public class EppoClientTest {
         EppoClient spyClient = spy(realClient);
         doThrow(new RuntimeException("Exception thrown by mock"))
             .when(spyClient)
-            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class));
+            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class), any(EppoValue.class));
 
-        assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("experiment1", "subject1", true));
+        assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("experiment1", "subject1", new SubjectAttributes(), false));
 
-        assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertThrows(RuntimeException.class, () -> spyClient.getIntegerAssignment("experiment1", "subject1", 10));
+        assertThrows(RuntimeException.class, () -> spyClient.getIntegerAssignment("experiment1", "subject1", new SubjectAttributes(), 0));
 
-        assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("experiment1", "subject1", 1.2345));
+        assertThrows(RuntimeException.class, () -> spyClient.getDoubleAssignment("experiment1", "subject1", new SubjectAttributes(), 0.0));
 
-        assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("experiment1", "subject1", "default"));
+        assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("experiment1", "subject1", new SubjectAttributes(), ""));
 
-        assertThrows(RuntimeException.class, () -> spyClient.getJSONAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
-
-        assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertThrows(RuntimeException.class, () -> spyClient.getJSONAssignment("subject1", "experiment1", JsonParser.parseString("{\"a\": 1, \"b\": false}")));
+        assertThrows(RuntimeException.class, () -> spyClient.getJSONAssignment("subject1", "experiment1", new SubjectAttributes(), JsonParser.parseString("{}")));
     }
 
     private void runTestCases() {
         try {
             int testsRan = 0;
             AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
-            for (String path : assets.list("assignment-v2")) {
-                testsRan += runTestCaseFileStream(assets.open("assignment-v2/" + path));
+            for (String path : assets.list("tests")) {
+                testsRan += runTestCaseFileStream(assets.open("tests/" + path));
             }
             System.out.println("We ran this many tests: " + testsRan);
             assertTrue("Did not run any test cases", testsRan > 0);
@@ -277,7 +205,10 @@ public class EppoClientTest {
     private int runTestCaseFileStream(InputStream testCaseStream) throws IOException {
         String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
         AssignmentTestCase testCase = gson.fromJson(json, AssignmentTestCase.class);
-        switch (testCase.valueType) {
+        // TODO: process test case
+
+        /*
+        switch (testCase.getVariationType()) {
             case NUMERIC:
                 List<Double> expectedDoubleAssignments = Converter.convertToDouble(testCase.expectedAssignments);
                 List<Double> actualDoubleAssignments = this.getDoubleAssignments(testCase);
@@ -299,67 +230,9 @@ public class EppoClientTest {
                 List<String> actualStringAssignments = this.getStringAssignments(testCase);
                 assertEquals(testCase.expectedAssignments, actualStringAssignments);
                 return actualStringAssignments.size();
-        }
-    }
+         */
 
-    private List<?> getAssignments(AssignmentTestCase testCase, AssignmentValueType valueType) {
-        EppoClient client = EppoClient.getInstance();
-        if (testCase.subjectsWithAttributes != null) {
-            return testCase.subjectsWithAttributes.stream()
-                    .map(subject -> {
-                        try {
-                            switch (valueType) {
-                                case NUMERIC:
-                                    return client.getDoubleAssignment(subject.subjectKey, testCase.experiment,
-                                            subject.subjectAttributes);
-                                case BOOLEAN:
-                                    return client.getBooleanAssignment(subject.subjectKey, testCase.experiment,
-                                            subject.subjectAttributes);
-                                case JSON:
-                                    return client.getJSONAssignment(subject.subjectKey, testCase.experiment,
-                                            subject.subjectAttributes);
-                                default:
-                                    return client.getStringAssignment(subject.subjectKey, testCase.experiment,
-                                            subject.subjectAttributes);
-                            }
-                        } catch (Exception e) {
-                            throw new RuntimeException(e);
-                        }
-                    }).collect(Collectors.toList());
-        }
-        return testCase.subjects.stream()
-                .map(subject -> {
-                    try {
-                        switch (valueType) {
-                            case NUMERIC:
-                                return client.getDoubleAssignment(subject, testCase.experiment);
-                            case BOOLEAN:
-                                return client.getBooleanAssignment(subject, testCase.experiment);
-                            case JSON:
-                                return client.getJSONAssignment(subject, testCase.experiment);
-                            default:
-                                return client.getStringAssignment(subject, testCase.experiment);
-                        }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }).collect(Collectors.toList());
-    }
-
-    private List<String> getStringAssignments(AssignmentTestCase testCase) {
-        return (List<String>) this.getAssignments(testCase, AssignmentValueType.STRING);
-    }
-
-    private List<Double> getDoubleAssignments(AssignmentTestCase testCase) {
-        return (List<Double>) this.getAssignments(testCase, AssignmentValueType.NUMERIC);
-    }
-
-    private List<Boolean> getBooleanAssignments(AssignmentTestCase testCase) {
-        return (List<Boolean>) this.getAssignments(testCase, AssignmentValueType.BOOLEAN);
-    }
-
-    private List<JsonElement> getJSONAssignments(AssignmentTestCase testCase) {
-        return (List<JsonElement>) this.getAssignments(testCase, AssignmentValueType.JSON);
+        return 0;
     }
 
     @Test
@@ -396,8 +269,8 @@ public class EppoClientTest {
             }
         }
 
-        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
-        assertNull(result);
+        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag", "not-populated");
+        assertEquals("not-populated", result);
     }
 
     @Test
@@ -414,12 +287,12 @@ public class EppoClientTest {
 
         initClient(TEST_HOST, false, false, false);
 
-        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
-        assertNull(result);
+        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag", "not-populated");
+        assertEquals("not-populated", result);
         // Failure callback will have fired from cache read error, but configuration request will still be fired off on init
         // Wait for the configuration request to load the configuration
         waitForNonNullAssignment();
-        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo", "");
         assertEquals("control", assignment);
     }
 
@@ -453,9 +326,10 @@ public class EppoClientTest {
                 if (System.currentTimeMillis() > waitEnd) {
                     throw new InterruptedException("Non-null assignment never received; assuming configuration not loaded");
                 }
+                // TODO: update
                 // Uses third subject in test-case-0
-                assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
-                if (assignment == null) {
+                assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo", "");
+                if (assignment.equals("")) {
                     Thread.sleep(100);
                 }
             }

@@ -31,4 +31,4 @@ jobs:
           echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
 
       - name: Publish
-        run: make publish-release-without-test
+        run: make publish-release

@@ -12,17 +12,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 
 import java.lang.reflect.Type;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 import cloud.eppo.android.dto.Allocation;
@@ -46,7 +42,7 @@ import cloud.eppo.android.dto.VariationType;
 public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConfigResponse> {
     private static final String TAG = logTag(FlagConfigResponseDeserializer.class);
 
-    private final EppoValueDeserializer eppoValueAdapter = new EppoValueDeserializer();
+    private final EppoValueDeserializer eppoValueDeserializer = new EppoValueDeserializer();
 
     @Override
     public FlagConfigResponse deserialize(JsonElement rootElement, Type type, JsonDeserializationContext context) throws JsonParseException {
@@ -104,7 +100,7 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
         for (Map.Entry<String, JsonElement> variationEntry : jsonElement.getAsJsonObject().entrySet()) {
             JsonObject variationObject = variationEntry.getValue().getAsJsonObject();
             String key = variationObject.get("key").getAsString();
-            EppoValue value = eppoValueAdapter.deserialize(variationObject.get("value"), type, context);
+            EppoValue value = eppoValueDeserializer.deserialize(variationObject.get("value"), type, context);
 
             Variation variation = new Variation();
             variation.setKey(key);
@@ -166,7 +162,7 @@ public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConf
                     Log.w(TAG, "Unknown operator \""+operatorKey+"\"");
                     continue;
                 }
-                EppoValue value = eppoValueAdapter.deserialize(conditionObject.get("value"), type, context);
+                EppoValue value = eppoValueDeserializer.deserialize(conditionObject.get("value"), type, context);
 
                 TargetingCondition condition = new TargetingCondition();
                 condition.setAttribute(attribute);

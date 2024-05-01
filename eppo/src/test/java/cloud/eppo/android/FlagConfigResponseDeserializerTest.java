@@ -35,8 +35,6 @@ public class FlagConfigResponseDeserializerTest {
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseDeserializer())
-            .registerTypeAdapter(EppoValue.class, new EppoValueDeserializer())
-            .serializeNulls()
             .create();
 
     @Test

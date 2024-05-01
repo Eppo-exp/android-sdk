@@ -86,9 +86,9 @@ public class EppoClient {
      */
 
     //TODO: fix
-    protected EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes, EppoValue defaultValue) {
-        validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
+    protected EppoValue getTypedAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, EppoValue defaultValue) {
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
+        validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
 
         FlagConfig flag = requestor.getConfiguration(flagKey);
         if (flag == null) {
