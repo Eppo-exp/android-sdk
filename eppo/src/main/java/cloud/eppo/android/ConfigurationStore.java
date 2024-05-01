@@ -63,7 +63,7 @@ public class ConfigurationStore {
                         throw new JsonSyntaxException("Configuration file missing flags");
                     }
 
-                    //flags = configResponse.getFlags();
+                    flags = new ConcurrentHashMap<>(configResponse.getFlags());
                     updateConfigsInSharedPrefs();
                 }
                 Log.d(TAG, "Cache loaded successfully");
@@ -82,8 +82,7 @@ public class ConfigurationStore {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
         } else {
-            //TODO
-            //flags = config.getFlags();
+            flags = new ConcurrentHashMap<>(config.getFlags());
         }
 
         // update any existing flags already in shared prefs

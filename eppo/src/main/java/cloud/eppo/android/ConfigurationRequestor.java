@@ -40,7 +40,7 @@ public class ConfigurationRequestor {
             }
         });
 
-        client.get("/api/randomized_assignment/v3/config", new RequestCallback() {
+        client.get("/api/flag-config/v1/config", new RequestCallback() {
             @Override
             public void onSuccess(Reader response) {
                 try {
