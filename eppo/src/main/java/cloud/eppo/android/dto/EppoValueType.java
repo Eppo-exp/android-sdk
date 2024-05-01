@@ -1,10 +1,10 @@
 package cloud.eppo.android.dto;
 
 public enum EppoValueType {
-    Number,
-    String,
-    Boolean,
-    Null,
-    ArrayOfStrings,
+    NULL,
+    BOOLEAN,
+    NUMBER,
+    STRING,
+    ARRAY_OF_STRING,
     JSON
 }

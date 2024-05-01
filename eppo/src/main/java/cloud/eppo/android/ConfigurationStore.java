@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.FlagConfigResponse;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
 import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
 import cloud.eppo.android.util.Utils;
 
@@ -31,7 +31,7 @@ public class ConfigurationStore {
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseDeserializer())
-            .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
+            .registerTypeAdapter(EppoValue.class, new EppoValueDeserializer())
             .serializeNulls()
             .create();
     private final Set<String> flagConfigsToSaveToPrefs = new HashSet<>();

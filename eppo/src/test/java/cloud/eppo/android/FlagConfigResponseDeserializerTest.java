@@ -28,14 +28,14 @@ import cloud.eppo.android.dto.Split;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.Variation;
 import cloud.eppo.android.dto.VariationType;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
 import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
 
 public class FlagConfigResponseDeserializerTest {
 
     private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseDeserializer())
-            .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
+            .registerTypeAdapter(EppoValue.class, new EppoValueDeserializer())
             .serializeNulls()
             .create();
 
@@ -96,7 +96,7 @@ public class FlagConfigResponseDeserializerTest {
         expectedValues.add("US");
         expectedValues.add("Canada");
         expectedValues.add("Mexico");
-        assertEquals(expectedValues, northAmericaCondition.getValue().arrayValue());
+        assertEquals(expectedValues, northAmericaCondition.getValue().stringArrayValue());
 
         assertEquals(1, northAmericaAllocation.getSplits().size());
         Split northAmericaSplit = northAmericaAllocation.getSplits().iterator().next();

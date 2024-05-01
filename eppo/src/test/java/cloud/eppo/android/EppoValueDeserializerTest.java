@@ -9,10 +9,10 @@ import com.google.gson.JsonParser;
 import org.junit.Test;
 
 import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
 
 public class EppoValueDeserializerTest {
-    private EppoValueAdapter adapter = new EppoValueAdapter();
+    private EppoValueDeserializer adapter = new EppoValueDeserializer();
 
     @Test
     public void testDeserializingDouble() throws Exception {
@@ -39,7 +39,7 @@ public class EppoValueDeserializerTest {
     public void testDeserializingArray() throws Exception {
         JsonElement object = JsonParser.parseString("[\"value1\", \"value2\"]");
         EppoValue value = adapter.deserialize(object, EppoValue.class, null);
-        assertTrue(value.arrayValue().contains("value1"));
+        assertTrue(value.stringArrayValue().contains("value1"));
     }
 
     @Test

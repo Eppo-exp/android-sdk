@@ -10,20 +10,13 @@ import android.util.Log;
 
 import com.google.gson.JsonElement;
 
-import java.util.List;
-
-import cloud.eppo.android.dto.Allocation;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.TargetingRule;
-import cloud.eppo.android.dto.Variation;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
-import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
-import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
     private static final String TAG = logTag(EppoClient.class);
@@ -93,14 +86,14 @@ public class EppoClient {
      */
 
     //TODO: fix
-    protected EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
+    protected EppoValue getTypedAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes, EppoValue defaultValue) {
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
 
         FlagConfig flag = requestor.getConfiguration(flagKey);
         if (flag == null) {
             Log.w(TAG, "no configuration found for key: " + flagKey);
-            return null;
+            return defaultValue;
         }
 
         if (!flag.isEnabled()) {
@@ -108,6 +101,7 @@ public class EppoClient {
             return null;
         }
 
+        // TODO: new UFC logic
         /*
         TargetingRule rule = RuleEvaluator.findMatchingRule(subjectAttributes, flag.getRules());
         if (rule == null) {
@@ -158,126 +152,75 @@ public class EppoClient {
         return null;
     }
 
-    public String getAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        try {
-            return this.getStringAssignment(subjectKey, flagKey, subjectAttributes);
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
+    public boolean getBooleanAssignment(String flagKey, String subjectKey, boolean defaultValue) {
+        return this.getBooleanAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
     }
 
-    public String getAssignment(String subjectKey, String flagKey) {
+    public boolean getBooleanAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, boolean defaultValue) {
         try {
-            return this.getStringAssignment(subjectKey, flagKey);
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
-    }
-
-    public String getStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        try {
-            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-            if (value == null) {
-                return null;
-            }
-
-            return value.stringValue();
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
-    }
-
-    public String getStringAssignment(String subjectKey, String flagKey) {
-        try {
-            return this.getStringAssignment(subjectKey, flagKey, new SubjectAttributes());
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
-    }
-
-    public Boolean getBooleanAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        try {
-            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-            if (value == null) {
-                return null;
-            }
-
+            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue));
             return value.boolValue();
         } catch (Exception e) {
-            return throwIfNotGraceful(e);
+            return throwIfNotGraceful(e, defaultValue);
         }
     }
 
-    public Boolean getBooleanAssignment(String subjectKey, String flagKey) {
+    public int getIntegerAssignment(String flagKey, String subjectKey, int defaultValue) {
+        return getIntegerAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
+    }
+
+    public int getIntegerAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, int defaultValue) {
         try {
-            return this.getBooleanAssignment(subjectKey, flagKey, new SubjectAttributes());
+            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue));
+            return Double.valueOf(value.doubleValue()).intValue();
         } catch (Exception e) {
-            return throwIfNotGraceful(e);
+            return throwIfNotGraceful(e, defaultValue);
         }
     }
 
-    public Double getDoubleAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        try {
-            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-            if (value == null) {
-                return null;
-            }
+    public Double getDoubleAssignment(String subjectKey, String flagKey, double defaultValue) {
+       return getDoubleAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
+    }
 
+    public Double getDoubleAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, double defaultValue) {
+        try {
+            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes, EppoValue.valueOf(defaultValue));
             return value.doubleValue();
         } catch (Exception e) {
-            return throwIfNotGraceful(e);
+            return throwIfNotGraceful(e, defaultValue);
         }
     }
 
-    public Double getDoubleAssignment(String subjectKey, String flagKey) {
+    public String getStringAssignment(String subjectKey, String flagKey, String defaultValue) {
+        return this.getStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
+    }
+
+    public String getStringAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, String defaultValue) {
         try {
-            return this.getDoubleAssignment(subjectKey, flagKey, new SubjectAttributes());
+            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue));
+            return value.stringValue();
         } catch (Exception e) {
-            return throwIfNotGraceful(e);
+            return throwIfNotGraceful(e, defaultValue);
         }
     }
 
-    public String getJSONStringAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        try {
-            return this.getParsedJSONAssignment(subjectKey, flagKey, subjectAttributes).toString();
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
+    public JsonElement getJSONAssignment(String subjectKey, String flagKey, JsonElement defaultValue) {
+        return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
     }
 
-    public String getJSONStringAssignment(String subjectKey, String flagKey) {
+    public JsonElement getJSONAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, JsonElement defaultValue) {
         try {
-            return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes()).toString();
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
-    }
-
-    public JsonElement getParsedJSONAssignment(String subjectKey, String flagKey, SubjectAttributes subjectAttributes) {
-        try {
-            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes);
-            if (value == null) {
-                return null;
-            }
-
+            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes, EppoValue.valueOf(defaultValue));
             return value.jsonValue();
         } catch (Exception e) {
-            return throwIfNotGraceful(e);
+            return throwIfNotGraceful(e, defaultValue);
         }
     }
 
-    public JsonElement getParsedJSONAssignment(String subjectKey, String flagKey) {
-        try {
-            return this.getParsedJSONAssignment(subjectKey, flagKey, new SubjectAttributes());
-        } catch (Exception e) {
-            return throwIfNotGraceful(e);
-        }
-    }
-
-    private <T> T throwIfNotGraceful(Exception e) {
+    private <T> T throwIfNotGraceful(Exception e, T defaultValue) {
         if (this.isGracefulMode) {
             Log.i(TAG, "error getting assignment value: " + e.getMessage());
-            return null;
+            return defaultValue;
         }
         throw new RuntimeException(e);
     }

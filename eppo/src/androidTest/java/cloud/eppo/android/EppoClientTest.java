@@ -48,14 +48,14 @@ import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
+import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
-    private Gson gson = new GsonBuilder()
-            .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
+    private final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(EppoValue.class, new EppoValueDeserializer())
             .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
             .create();
 
@@ -64,7 +64,7 @@ public class EppoClientTest {
         SubjectAttributes subjectAttributes;
     }
 
-    static enum AssignmentValueType {
+    enum AssignmentValueType {
         STRING("string"),
         BOOLEAN("boolean"),
         JSON("json"),
@@ -210,8 +210,8 @@ public class EppoClientTest {
         assertNull(spyClient.getStringAssignment("subject1", "experiment1"));
         assertNull(spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
 
-        assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1"));
-        assertNull(spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertNull(spyClient.getJSONAssignment("subject1", "experiment1"));
+        assertNull(spyClient.getJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
 
         assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1"));
         assertNull(spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
@@ -239,8 +239,8 @@ public class EppoClientTest {
         assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1"));
         assertThrows(RuntimeException.class, () -> spyClient.getStringAssignment("subject1", "experiment1", new SubjectAttributes()));
 
-        assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1"));
-        assertThrows(RuntimeException.class, () -> spyClient.getParsedJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
+        assertThrows(RuntimeException.class, () -> spyClient.getJSONAssignment("subject1", "experiment1"));
+        assertThrows(RuntimeException.class, () -> spyClient.getJSONAssignment("subject1", "experiment1", new SubjectAttributes()));
 
         assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1"));
         assertThrows(RuntimeException.class, () -> spyClient.getJSONStringAssignment("subject1", "experiment1", new SubjectAttributes()));
@@ -316,7 +316,7 @@ public class EppoClientTest {
                                     return client.getBooleanAssignment(subject.subjectKey, testCase.experiment,
                                             subject.subjectAttributes);
                                 case JSON:
-                                    return client.getParsedJSONAssignment(subject.subjectKey, testCase.experiment,
+                                    return client.getJSONAssignment(subject.subjectKey, testCase.experiment,
                                             subject.subjectAttributes);
                                 default:
                                     return client.getStringAssignment(subject.subjectKey, testCase.experiment,
@@ -336,7 +336,7 @@ public class EppoClientTest {
                             case BOOLEAN:
                                 return client.getBooleanAssignment(subject, testCase.experiment);
                             case JSON:
-                                return client.getParsedJSONAssignment(subject, testCase.experiment);
+                                return client.getJSONAssignment(subject, testCase.experiment);
                             default:
                                 return client.getStringAssignment(subject, testCase.experiment);
                         }

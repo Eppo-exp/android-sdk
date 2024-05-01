@@ -115,9 +115,9 @@ public class RuleEvaluator {
                     case Matches:
                         return Compare.compareRegex(value.stringValue(), Pattern.compile(condition.getValue().stringValue()));
                     case OneOf:
-                        return Compare.isOneOf(value.stringValue(), condition.getValue().arrayValue());
+                        return Compare.isOneOf(value.stringValue(), condition.getValue().stringArrayValue());
                     case NotOneOf:
-                        return !Compare.isOneOf(value.stringValue(), condition.getValue().arrayValue());
+                        return !Compare.isOneOf(value.stringValue(), condition.getValue().stringArrayValue());
                     default:
                         throw new IllegalStateException("Unexpected value: " + condition.getOperator());
                 }

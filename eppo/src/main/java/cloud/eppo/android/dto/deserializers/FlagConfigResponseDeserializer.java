@@ -45,7 +45,7 @@ import cloud.eppo.android.dto.VariationType;
 public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConfigResponse> {
     private static final String TAG = logTag(FlagConfigResponseDeserializer.class);
 
-    private final EppoValueAdapter eppoValueAdapter = new EppoValueAdapter();
+    private final EppoValueDeserializer eppoValueAdapter = new EppoValueDeserializer();
 
     @Override
     public FlagConfigResponse deserialize(JsonElement rootElement, Type type, JsonDeserializationContext context) throws JsonParseException {
