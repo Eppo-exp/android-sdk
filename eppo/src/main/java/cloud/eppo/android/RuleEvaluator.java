@@ -72,7 +72,7 @@ public class RuleEvaluator {
 
             try {
                 switch (condition.getOperator()) {
-                    case GreaterThanEqualTo:
+                    case GREATER_THAN_OR_EQUAL_TO:
                         if (numericComparison) {
                             return value.doubleValue() >= condition.getValue().doubleValue();
                         }
@@ -82,7 +82,7 @@ public class RuleEvaluator {
                         }
 
                         return false;
-                    case GreaterThan:
+                    case GREATER_THAN:
                         if (numericComparison) {
                             return value.doubleValue() > condition.getValue().doubleValue();
                         }
@@ -92,7 +92,7 @@ public class RuleEvaluator {
                         }
 
                         return false;
-                    case LessThanEqualTo:
+                    case LESS_THAN_OR_EQUAL_TO:
                         if (numericComparison) {
                             return value.doubleValue() <= condition.getValue().doubleValue();
                         }
@@ -102,7 +102,7 @@ public class RuleEvaluator {
                         }
 
                         return false;
-                    case LessThan:
+                    case LESS_THAN:
                         if (numericComparison) {
                             return value.doubleValue() < condition.getValue().doubleValue();
                         }
@@ -112,11 +112,11 @@ public class RuleEvaluator {
                         }
 
                         return false;
-                    case Matches:
+                    case MATCHES:
                         return Compare.compareRegex(value.stringValue(), Pattern.compile(condition.getValue().stringValue()));
-                    case OneOf:
+                    case ONE_OF:
                         return Compare.isOneOf(value.stringValue(), condition.getValue().stringArrayValue());
-                    case NotOneOf:
+                    case NOT_ONE_OF:
                         return !Compare.isOneOf(value.stringValue(), condition.getValue().stringArrayValue());
                     default:
                         throw new IllegalStateException("Unexpected value: " + condition.getOperator());

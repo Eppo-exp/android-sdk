@@ -1,13 +1,13 @@
 package cloud.eppo.android.dto;
 
 public enum VariationType {
-    Boolean("BOOLEAN"),
-    Integer("INTEGER"),
-    Numeric("NUMERIC"),
-    String("STRING"),
+    BOOLEAN("BOOLEAN"),
+    INTEGER("INTEGER"),
+    NUMERIC("NUMERIC"),
+    STRING("STRING"),
     JSON("JSON");
 
-    public String value;
+    public final String value;
 
     VariationType(String value) {
         this.value = value;

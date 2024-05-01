@@ -1,17 +1,16 @@
 package cloud.eppo.android.dto;
 
 public enum OperatorType {
-    Matches("MATCHES"),
-    GreaterThanEqualTo("GTE"),
-    GreaterThan("GT"),
-    LessThanEqualTo("LTE"),
-    LessThan("LT"),
-    OneOf("ONE_OF"),
-    NotOneOf("NOT_ONE_OF");
+    MATCHES("MATCHES"),
+    GREATER_THAN_OR_EQUAL_TO("GTE"),
+    GREATER_THAN("GT"),
+    LESS_THAN_OR_EQUAL_TO("LTE"),
+    LESS_THAN("LT"),
+    ONE_OF("ONE_OF"),
+    NOT_ONE_OF("NOT_ONE_OF"),
+    IS_NULL("IS_NULL");
 
-    // TODO add in null checks
-
-    public String value;
+    public final String value;
 
     OperatorType(String value) {
         this.value = value;

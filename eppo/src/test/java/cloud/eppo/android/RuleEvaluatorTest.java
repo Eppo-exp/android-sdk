@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Assert.*;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -34,12 +33,12 @@ public class RuleEvaluatorTest {
         TargetingCondition condition1 = new TargetingCondition();
         condition1.setValue(EppoValue.valueOf(10));
         condition1.setAttribute("price");
-        condition1.setOperator(OperatorType.GreaterThanEqualTo);
+        condition1.setOperator(OperatorType.GREATER_THAN_OR_EQUAL_TO);
 
         TargetingCondition condition2 = new TargetingCondition();
         condition2.setValue(EppoValue.valueOf(20));
         condition2.setAttribute("price");
-        condition2.setOperator(OperatorType.LessThanEqualTo);
+        condition2.setOperator(OperatorType.LESS_THAN_OR_EQUAL_TO);
 
         addConditionToRule(TargetingRule, condition1);
         addConditionToRule(TargetingRule, condition2);
@@ -49,12 +48,12 @@ public class RuleEvaluatorTest {
         TargetingCondition condition1 = new TargetingCondition();
         condition1.setValue(EppoValue.valueOf("1.5.0"));
         condition1.setAttribute("appVersion");
-        condition1.setOperator(OperatorType.GreaterThanEqualTo);
+        condition1.setOperator(OperatorType.GREATER_THAN_OR_EQUAL_TO);
 
         TargetingCondition condition2 = new TargetingCondition();
         condition2.setValue(EppoValue.valueOf("2.2.0"));
         condition2.setAttribute("appVersion");
-        condition2.setOperator(OperatorType.LessThan);
+        condition2.setOperator(OperatorType.LESS_THAN);
 
         addConditionToRule(TargetingRule, condition1);
         addConditionToRule(TargetingRule, condition2);
@@ -64,7 +63,7 @@ public class RuleEvaluatorTest {
         TargetingCondition condition = new TargetingCondition();
         condition.setValue(EppoValue.valueOf("[a-z]+"));
         condition.setAttribute("match");
-        condition.setOperator(OperatorType.Matches);
+        condition.setOperator(OperatorType.MATCHES);
 
         addConditionToRule(TargetingRule, condition);
     }
@@ -76,7 +75,7 @@ public class RuleEvaluatorTest {
         values.add("value2");
         condition.setValue(EppoValue.valueOf(values));
         condition.setAttribute("oneOf");
-        condition.setOperator(OperatorType.OneOf);
+        condition.setOperator(OperatorType.ONE_OF);
 
         addConditionToRule(TargetingRule, condition);
     }
@@ -88,7 +87,7 @@ public class RuleEvaluatorTest {
         values.add("value2");
         condition.setValue(EppoValue.valueOf(values));
         condition.setAttribute("oneOf");
-        condition.setOperator(OperatorType.NotOneOf);
+        condition.setOperator(OperatorType.NOT_ONE_OF);
 
         addConditionToRule(TargetingRule, condition);
     }

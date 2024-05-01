@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 import cloud.eppo.android.dto.Allocation;
-import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.FlagConfigResponse;
 import cloud.eppo.android.dto.OperatorType;
@@ -28,7 +27,6 @@ import cloud.eppo.android.dto.Split;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.Variation;
 import cloud.eppo.android.dto.VariationType;
-import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
 import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
 
 public class FlagConfigResponseDeserializerTest {
@@ -62,7 +60,7 @@ public class FlagConfigResponseDeserializerTest {
         assertNotNull(flagConfig);
         assertEquals(flagConfig.getKey(), "kill-switch");
         assertTrue(flagConfig.isEnabled());
-        assertEquals(VariationType.Boolean, flagConfig.getVariationType());
+        assertEquals(VariationType.BOOLEAN, flagConfig.getVariationType());
 
         Map<String, Variation> variations = flagConfig.getVariations();
         assertEquals(2, variations.size());
@@ -89,7 +87,7 @@ public class FlagConfigResponseDeserializerTest {
                 .iterator()
                 .next();
         assertEquals("country", northAmericaCondition.getAttribute());
-        assertEquals(OperatorType.OneOf, northAmericaCondition.getOperator());
+        assertEquals(OperatorType.ONE_OF, northAmericaCondition.getOperator());
         List<String> expectedValues = new ArrayList<>();
         expectedValues.add("US");
         expectedValues.add("Canada");
@@ -118,7 +116,7 @@ public class FlagConfigResponseDeserializerTest {
                 .iterator()
                 .next();
         assertEquals("age", fiftyPlusCondition.getAttribute());
-        assertEquals(OperatorType.GreaterThanEqualTo, fiftyPlusCondition.getOperator());
+        assertEquals(OperatorType.GREATER_THAN_OR_EQUAL_TO, fiftyPlusCondition.getOperator());
         assertEquals(50, fiftyPlusCondition.getValue().doubleValue(), 0.0);
 
         assertEquals(1, fiftyPlusAllocation.getSplits().size());
