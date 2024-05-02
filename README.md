@@ -11,12 +11,11 @@
 - Progressive rollouts
 - A/B/n experiments
 - Mutually exclusive experiments (Layers)
-- Global holdouts
 - Dynamic configuration
 
 ## Installation
 
-Install the SDK using Gradle.
+Install the SDK using Gradle:
 
 ```java
 implementation 'cloud.eppo:android-sdk:1.0.2'
@@ -43,7 +42,12 @@ import cloud.eppo.android.EppoClient;
 EppoClient eppoClient = EppoClient.getInstance(); 
 User user = getCurrentUser();
 
-Boolean variant = eppoClient.getBoolAssignment('new-user-onboarding', user.id, user.attributes, false);
+Boolean variant = eppoClient.getBooleanAssignment(
+  'new-user-onboarding', 
+  user.id, 
+  user.attributes, 
+  false
+);
 ```
 
 ## Assignment functions
@@ -52,9 +56,10 @@ Every Eppo flag has a return type that is set once on creation in the dashboard.
 
 ```java
 getBooleanAssignment(...)
-getDoubleAssignment(...)
-getJSONAssignment(...)
+getNumericAssignment(...)
+getIntegerAssignment(...)
 getStringAssignment(...)
+getJSONAssignment(...)
 ```
 
 Each function has the same signature, but returns the type in the function name. For booleans use `getBooleanAssignment`, which has the following signature:
@@ -91,7 +96,7 @@ AssignmentLogger logger = new AssignmentLogger() {
 };
 
 EppoClient eppoClient = new EppoClient.Builder()
-    .apiKey("YOUR_SDK_KEY")
+    .apiKey("SDK-KEY-FROM-DASHBOARD")
     .assignmentLogger(assignmentLogger)
     .application(application)
     .buildAndInit();
@@ -99,7 +104,6 @@ EppoClient eppoClient = new EppoClient.Builder()
 
 ## Philosophy
 
-Eppo's SDKs are built for simplicity, speed and reliability. Flag configurations are compressed and distributed over a global CDN (Fastly), typically reaching end users in under 15ms. Those configurations are then cached locally, ensuring that each assignment is made instantly. Each SDK is as light as possible, with evaluation logic at around 25 simple lines of code. The simple typed functions listed above are all developers need to know about, abstracting away the complexity of the underlying set of features. 
-
+Eppo's SDKs are built for simplicity, speed and reliability. Flag configurations are compressed and distributed over a global CDN (Fastly), typically reaching your servers in under 15ms. Server SDKs continue polling Eppo’s API at 30-second intervals. Configurations are then cached locally, ensuring that each assignment is made instantly. Evaluation logic within each SDK consists of a few lines of simple numeric and string comparisons. The typed functions listed above are all developers need to understand, abstracting away the complexity of the Eppo's underlying (and expanding) feature set.
 
 
