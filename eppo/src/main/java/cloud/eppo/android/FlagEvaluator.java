@@ -81,7 +81,12 @@ public class FlagEvaluator {
     }
 
     private static boolean allShardsMatch(Split split, String subjectKey, int totalShards) {
-        boolean allShardsMatch = true; // Default to matching if no explicit shards
+        if (split.getShards() == null || split.getShards().isEmpty()) {
+            // Default to matching if no explicit shards
+            return true;
+        }
+
+        boolean allShardsMatch = true;
         for (Shard shard : split.getShards()) {
             if (!matchesShard(shard, subjectKey, totalShards)) {
                 allShardsMatch = false;
@@ -103,5 +108,4 @@ public class FlagEvaluator {
         }
         return inRange;
     }
-
 }

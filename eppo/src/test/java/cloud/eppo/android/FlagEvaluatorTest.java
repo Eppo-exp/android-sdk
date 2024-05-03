@@ -56,7 +56,6 @@ public class FlagEvaluatorTest {
 
         Allocation allocation = new Allocation();
         allocation.setKey("allocation");
-        allocation.setRules(new HashSet<>());
         allocation.setSplits(splits);
         List<Allocation> allocations = new ArrayList<>();
         allocations.add(allocation);
@@ -93,7 +92,6 @@ public class FlagEvaluatorTest {
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
         flag.setVariations(variations);
-        flag.setAllocations(new LinkedList<>());
         flag.setTotalShards(10);
         flag.setEnabled(false);
 
@@ -140,7 +138,6 @@ public class FlagEvaluatorTest {
 
         Allocation allocation = new Allocation();
         allocation.setKey("allocation");
-        allocation.setRules(new HashSet<>());
         allocation.setSplits(splits);
         allocation.setDoLog(true);
         List<Allocation> allocations = new ArrayList<>();
@@ -178,7 +175,6 @@ public class FlagEvaluatorTest {
 
         Split split = new Split();
         split.setVariationKey("control");
-        split.setShards(new HashSet<>());
         List<Split> splits = new ArrayList<>();
         splits.add(split);
 
@@ -251,7 +247,6 @@ public class FlagEvaluatorTest {
 
         Split split = new Split();
         split.setVariationKey("control");
-        split.setShards(new HashSet<>());
         List<Split> splits = new ArrayList<>();
         splits.add(split);
 
@@ -308,5 +303,136 @@ public class FlagEvaluatorTest {
         );
 
         assertEquals(variation, result.getVariation());
+    }
+
+    @Test
+    public void testCatchAllAllocation() {
+        Variation variationA = new Variation();
+        variationA.setKey("a");
+        variationA.setValue(EppoValue.valueOf("A"));
+        Variation variationB = new Variation();
+        variationB.setKey("b");
+        variationB.setValue(EppoValue.valueOf("B"));
+
+        Map<String, Variation> variations = new HashMap<>();
+        variations.put(variationA.getKey(), variationA);
+        variations.put(variationB.getKey(), variationB);
+
+        Split split = new Split();
+        split.setVariationKey("a");
+        List<Split> splits = new ArrayList<>();
+        splits.add(split);
+
+        Allocation allocation = new Allocation();
+        allocation.setKey("default");
+        allocation.setSplits(splits);
+        allocation.setDoLog(true);
+        List<Allocation> allocations = new ArrayList<>();
+        allocations.add(allocation);
+
+        FlagConfig flag = new FlagConfig();
+        flag.setKey("flag");
+        flag.setVariations(variations);
+        flag.setAllocations(allocations);
+        flag.setTotalShards(10);
+        flag.setEnabled(true);
+
+        FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertEquals("default", result.getAllocationKey());
+        assertEquals(variationA, result.getVariation());
+        assertTrue(result.doLog());
+    }
+
+    @Test
+    public void testMultipleAllocations() {
+        Variation variationA = new Variation();
+        variationA.setKey("a");
+        variationA.setValue(EppoValue.valueOf("A"));
+        Variation variationB = new Variation();
+        variationB.setKey("b");
+        variationB.setValue(EppoValue.valueOf("B"));
+
+        Map<String, Variation> variations = new HashMap<>();
+        variations.put(variationA.getKey(), variationA);
+        variations.put(variationB.getKey(), variationB);
+
+        Split firstAllocationSplit = new Split();
+        firstAllocationSplit.setVariationKey("b");
+        List<Split> firstAllocationSplits = new ArrayList<>();
+        firstAllocationSplits.add(firstAllocationSplit);
+
+        TargetingCondition condition = new TargetingCondition();
+        condition.setAttribute("email");
+        condition.setOperator(OperatorType.MATCHES);
+        condition.setValue(EppoValue.valueOf(".*example\\.com$"));
+        Set<TargetingCondition> conditions = new HashSet<>();
+        conditions.add(condition);
+
+        TargetingRule rule = new TargetingRule();
+        rule.setConditions(conditions);
+
+        Set<TargetingRule> rules = new HashSet<>();
+        rules.add(rule);
+
+        Allocation firstAllocation = new Allocation();
+        firstAllocation.setKey("first");
+        firstAllocation.setRules(rules);
+        firstAllocation.setSplits(firstAllocationSplits);
+        firstAllocation.setDoLog(true);
+
+        Split defaultSplit = new Split();
+        defaultSplit.setVariationKey("a");
+        List<Split> defaultSplits = new ArrayList<>();
+        defaultSplits.add(defaultSplit);
+
+        Allocation defaultAllocation = new Allocation();
+        defaultAllocation.setKey("default");
+        defaultAllocation.setSplits(defaultSplits);
+        defaultAllocation.setDoLog(true);
+
+        List<Allocation> allocations = new ArrayList<>();
+        allocations.add(firstAllocation);
+        allocations.add(defaultAllocation);
+
+        FlagConfig flag = new FlagConfig();
+        flag.setKey("flag");
+        flag.setVariations(variations);
+        flag.setAllocations(allocations);
+        flag.setTotalShards(10);
+        flag.setEnabled(true);
+
+        SubjectAttributes matchingEmailAttributes = new SubjectAttributes();
+        matchingEmailAttributes.put("email", "eppo@example.com");
+        FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                matchingEmailAttributes,
+                false
+        );
+        assertEquals(variationB, result.getVariation());
+
+        SubjectAttributes unknownEmailAttributes = new SubjectAttributes();
+        unknownEmailAttributes.put("email", "eppo@test.com");
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                unknownEmailAttributes,
+                false
+        );
+        assertEquals(variationA, result.getVariation());
+
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                new SubjectAttributes(),
+                false
+        );
+        assertEquals(variationA, result.getVariation());
     }
 }
