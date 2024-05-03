@@ -63,7 +63,7 @@ public class FlagEvaluationResult {
         this.extraLogging = extraLogging;
     }
 
-    public boolean isDoLog() {
+    public boolean doLog() {
         return doLog;
     }
 

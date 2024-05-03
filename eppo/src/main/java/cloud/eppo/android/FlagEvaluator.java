@@ -2,6 +2,8 @@ package cloud.eppo.android;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import cloud.eppo.android.dto.Allocation;
@@ -21,9 +23,13 @@ public class FlagEvaluator {
         Variation variation = null;
         String allocationKey = null;
         Map<String, String> extraLogging = new HashMap<>();
-        boolean doLog = true;
+        boolean doLog = false;
 
-        for (Allocation allocation : flag.getAllocations()) {
+        // If flag is disabled; use an empty list of allocations so that the empty result is returned
+        // Note: this is a safety check; disabled flags should be filtered upstream
+        List<Allocation> allocationsToConsider = flag.isEnabled() ? flag.getAllocations() : new LinkedList<>();
+
+        for (Allocation allocation : allocationsToConsider) {
             if (allocation.getStartAt() != null && allocation.getStartAt().after(now)) {
                 // Allocation not yet active
                 continue;
@@ -33,7 +39,14 @@ public class FlagEvaluator {
                 continue;
             }
 
-            if (allocation.getRules() != null && !allocation.getRules().isEmpty() && RuleEvaluator.findMatchingRule(subjectAttributes, allocation.getRules()) == null) {
+            // For convenience, we will automatically include the subject key as the "id" attribute if none is provided
+            SubjectAttributes subjectAttributesToEvaluate = subjectAttributes;
+            if (!subjectAttributes.containsKey("id")) {
+                subjectAttributesToEvaluate = new SubjectAttributes(subjectAttributes);
+                subjectAttributesToEvaluate.put("id", subjectKey);
+            }
+
+            if (allocation.getRules() != null && !allocation.getRules().isEmpty() && RuleEvaluator.findMatchingRule(subjectAttributesToEvaluate, allocation.getRules()) == null) {
                 // Rules are defined, but none match
                 continue;
             }
