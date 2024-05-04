@@ -435,4 +435,109 @@ public class FlagEvaluatorTest {
         );
         assertEquals(variationA, result.getVariation());
     }
+
+    @Test
+    public void testVariationShardRanges() {
+        Variation variationA = new Variation();
+        variationA.setKey("a");
+        variationA.setValue(EppoValue.valueOf("A"));
+        Variation variationB = new Variation();
+        variationB.setKey("b");
+        variationB.setValue(EppoValue.valueOf("B"));
+        Variation variationC = new Variation();
+        variationC.setKey("c");
+        variationC.setValue(EppoValue.valueOf("C"));
+
+        Map<String, Variation> variations = new HashMap<>();
+        variations.put(variationA.getKey(), variationA);
+        variations.put(variationB.getKey(), variationB);
+        variations.put(variationC.getKey(), variationC);
+
+        Range trafficRange = new Range();
+        trafficRange.setStart(0);
+        trafficRange.setEnd(5);
+        Set<Range> trafficRanges = new HashSet<>();
+        trafficRanges.add(trafficRange);
+
+        Shard trafficShard = new Shard();
+        trafficShard.setSalt("traffic");
+        trafficShard.setRanges(trafficRanges);
+
+        Range splitRangeA = new Range();
+        splitRangeA.setStart(0);
+        splitRangeA.setEnd(3);
+        Set<Range> splitRangesA = new HashSet<>();
+        splitRangesA.add(splitRangeA);
+
+        Shard splitShardA = new Shard();
+        splitShardA.setSalt("split");
+        splitShardA.setRanges(splitRangesA);
+
+        Split splitA = new Split();
+        splitA.setVariationKey("a");
+        Set<Shard> shardsA = new HashSet<>();
+        shardsA.add(trafficShard);
+        shardsA.add(splitShardA);
+        splitA.setShards(shardsA);
+
+        Range splitRangeB = new Range();
+        splitRangeB.setStart(3);
+        splitRangeB.setEnd(6);
+        Set<Range> splitRangesB = new HashSet<>();
+        splitRangesB.add(splitRangeB);
+
+        Shard splitShardB = new Shard();
+        splitShardB.setSalt("split");
+        splitShardB.setRanges(splitRangesB);
+
+        Split splitB = new Split();
+        splitB.setVariationKey("b");
+        Set<Shard> shardsB = new HashSet<>();
+        shardsB.add(trafficShard);
+        shardsB.add(splitShardB);
+        splitB.setShards(shardsB);
+
+        List<Split> firstSplits = new ArrayList<>();
+        firstSplits.add(splitA);
+        firstSplits.add(splitB);
+
+        Allocation allocation = new Allocation();
+        allocation.setKey("first");
+        allocation.setSplits(firstSplits);
+        allocation.setDoLog(true);
+
+        Split defaultSplit = new Split();
+        defaultSplit.setVariationKey("c");
+        List<Split> defaultSplits = new ArrayList<>();
+        defaultSplits.add(defaultSplit);
+
+        Allocation defaultAllocation = new Allocation();
+        defaultAllocation.setKey("default");
+        defaultAllocation.setSplits(defaultSplits);
+        defaultAllocation.setDoLog(true);
+
+        List<Allocation> allocations = new ArrayList<>();
+        allocations.add(allocation);
+        allocations.add(defaultAllocation);
+
+        FlagConfig flag = new FlagConfig();
+        flag.setKey("flag");
+        flag.setVariations(variations);
+        flag.setAllocations(allocations);
+        flag.setTotalShards(10);
+        flag.setEnabled(true);
+
+        for (int i = 0; i < 50; i +=1) {
+            FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+                    flag,
+                    "subject"+i,
+                    new SubjectAttributes(),
+                    false
+            );
+            System.out.println("subject"+i+": "+(result.getVariation() != null ? result.getVariation().getValue() : "null"));
+        }
+
+        // TODO: get test working
+        // TODO: leave subject assignments for one of the three variations
+    }
 }
