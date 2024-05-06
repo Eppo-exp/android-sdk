@@ -537,7 +537,31 @@ public class FlagEvaluatorTest {
             System.out.println("subject"+i+": "+(result.getVariation() != null ? result.getVariation().getValue() : "null"));
         }
 
-        // TODO: get test working
-        // TODO: leave subject assignments for one of the three variations
+        FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subject4",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertEquals("A", result.getVariation().getValue().stringValue());
+
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subject13",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertEquals("B", result.getVariation().getValue().stringValue());
+
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subject14",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertEquals("C", result.getVariation().getValue().stringValue());
     }
 }

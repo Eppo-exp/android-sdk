@@ -61,11 +61,13 @@ public class FlagEvaluator {
                 }
             }
 
-            // We only evaluate the first relevant allocation
-            allocationKey = allocation.getKey();
-            // doLog is determined by the allocation
-            doLog = allocation.doLog();
-            break;
+            if (variation != null) {
+                // We only evaluate the first relevant allocation
+                allocationKey = allocation.getKey();
+                // doLog is determined by the allocation
+                doLog = allocation.doLog();
+                break;
+            }
         }
 
         FlagEvaluationResult evaluationResult = new FlagEvaluationResult();
