@@ -32,10 +32,7 @@ public class FlagEvaluatorTest {
 
     @Test
     public void testDisabledFlag() {
-        Map<String, Variation> variations = new HashMap<>();
-        Variation variation = new Variation();
-        variation.setKey("variation");
-        variations.put(variation.getKey(), variation);
+        Map<String, Variation> variations = createVariations("a");
 
         Range range = new Range();
         range.setStart(0);
@@ -50,7 +47,7 @@ public class FlagEvaluatorTest {
         shards.add(shard);
 
         Split split = new Split();
-        split.setVariationKey("variation");
+        split.setVariationKey("a");
         split.setShards(shards);
         List<Split> splits = new ArrayList<>();
         splits.add(split);
@@ -85,10 +82,7 @@ public class FlagEvaluatorTest {
 
     @Test
     public void testNoAllocations() {
-        Map<String, Variation> variations = new HashMap<>();
-        Variation variation = new Variation();
-        variation.setKey("variation");
-        variations.put(variation.getKey(), variation);
+        Map<String, Variation> variations = createVariations("a");
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -113,11 +107,7 @@ public class FlagEvaluatorTest {
 
     @Test
     public void testSimpleFlag() {
-        Map<String, Variation> variations = new HashMap<>();
-        Variation variation = new Variation();
-        variation.setKey("control");
-        variation.setValue(EppoValue.valueOf("control-value"));
-        variations.put(variation.getKey(), variation);
+        Map<String, Variation> variations = createVariations("a");
 
         Range range = new Range();
         range.setStart(0);
@@ -132,7 +122,7 @@ public class FlagEvaluatorTest {
         shards.add(shard);
 
         Split split = new Split();
-        split.setVariationKey("control");
+        split.setVariationKey("a");
         split.setShards(shards);
         List<Split> splits = new ArrayList<>();
         splits.add(split);
@@ -162,20 +152,16 @@ public class FlagEvaluatorTest {
         assertEquals("subjectKey", result.getSubjectKey());
         assertEquals(new SubjectAttributes(), result.getSubjectAttributes());
         assertEquals("allocation", result.getAllocationKey());
-        assertEquals(variation, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
         assertTrue(result.doLog());
     }
 
     @Test
     public void testSubjectKeyIDTargetingCondition() {
-        Map<String, Variation> variations = new HashMap<>();
-        Variation variation = new Variation();
-        variation.setKey("control");
-        variation.setValue(EppoValue.valueOf("control-value"));
-        variations.put(variation.getKey(), variation);
+        Map<String, Variation> variations = createVariations("a");
 
         Split split = new Split();
-        split.setVariationKey("control");
+        split.setVariationKey("a");
         List<Split> splits = new ArrayList<>();
         splits.add(split);
 
@@ -217,7 +203,7 @@ public class FlagEvaluatorTest {
                 false
         );
 
-        assertEquals(variation, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -226,7 +212,7 @@ public class FlagEvaluatorTest {
                 false
         );
 
-        assertEquals(variation, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -240,14 +226,10 @@ public class FlagEvaluatorTest {
 
     @Test
     public void testOverriddenIDTargetingCondition() {
-        Map<String, Variation> variations = new HashMap<>();
-        Variation variation = new Variation();
-        variation.setKey("control");
-        variation.setValue(EppoValue.valueOf("control-value"));
-        variations.put(variation.getKey(), variation);
+        Map<String, Variation> variations = createVariations("a");
 
         Split split = new Split();
-        split.setVariationKey("control");
+        split.setVariationKey("a");
         List<Split> splits = new ArrayList<>();
         splits.add(split);
 
@@ -303,21 +285,12 @@ public class FlagEvaluatorTest {
                 false
         );
 
-        assertEquals(variation, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
     }
 
     @Test
     public void testCatchAllAllocation() {
-        Variation variationA = new Variation();
-        variationA.setKey("a");
-        variationA.setValue(EppoValue.valueOf("A"));
-        Variation variationB = new Variation();
-        variationB.setKey("b");
-        variationB.setValue(EppoValue.valueOf("B"));
-
-        Map<String, Variation> variations = new HashMap<>();
-        variations.put(variationA.getKey(), variationA);
-        variations.put(variationB.getKey(), variationB);
+        Map<String, Variation> variations = createVariations("a", "b");
 
         Split split = new Split();
         split.setVariationKey("a");
@@ -346,22 +319,13 @@ public class FlagEvaluatorTest {
         );
 
         assertEquals("default", result.getAllocationKey());
-        assertEquals(variationA, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
         assertTrue(result.doLog());
     }
 
     @Test
     public void testMultipleAllocations() {
-        Variation variationA = new Variation();
-        variationA.setKey("a");
-        variationA.setValue(EppoValue.valueOf("A"));
-        Variation variationB = new Variation();
-        variationB.setKey("b");
-        variationB.setValue(EppoValue.valueOf("B"));
-
-        Map<String, Variation> variations = new HashMap<>();
-        variations.put(variationA.getKey(), variationA);
-        variations.put(variationB.getKey(), variationB);
+        Map<String, Variation> variations = createVariations("a", "b");
 
         Split firstAllocationSplit = new Split();
         firstAllocationSplit.setVariationKey("b");
@@ -416,7 +380,7 @@ public class FlagEvaluatorTest {
                 matchingEmailAttributes,
                 false
         );
-        assertEquals(variationB, result.getVariation());
+        assertEquals("B", result.getVariation().getValue().stringValue());
 
         SubjectAttributes unknownEmailAttributes = new SubjectAttributes();
         unknownEmailAttributes.put("email", "eppo@test.com");
@@ -426,7 +390,7 @@ public class FlagEvaluatorTest {
                 unknownEmailAttributes,
                 false
         );
-        assertEquals(variationA, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -434,25 +398,12 @@ public class FlagEvaluatorTest {
                 new SubjectAttributes(),
                 false
         );
-        assertEquals(variationA, result.getVariation());
+        assertEquals("A", result.getVariation().getValue().stringValue());
     }
 
     @Test
     public void testVariationShardRanges() {
-        Variation variationA = new Variation();
-        variationA.setKey("a");
-        variationA.setValue(EppoValue.valueOf("A"));
-        Variation variationB = new Variation();
-        variationB.setKey("b");
-        variationB.setValue(EppoValue.valueOf("B"));
-        Variation variationC = new Variation();
-        variationC.setKey("c");
-        variationC.setValue(EppoValue.valueOf("C"));
-
-        Map<String, Variation> variations = new HashMap<>();
-        variations.put(variationA.getKey(), variationA);
-        variations.put(variationB.getKey(), variationB);
-        variations.put(variationC.getKey(), variationC);
+        Map<String, Variation> variations = createVariations("a", "b", "c");
 
         Range trafficRange = new Range();
         trafficRange.setStart(0);
@@ -528,16 +479,6 @@ public class FlagEvaluatorTest {
         flag.setTotalShards(10);
         flag.setEnabled(true);
 
-        for (int i = 0; i < 50; i +=1) {
-            FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
-                    flag,
-                    "subject"+i,
-                    new SubjectAttributes(),
-                    false
-            );
-            System.out.println("subject"+i+": "+(result.getVariation() != null ? result.getVariation().getValue() : "null"));
-        }
-
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
                 "subject4",
@@ -568,11 +509,7 @@ public class FlagEvaluatorTest {
 
     @Test
     public void testAllocationStartAndEndAt() {
-        Variation variation = new Variation();
-        variation.setKey("a");
-        variation.setValue(EppoValue.valueOf("A"));
-        Map<String, Variation> variations = new HashMap<>();
-        variations.put(variation.getKey(), variation);
+        Map<String, Variation> variations = createVariations("a");
 
         Split split = new Split();
         split.setVariationKey("a");
@@ -640,5 +577,28 @@ public class FlagEvaluatorTest {
 
         assertNull(result.getVariation());
         assertFalse(result.doLog());
+    }
+
+    private Map<String, Variation> createVariations(String key) {
+        return createVariations(key, null, null);
+    }
+
+    private Map<String, Variation> createVariations(String key1, String key2) {
+        return createVariations(key1, key2, null);
+    }
+
+    private Map<String, Variation> createVariations(String key1, String key2, String key3) {
+        String[] keys = { key1, key2, key3 };
+        Map<String, Variation> variations = new HashMap<>();
+        for (String key : keys) {
+            if (key != null) {
+                Variation variation = new Variation();
+                variation.setKey(key);
+                // Use the uppercase key as the dummy value
+                variation.setValue(EppoValue.valueOf(key.toUpperCase()));
+                variations.put(variation.getKey(), variation);
+            }
+        }
+        return variations;
     }
 }
