@@ -8,6 +8,7 @@ import static org.junit.Assert.assertNull;
 import org.junit.Test;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -563,5 +564,81 @@ public class FlagEvaluatorTest {
         );
 
         assertEquals("C", result.getVariation().getValue().stringValue());
+    }
+
+    @Test
+    public void testAllocationStartAndEndAt() {
+        Variation variation = new Variation();
+        variation.setKey("a");
+        variation.setValue(EppoValue.valueOf("A"));
+        Map<String, Variation> variations = new HashMap<>();
+        variations.put(variation.getKey(), variation);
+
+        Split split = new Split();
+        split.setVariationKey("a");
+        List<Split> splits = new ArrayList<>();
+        splits.add(split);
+
+        Allocation allocation = new Allocation();
+        allocation.setKey("allocation");
+        allocation.setSplits(splits);
+        allocation.setDoLog(true);
+
+        // Start off with today being between startAt and endAt
+        Date now = new Date();
+        long oneDayInMilliseconds = 1000L * 60 * 60 * 24;
+        Date startAt = new Date(now.getTime() - oneDayInMilliseconds);
+        Date endAt = new Date(now.getTime() + oneDayInMilliseconds);
+
+        allocation.setStartAt(startAt);
+        allocation.setEndAt(endAt);
+
+        List<Allocation> allocations = new LinkedList<>();
+        allocations.add(allocation);
+
+        FlagConfig flag = new FlagConfig();
+        flag.setKey("flag");
+        flag.setVariations(variations);
+        flag.setAllocations(allocations);
+        flag.setTotalShards(10);
+        flag.setEnabled(true);
+
+        FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subject",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertEquals("A", result.getVariation().getValue().stringValue());
+        assertTrue(result.doLog());
+
+        // Make both start startAt and endAt in the future
+        allocation.setStartAt(new Date(now.getTime() + oneDayInMilliseconds));
+        allocation.setEndAt(new Date(now.getTime() + 2 * oneDayInMilliseconds));
+
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subject",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertNull(result.getVariation());
+        assertFalse(result.doLog());
+
+        // Make both startAt and endAt in the past
+        allocation.setStartAt(new Date(now.getTime() - 2 * oneDayInMilliseconds));
+        allocation.setEndAt(new Date(now.getTime() - oneDayInMilliseconds));
+
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subject",
+                new SubjectAttributes(),
+                false
+        );
+
+        assertNull(result.getVariation());
+        assertFalse(result.doLog());
     }
 }
