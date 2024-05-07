@@ -34,12 +34,7 @@ public class FlagEvaluatorTest {
     public void testDisabledFlag() {
         Map<String, Variation> variations = createVariations("a");
         Set<Shard> shards = createShards("salt");
-
-        Split split = new Split();
-        split.setVariationKey("a");
-        split.setShards(shards);
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
+        List<Split> splits = createSplits("a", shards);
 
         Allocation allocation = new Allocation();
         allocation.setKey("allocation");
@@ -98,12 +93,7 @@ public class FlagEvaluatorTest {
     public void testSimpleFlag() {
         Map<String, Variation> variations = createVariations("a");
         Set<Shard> shards = createShards("salt", 0, 10000);
-
-        Split split = new Split();
-        split.setVariationKey("a");
-        split.setShards(shards);
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
+        List<Split> splits = createSplits("a", shards);
 
         Allocation allocation = new Allocation();
         allocation.setKey("allocation");
@@ -137,11 +127,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testSubjectKeyIDTargetingCondition() {
         Map<String, Variation> variations = createVariations("a");
-
-        Split split = new Split();
-        split.setVariationKey("a");
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
+        List<Split> splits = createSplits("a");
 
         TargetingCondition condition = new TargetingCondition();
         condition.setAttribute("id");
@@ -205,11 +191,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testOverriddenIDTargetingCondition() {
         Map<String, Variation> variations = createVariations("a");
-
-        Split split = new Split();
-        split.setVariationKey("a");
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
+        List<Split> splits = createSplits("a");
 
         TargetingCondition condition = new TargetingCondition();
         condition.setAttribute("id");
@@ -269,11 +251,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testCatchAllAllocation() {
         Map<String, Variation> variations = createVariations("a", "b");
-
-        Split split = new Split();
-        split.setVariationKey("a");
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
+        List<Split> splits = createSplits("a");
 
         Allocation allocation = new Allocation();
         allocation.setKey("default");
@@ -304,11 +282,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testMultipleAllocations() {
         Map<String, Variation> variations = createVariations("a", "b");
-
-        Split firstAllocationSplit = new Split();
-        firstAllocationSplit.setVariationKey("b");
-        List<Split> firstAllocationSplits = new ArrayList<>();
-        firstAllocationSplits.add(firstAllocationSplit);
+        List<Split> firstAllocationSplits = createSplits("b");
 
         TargetingCondition condition = new TargetingCondition();
         condition.setAttribute("email");
@@ -329,10 +303,7 @@ public class FlagEvaluatorTest {
         firstAllocation.setSplits(firstAllocationSplits);
         firstAllocation.setDoLog(true);
 
-        Split defaultSplit = new Split();
-        defaultSplit.setVariationKey("a");
-        List<Split> defaultSplits = new ArrayList<>();
-        defaultSplits.add(defaultSplit);
+        List<Split> defaultSplits = createSplits("a");
 
         Allocation defaultAllocation = new Allocation();
         defaultAllocation.setKey("default");
@@ -384,39 +355,20 @@ public class FlagEvaluatorTest {
         Map<String, Variation> variations = createVariations("a", "b", "c");
         Set<Shard> trafficShards = createShards("traffic", 0, 5);
 
-        Range splitRangeA = new Range();
-        splitRangeA.setStart(0);
-        splitRangeA.setEnd(3);
-        Set<Range> splitRangesA = new HashSet<>();
-        splitRangesA.add(splitRangeA);
-
         Set<Shard> shardsA = createShards("split", 0, 3);
         shardsA.addAll(trafficShards);
-
-        Split splitA = new Split();
-        splitA.setVariationKey("a");
-        splitA.setShards(shardsA);
+        List<Split> firstAllocationSplits = createSplits("a", shardsA);
 
         Set<Shard> shardsB = createShards("split", 3, 6);
         shardsB.addAll(trafficShards);
-
-        Split splitB = new Split();
-        splitB.setVariationKey("b");
-        splitB.setShards(shardsB);
-
-        List<Split> firstSplits = new ArrayList<>();
-        firstSplits.add(splitA);
-        firstSplits.add(splitB);
+        firstAllocationSplits.addAll(createSplits("b", shardsB));
 
         Allocation allocation = new Allocation();
         allocation.setKey("first");
-        allocation.setSplits(firstSplits);
+        allocation.setSplits(firstAllocationSplits);
         allocation.setDoLog(true);
 
-        Split defaultSplit = new Split();
-        defaultSplit.setVariationKey("c");
-        List<Split> defaultSplits = new ArrayList<>();
-        defaultSplits.add(defaultSplit);
+        List<Split> defaultSplits = createSplits("c");
 
         Allocation defaultAllocation = new Allocation();
         defaultAllocation.setKey("default");
@@ -465,11 +417,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testAllocationStartAndEndAt() {
         Map<String, Variation> variations = createVariations("a");
-
-        Split split = new Split();
-        split.setVariationKey("a");
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
+        List<Split> splits = createSplits("a");
 
         Allocation allocation = new Allocation();
         allocation.setKey("allocation");
@@ -575,5 +523,18 @@ public class FlagEvaluatorTest {
         Set<Shard> shards = new HashSet<>();
         shards.add(shard);
         return shards;
+    }
+
+    private List<Split> createSplits(String variationKey) {
+        return createSplits(variationKey, null);
+    }
+
+    private List<Split> createSplits(String variationKey, Set<Shard> shards) {
+        Split split = new Split();
+        split.setVariationKey(variationKey);
+        split.setShards(shards);
+        List<Split> splits = new ArrayList<>();
+        splits.add(split);
+        return splits;
     }
 }
