@@ -33,18 +33,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testDisabledFlag() {
         Map<String, Variation> variations = createVariations("a");
-
-        Range range = new Range();
-        range.setStart(0);
-        range.setEnd(10);
-        Set<Range> ranges = new HashSet<>();
-        ranges.add(range);
-
-        Shard shard = new Shard();
-        shard.setSalt("salt");
-        shard.setRanges(ranges);
-        Set<Shard> shards = new HashSet<>();
-        shards.add(shard);
+        Set<Shard> shards = createShards("salt");
 
         Split split = new Split();
         split.setVariationKey("a");
@@ -108,18 +97,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testSimpleFlag() {
         Map<String, Variation> variations = createVariations("a");
-
-        Range range = new Range();
-        range.setStart(0);
-        range.setEnd(10000);
-        Set<Range> ranges = new HashSet<>();
-        ranges.add(range);
-
-        Shard shard = new Shard();
-        shard.setSalt("salt");
-        shard.setRanges(ranges);
-        Set<Shard> shards = new HashSet<>();
-        shards.add(shard);
+        Set<Shard> shards = createShards("salt", 0, 10000);
 
         Split split = new Split();
         split.setVariationKey("a");
@@ -404,16 +382,7 @@ public class FlagEvaluatorTest {
     @Test
     public void testVariationShardRanges() {
         Map<String, Variation> variations = createVariations("a", "b", "c");
-
-        Range trafficRange = new Range();
-        trafficRange.setStart(0);
-        trafficRange.setEnd(5);
-        Set<Range> trafficRanges = new HashSet<>();
-        trafficRanges.add(trafficRange);
-
-        Shard trafficShard = new Shard();
-        trafficShard.setSalt("traffic");
-        trafficShard.setRanges(trafficRanges);
+        Set<Shard> trafficShards = createShards("traffic", 0, 5);
 
         Range splitRangeA = new Range();
         splitRangeA.setStart(0);
@@ -421,32 +390,18 @@ public class FlagEvaluatorTest {
         Set<Range> splitRangesA = new HashSet<>();
         splitRangesA.add(splitRangeA);
 
-        Shard splitShardA = new Shard();
-        splitShardA.setSalt("split");
-        splitShardA.setRanges(splitRangesA);
+        Set<Shard> shardsA = createShards("split", 0, 3);
+        shardsA.addAll(trafficShards);
 
         Split splitA = new Split();
         splitA.setVariationKey("a");
-        Set<Shard> shardsA = new HashSet<>();
-        shardsA.add(trafficShard);
-        shardsA.add(splitShardA);
         splitA.setShards(shardsA);
 
-        Range splitRangeB = new Range();
-        splitRangeB.setStart(3);
-        splitRangeB.setEnd(6);
-        Set<Range> splitRangesB = new HashSet<>();
-        splitRangesB.add(splitRangeB);
-
-        Shard splitShardB = new Shard();
-        splitShardB.setSalt("split");
-        splitShardB.setRanges(splitRangesB);
+        Set<Shard> shardsB = createShards("split", 3, 6);
+        shardsB.addAll(trafficShards);
 
         Split splitB = new Split();
         splitB.setVariationKey("b");
-        Set<Shard> shardsB = new HashSet<>();
-        shardsB.add(trafficShard);
-        shardsB.add(splitShardB);
         splitB.setShards(shardsB);
 
         List<Split> firstSplits = new ArrayList<>();
@@ -600,5 +555,25 @@ public class FlagEvaluatorTest {
             }
         }
         return variations;
+    }
+
+    private Set<Shard> createShards(String salt) {
+        return createShards(salt, null, null);
+    }
+
+    private Set<Shard> createShards(String salt, Integer rangeStart, Integer rangeEnd) {
+        Shard shard = new Shard();
+        shard.setSalt(salt);
+        if (rangeStart != null) {
+            Range range = new Range();
+            range.setStart(rangeStart);
+            range.setEnd(rangeEnd);
+            Set<Range> ranges = new HashSet<>();
+            ranges.add(range);
+            shard.setRanges(ranges);
+        }
+        Set<Shard> shards = new HashSet<>();
+        shards.add(shard);
+        return shards;
     }
 }
