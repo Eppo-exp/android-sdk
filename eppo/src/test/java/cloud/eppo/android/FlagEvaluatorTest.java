@@ -114,25 +114,15 @@ public class FlagEvaluatorTest {
     }
 
     @Test
-    public void testSubjectKeyIDTargetingCondition() {
+    public void testIDTargetingCondition() {
         Map<String, Variation> variations = createVariations("a");
         List<Split> splits = createSplits("a");
 
-        TargetingCondition condition = new TargetingCondition();
-        condition.setAttribute("id");
-        condition.setOperator(OperatorType.ONE_OF);
         List<String> values = new LinkedList<>();
         values.add("alice");
         values.add("bob");
-        condition.setValue(EppoValue.valueOf(values));
-        Set<TargetingCondition> conditions = new HashSet<>();
-        conditions.add(condition);
-
-        TargetingRule rule = new TargetingRule();
-        rule.setConditions(conditions);
-
-        Set<TargetingRule> rules = new HashSet<>();
-        rules.add(rule);
+        EppoValue value = EppoValue.valueOf(values);
+        Set<TargetingRule> rules = createRules("id", OperatorType.ONE_OF, value);
 
         List<Allocation> allocations = createAllocations("allocation", splits, rules);
 
@@ -142,6 +132,8 @@ public class FlagEvaluatorTest {
         flag.setAllocations(allocations);
         flag.setTotalShards(10);
         flag.setEnabled(true);
+
+        // Check that subjectKey is evaluated as the "id" attribute
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -169,41 +161,12 @@ public class FlagEvaluatorTest {
         );
 
         assertNull(result.getVariation());
-    }
 
-    @Test
-    public void testOverriddenIDTargetingCondition() {
-        Map<String, Variation> variations = createVariations("a");
-        List<Split> splits = createSplits("a");
-
-        TargetingCondition condition = new TargetingCondition();
-        condition.setAttribute("id");
-        condition.setOperator(OperatorType.ONE_OF);
-        List<String> values = new LinkedList<>();
-        values.add("alice");
-        values.add("bob");
-        condition.setValue(EppoValue.valueOf(values));
-        Set<TargetingCondition> conditions = new HashSet<>();
-        conditions.add(condition);
-
-        TargetingRule rule = new TargetingRule();
-        rule.setConditions(conditions);
-
-        Set<TargetingRule> rules = new HashSet<>();
-        rules.add(rule);
-
-        List<Allocation> allocations = createAllocations("allocation", splits, rules);
-
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        // Check that an explicitly passed-in "id" attribute takes precedence
 
         SubjectAttributes aliceAttributes = new SubjectAttributes();
         aliceAttributes.put("id", "charlie");
-        FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+        result = FlagEvaluator.evaluateFlag(
                 flag,
                 "alice",
                 aliceAttributes,
@@ -229,13 +192,7 @@ public class FlagEvaluatorTest {
     public void testCatchAllAllocation() {
         Map<String, Variation> variations = createVariations("a", "b");
         List<Split> splits = createSplits("a");
-
-        Allocation allocation = new Allocation();
-        allocation.setKey("default");
-        allocation.setSplits(splits);
-        allocation.setDoLog(true);
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
+        List<Allocation> allocations = createAllocations("default", splits);
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -260,20 +217,7 @@ public class FlagEvaluatorTest {
     public void testMultipleAllocations() {
         Map<String, Variation> variations = createVariations("a", "b");
         List<Split> firstAllocationSplits = createSplits("b");
-
-        TargetingCondition condition = new TargetingCondition();
-        condition.setAttribute("email");
-        condition.setOperator(OperatorType.MATCHES);
-        condition.setValue(EppoValue.valueOf(".*example\\.com$"));
-        Set<TargetingCondition> conditions = new HashSet<>();
-        conditions.add(condition);
-
-        TargetingRule rule = new TargetingRule();
-        rule.setConditions(conditions);
-
-        Set<TargetingRule> rules = new HashSet<>();
-        rules.add(rule);
-
+        Set<TargetingRule> rules = createRules("email", OperatorType.MATCHES, EppoValue.valueOf(".*example\\.com$"));
         List<Allocation> allocations = createAllocations("first", firstAllocationSplits, rules);
 
         List<Split> defaultSplits = createSplits("a");
@@ -321,11 +265,11 @@ public class FlagEvaluatorTest {
         Set<Shard> trafficShards = createShards("traffic", 0, 5);
 
         Set<Shard> shardsA = createShards("split", 0, 3);
-        shardsA.addAll(trafficShards);
+        shardsA.addAll(trafficShards); // both splits include the same traffic shard
         List<Split> firstAllocationSplits = createSplits("a", shardsA);
 
         Set<Shard> shardsB = createShards("split", 3, 6);
-        shardsB.addAll(trafficShards);
+        shardsB.addAll(trafficShards); // both splits include the same traffic shard
         firstAllocationSplits.addAll(createSplits("b", shardsB));
 
         List<Allocation> allocations = createAllocations("first", firstAllocationSplits);
@@ -484,6 +428,20 @@ public class FlagEvaluatorTest {
         List<Split> splits = new ArrayList<>();
         splits.add(split);
         return splits;
+    }
+
+    private Set<TargetingRule> createRules(String attribute, OperatorType operator, EppoValue value) {
+        TargetingCondition condition = new TargetingCondition();
+        condition.setAttribute(attribute);
+        condition.setOperator(operator);
+        condition.setValue(value);
+        Set<TargetingCondition> conditions = new HashSet<>();
+        conditions.add(condition);
+        TargetingRule rule = new TargetingRule();
+        rule.setConditions(conditions);
+        Set<TargetingRule> rules = new HashSet<>();
+        rules.add(rule);
+        return rules;
     }
 
     private List<Allocation> createAllocations(String allocationKey, List<Split> splits) {
