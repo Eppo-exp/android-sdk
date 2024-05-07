@@ -35,12 +35,7 @@ public class FlagEvaluatorTest {
         Map<String, Variation> variations = createVariations("a");
         Set<Shard> shards = createShards("salt");
         List<Split> splits = createSplits("a", shards);
-
-        Allocation allocation = new Allocation();
-        allocation.setKey("allocation");
-        allocation.setSplits(splits);
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
+        List<Allocation> allocations = createAllocations("allocation", splits);
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -94,13 +89,7 @@ public class FlagEvaluatorTest {
         Map<String, Variation> variations = createVariations("a");
         Set<Shard> shards = createShards("salt", 0, 10000);
         List<Split> splits = createSplits("a", shards);
-
-        Allocation allocation = new Allocation();
-        allocation.setKey("allocation");
-        allocation.setSplits(splits);
-        allocation.setDoLog(true);
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
+        List<Allocation> allocations = createAllocations("allocation", splits);
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -145,13 +134,7 @@ public class FlagEvaluatorTest {
         Set<TargetingRule> rules = new HashSet<>();
         rules.add(rule);
 
-        Allocation allocation = new Allocation();
-        allocation.setKey("allocation");
-        allocation.setRules(rules);
-        allocation.setSplits(splits);
-        allocation.setDoLog(true);
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
+        List<Allocation> allocations = createAllocations("allocation", splits, rules);
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -209,13 +192,7 @@ public class FlagEvaluatorTest {
         Set<TargetingRule> rules = new HashSet<>();
         rules.add(rule);
 
-        Allocation allocation = new Allocation();
-        allocation.setKey("allocation");
-        allocation.setRules(rules);
-        allocation.setSplits(splits);
-        allocation.setDoLog(true);
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
+        List<Allocation> allocations = createAllocations("allocation", splits, rules);
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -297,22 +274,10 @@ public class FlagEvaluatorTest {
         Set<TargetingRule> rules = new HashSet<>();
         rules.add(rule);
 
-        Allocation firstAllocation = new Allocation();
-        firstAllocation.setKey("first");
-        firstAllocation.setRules(rules);
-        firstAllocation.setSplits(firstAllocationSplits);
-        firstAllocation.setDoLog(true);
+        List<Allocation> allocations = createAllocations("first", firstAllocationSplits, rules);
 
         List<Split> defaultSplits = createSplits("a");
-
-        Allocation defaultAllocation = new Allocation();
-        defaultAllocation.setKey("default");
-        defaultAllocation.setSplits(defaultSplits);
-        defaultAllocation.setDoLog(true);
-
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(firstAllocation);
-        allocations.add(defaultAllocation);
+        allocations.addAll(createAllocations("default", defaultSplits));
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -363,21 +328,10 @@ public class FlagEvaluatorTest {
         shardsB.addAll(trafficShards);
         firstAllocationSplits.addAll(createSplits("b", shardsB));
 
-        Allocation allocation = new Allocation();
-        allocation.setKey("first");
-        allocation.setSplits(firstAllocationSplits);
-        allocation.setDoLog(true);
+        List<Allocation> allocations = createAllocations("first", firstAllocationSplits);
 
         List<Split> defaultSplits = createSplits("c");
-
-        Allocation defaultAllocation = new Allocation();
-        defaultAllocation.setKey("default");
-        defaultAllocation.setSplits(defaultSplits);
-        defaultAllocation.setDoLog(true);
-
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
-        allocations.add(defaultAllocation);
+        allocations.addAll(createAllocations("default", defaultSplits));
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -418,23 +372,7 @@ public class FlagEvaluatorTest {
     public void testAllocationStartAndEndAt() {
         Map<String, Variation> variations = createVariations("a");
         List<Split> splits = createSplits("a");
-
-        Allocation allocation = new Allocation();
-        allocation.setKey("allocation");
-        allocation.setSplits(splits);
-        allocation.setDoLog(true);
-
-        // Start off with today being between startAt and endAt
-        Date now = new Date();
-        long oneDayInMilliseconds = 1000L * 60 * 60 * 24;
-        Date startAt = new Date(now.getTime() - oneDayInMilliseconds);
-        Date endAt = new Date(now.getTime() + oneDayInMilliseconds);
-
-        allocation.setStartAt(startAt);
-        allocation.setEndAt(endAt);
-
-        List<Allocation> allocations = new LinkedList<>();
-        allocations.add(allocation);
+        List<Allocation> allocations = createAllocations("allocation", splits);
 
         FlagConfig flag = new FlagConfig();
         flag.setKey("flag");
@@ -442,6 +380,16 @@ public class FlagEvaluatorTest {
         flag.setAllocations(allocations);
         flag.setTotalShards(10);
         flag.setEnabled(true);
+
+        // Start off with today being between startAt and endAt
+        Date now = new Date();
+        long oneDayInMilliseconds = 1000L * 60 * 60 * 24;
+        Date startAt = new Date(now.getTime() - oneDayInMilliseconds);
+        Date endAt = new Date(now.getTime() + oneDayInMilliseconds);
+
+        Allocation allocation = allocations.get(0);
+        allocation.setStartAt(startAt);
+        allocation.setEndAt(endAt);
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -536,5 +484,20 @@ public class FlagEvaluatorTest {
         List<Split> splits = new ArrayList<>();
         splits.add(split);
         return splits;
+    }
+
+    private List<Allocation> createAllocations(String allocationKey, List<Split> splits) {
+        return createAllocations(allocationKey, splits, null);
+    }
+
+    private List<Allocation> createAllocations(String allocationKey, List<Split> splits, Set<TargetingRule> rules) {
+        Allocation allocation = new Allocation();
+        allocation.setKey(allocationKey);
+        allocation.setSplits(splits);
+        allocation.setRules(rules);
+        allocation.setDoLog(true);
+        List<Allocation> allocations = new ArrayList<>();
+        allocations.add(allocation);
+        return allocations;
     }
 }
