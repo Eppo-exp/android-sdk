@@ -37,11 +37,7 @@ public class FlagEvaluatorTest {
         List<Split> splits = createSplits("a", shards);
         List<Allocation> allocations = createAllocations("allocation", splits);
 
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
+        FlagConfig flag = createFlag(variations, allocations);
         flag.setEnabled(false);
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
@@ -63,11 +59,7 @@ public class FlagEvaluatorTest {
     public void testNoAllocations() {
         Map<String, Variation> variations = createVariations("a");
 
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setTotalShards(10);
-        flag.setEnabled(false);
+        FlagConfig flag = createFlag(variations, null);
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -87,16 +79,10 @@ public class FlagEvaluatorTest {
     @Test
     public void testSimpleFlag() {
         Map<String, Variation> variations = createVariations("a");
-        Set<Shard> shards = createShards("salt", 0, 10000);
+        Set<Shard> shards = createShards("salt", 0, 10);
         List<Split> splits = createSplits("a", shards);
         List<Allocation> allocations = createAllocations("allocation", splits);
-
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        FlagConfig flag = createFlag(variations, allocations);
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -125,13 +111,7 @@ public class FlagEvaluatorTest {
         Set<TargetingRule> rules = createRules("id", OperatorType.ONE_OF, value);
 
         List<Allocation> allocations = createAllocations("allocation", splits, rules);
-
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        FlagConfig flag = createFlag(variations, allocations);
 
         // Check that subjectKey is evaluated as the "id" attribute
 
@@ -193,13 +173,7 @@ public class FlagEvaluatorTest {
         Map<String, Variation> variations = createVariations("a", "b");
         List<Split> splits = createSplits("a");
         List<Allocation> allocations = createAllocations("default", splits);
-
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        FlagConfig flag = createFlag(variations, allocations);
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -222,13 +196,7 @@ public class FlagEvaluatorTest {
 
         List<Split> defaultSplits = createSplits("a");
         allocations.addAll(createAllocations("default", defaultSplits));
-
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        FlagConfig flag = createFlag(variations, allocations);
 
         SubjectAttributes matchingEmailAttributes = new SubjectAttributes();
         matchingEmailAttributes.put("email", "eppo@example.com");
@@ -277,12 +245,7 @@ public class FlagEvaluatorTest {
         List<Split> defaultSplits = createSplits("c");
         allocations.addAll(createAllocations("default", defaultSplits));
 
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        FlagConfig flag = createFlag(variations, allocations);
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
@@ -317,13 +280,7 @@ public class FlagEvaluatorTest {
         Map<String, Variation> variations = createVariations("a");
         List<Split> splits = createSplits("a");
         List<Allocation> allocations = createAllocations("allocation", splits);
-
-        FlagConfig flag = new FlagConfig();
-        flag.setKey("flag");
-        flag.setVariations(variations);
-        flag.setAllocations(allocations);
-        flag.setTotalShards(10);
-        flag.setEnabled(true);
+        FlagConfig flag = createFlag(variations, allocations);
 
         // Start off with today being between startAt and endAt
         Date now = new Date();
@@ -457,5 +414,15 @@ public class FlagEvaluatorTest {
         List<Allocation> allocations = new ArrayList<>();
         allocations.add(allocation);
         return allocations;
+    }
+
+    private FlagConfig createFlag(Map<String, Variation> variations, List<Allocation> allocations) {
+        FlagConfig flag = new FlagConfig();
+        flag.setKey("flag");
+        flag.setTotalShards(10);
+        flag.setEnabled(true);
+        flag.setVariations(variations);
+        flag.setAllocations(allocations);
+        return flag;
     }
 }

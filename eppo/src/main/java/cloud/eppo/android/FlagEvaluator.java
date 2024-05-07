@@ -27,7 +27,9 @@ public class FlagEvaluator {
 
         // If flag is disabled; use an empty list of allocations so that the empty result is returned
         // Note: this is a safety check; disabled flags should be filtered upstream
-        List<Allocation> allocationsToConsider = flag.isEnabled() ? flag.getAllocations() : new LinkedList<>();
+        List<Allocation> allocationsToConsider = flag.isEnabled() && flag.getAllocations() != null
+                ? flag.getAllocations()
+                : new LinkedList<>();
 
         for (Allocation allocation : allocationsToConsider) {
             if (allocation.getStartAt() != null && allocation.getStartAt().after(now)) {
