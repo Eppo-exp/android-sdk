@@ -5,6 +5,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
 
+import static cloud.eppo.android.util.Utils.base64Encode;
+import static cloud.eppo.android.util.Utils.getMD5Hex;
+
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -329,6 +332,72 @@ public class FlagEvaluatorTest {
 
         assertNull(result.getVariation());
         assertFalse(result.doLog());
+    }
+
+    @Test
+    public void testObfuscated() {
+        // Note: this is NOT a comprehensive test of obfuscation (many operators and value types are
+        // excluded, as are startAt and endAt)
+
+        Map<String, Variation> variations = createVariations("a", "b");
+        List<Split> firstAllocationSplits = createSplits("b");
+        Set<TargetingRule> rules = createRules("email", OperatorType.MATCHES, EppoValue.valueOf(".*example\\.com$"));
+        List<Allocation> allocations = createAllocations("first", firstAllocationSplits, rules);
+
+        List<Split> defaultSplits = createSplits("a");
+        allocations.addAll(createAllocations("default", defaultSplits));
+        FlagConfig flag = createFlag(variations, allocations);
+
+        // Obfuscate the config
+
+        // Hash the flag key (done in-place)
+        flag.setKey(getMD5Hex(flag.getKey()));
+
+        // Encode the variations (done by creating new map as keys change)
+        Map<String, Variation> encodedVariations = new HashMap<>();
+        for (Map.Entry<String, Variation> variationEntry : variations.entrySet()) {
+            String encodedVariationKey = base64Encode(variationEntry.getKey());
+            Variation variationToEncode = variationEntry.getValue();
+            variationToEncode.setKey(encodedVariationKey);
+            variationToEncode.setValue(EppoValue.valueOf(variationToEncode.getValue().stringValue()));
+            encodedVariations.put(encodedVariationKey, variationToEncode);
+        }
+        flag.setVariations(encodedVariations);
+
+        // Encode the allocation (done in-place)
+        Allocation allocationToEncode = allocations.get(0);
+        allocationToEncode.setKey(base64Encode(allocationToEncode.getKey()));
+        TargetingCondition condition = allocationToEncode.getRules().iterator().next().getConditions().iterator().next();
+        condition.setAttribute(base64Encode(condition.getAttribute()));
+        condition.setValue(EppoValue.valueOf(base64Encode(condition.getValue().stringValue())));
+
+        SubjectAttributes matchingEmailAttributes = new SubjectAttributes();
+        matchingEmailAttributes.put("email", "eppo@example.com");
+        FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                matchingEmailAttributes,
+                true
+        );
+        assertEquals("B", result.getVariation().getValue().stringValue());
+
+        SubjectAttributes unknownEmailAttributes = new SubjectAttributes();
+        unknownEmailAttributes.put("email", "eppo@test.com");
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                unknownEmailAttributes,
+                true
+        );
+        assertEquals("A", result.getVariation().getValue().stringValue());
+
+        result = FlagEvaluator.evaluateFlag(
+                flag,
+                "subjectKey",
+                new SubjectAttributes(),
+                true
+        );
+        assertEquals("A", result.getVariation().getValue().stringValue());
     }
 
     private Map<String, Variation> createVariations(String key) {

@@ -2,6 +2,7 @@ package cloud.eppo.android.util;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.util.Base64;
 import android.util.Log;
 
 import com.google.gson.JsonElement;
@@ -38,6 +39,14 @@ public class Utils {
         }
 
         return hashText;
+    }
+
+    public static String base64Encode(String input) {
+        return Base64.encodeToString(input.getBytes(), Base64.DEFAULT);
+    }
+
+    public static String base64Decode(String input) {
+        return new String(Base64.decode(input, Base64.DEFAULT));
     }
 
     public static int getShard(String input, int maxShardValue) {

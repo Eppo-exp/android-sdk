@@ -1,5 +1,7 @@
 package cloud.eppo.android.dto;
 
+import static cloud.eppo.android.util.Utils.getMD5Hex;
+
 public enum OperatorType {
     MATCHES("MATCHES"),
     GREATER_THAN_OR_EQUAL_TO("GTE"),
@@ -19,7 +21,7 @@ public enum OperatorType {
     public static OperatorType fromString(String value) {
         for (OperatorType type : OperatorType.values()) {
             // TODO: also check hashed version
-            if (type.value.equals(value)) {
+            if (type.value.equals(value) || type.value.equals(getMD5Hex(value))) {
                 return type;
             }
         }

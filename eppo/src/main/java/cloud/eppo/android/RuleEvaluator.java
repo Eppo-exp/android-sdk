@@ -1,5 +1,8 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.util.Utils.base64Decode;
+import static cloud.eppo.android.util.Utils.getMD5Hex;
+
 import com.github.zafarkhaja.semver.Version;
 
 import java.util.Set;
@@ -13,32 +16,34 @@ import cloud.eppo.android.dto.TargetingRule;
 
 public class RuleEvaluator {
 
-    public static TargetingRule findMatchingRule(SubjectAttributes subjectAttributes, Set<TargetingRule> rules) {
+    public static TargetingRule findMatchingRule(SubjectAttributes subjectAttributes, Set<TargetingRule> rules, boolean isObfuscated) {
         for (TargetingRule rule : rules) {
-            if (allConditionsMatch(subjectAttributes, rule.getConditions())) {
+            if (allConditionsMatch(subjectAttributes, rule.getConditions(), isObfuscated)) {
                 return rule;
             }
         }
         return null;
     }
 
-    private static boolean allConditionsMatch(SubjectAttributes subjectAttributes, Set<TargetingCondition> conditions) {
+    private static boolean allConditionsMatch(SubjectAttributes subjectAttributes, Set<TargetingCondition> conditions, boolean isObfuscated) {
         for (TargetingCondition condition : conditions) {
-            if (!evaluateCondition(subjectAttributes, condition)) {
+            if (!evaluateCondition(subjectAttributes, condition, isObfuscated)) {
                 return false;
             }
         }
         return true;
     }
 
-    private static boolean evaluateCondition(SubjectAttributes subjectAttributes, TargetingCondition condition) {
+    private static boolean evaluateCondition(SubjectAttributes subjectAttributes, TargetingCondition condition, boolean isObfuscated) {
         EppoValue conditionValue = condition.getValue();
         EppoValue attributeValue = subjectAttributes.get(condition.getAttribute());
 
         // First we do any NULL check
         boolean attributeValueIsNull = attributeValue == null || attributeValue.isNull();
         if (condition.getOperator() == OperatorType.IS_NULL) {
-            boolean expectNull = conditionValue.booleanValue();
+            boolean expectNull = isObfuscated
+                    ? conditionValue.booleanValue()
+                    : getMD5Hex("true").equals(conditionValue.stringValue());
             return expectNull && attributeValueIsNull || !expectNull && !attributeValueIsNull;
         } else if (attributeValueIsNull) {
             // Any check other than IS NULL should fail if the attribute value is null
@@ -46,6 +51,17 @@ public class RuleEvaluator {
         }
 
         boolean numericComparison = attributeValue.isNumeric() && conditionValue.isNumeric();
+        double conditionNumber;
+        if (isObfuscated && conditionValue.isString()) {
+            // it may be an encoded number
+            try {
+                conditionNumber = Double.parseDouble(base64Decode(conditionValue.stringValue()))
+            } catch(Exception e) {
+                // not a number
+            }
+        } else if (numericComparison) {
+            conditionNumber = conditionValue.doubleValue();
+        }
 
         // Android API version 21 does not have access to the java.util.Optional class.
         // Version.tryParse returns a Optional<Version> would be ideal.
@@ -54,9 +70,14 @@ public class RuleEvaluator {
         // more straight-forward.
         Version valueSemVer = null;
         Version conditionSemVer = null;
+        numericComparison = false;
         try {
             valueSemVer = Version.parse(attributeValue.stringValue());
-            conditionSemVer = Version.parse(condition.getValue().stringValue());
+            String conditionSemVerString = condition.getValue().stringValue();
+            if (isObfuscated) {
+                conditionSemVerString = base64Decode(conditionSemVerString);
+            }
+            conditionSemVer = Version.parse(conditionSemVerString);
         } catch (Exception e) {
             // no-op
         }
