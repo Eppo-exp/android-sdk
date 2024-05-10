@@ -1,5 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.util.Utils.base64Decode;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -17,7 +19,7 @@ import cloud.eppo.android.util.Utils;
 
 public class FlagEvaluator {
 
-    public static FlagEvaluationResult evaluateFlag(FlagConfig flag, String subjectKey, SubjectAttributes subjectAttributes, boolean isConfigObfuscated) {
+    public static FlagEvaluationResult evaluateFlag(FlagConfig flag, String flagKey, String subjectKey, SubjectAttributes subjectAttributes, boolean isConfigObfuscated) {
         Date now = new Date();
 
         Variation variation = null;
@@ -48,7 +50,10 @@ public class FlagEvaluator {
                 subjectAttributesToEvaluate.put("id", subjectKey);
             }
 
-            if (allocation.getRules() != null && !allocation.getRules().isEmpty() && RuleEvaluator.findMatchingRule(subjectAttributesToEvaluate, allocation.getRules()) == null) {
+            if (allocation.getRules() != null
+                    && !allocation.getRules().isEmpty()
+                    && RuleEvaluator.findMatchingRule(subjectAttributesToEvaluate, allocation.getRules(), isConfigObfuscated) == null
+            ) {
                 // Rules are defined, but none match
                 continue;
             }
@@ -73,13 +78,21 @@ public class FlagEvaluator {
         }
 
         FlagEvaluationResult evaluationResult = new FlagEvaluationResult();
-        evaluationResult.setFlagKey(flag.getKey());
+        evaluationResult.setFlagKey(flagKey);
         evaluationResult.setSubjectKey(subjectKey);
         evaluationResult.setSubjectAttributes(subjectAttributes);
         evaluationResult.setAllocationKey(allocationKey);
         evaluationResult.setVariation(variation);
         evaluationResult.setExtraLogging(extraLogging);
         evaluationResult.setDoLog(doLog);
+
+        if (isConfigObfuscated) {
+            // Need to unobfuscate result
+            evaluationResult.setFlagKey(flagKey);
+            evaluationResult.setAllocationKey(base64Decode(allocationKey));
+
+            //TODO: partially decode flags upon ingesting
+        }
 
         return evaluationResult;
     }

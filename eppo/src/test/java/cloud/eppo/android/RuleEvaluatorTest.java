@@ -107,7 +107,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         addNameToSubjectAttribute(subjectAttributes);
 
-        assertEquals(targetingRuleWithEmptyConditions, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertEquals(targetingRuleWithEmptyConditions, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     
@@ -117,7 +117,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         addNameToSubjectAttribute(subjectAttributes);
 
-        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -130,7 +130,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         addPriceToSubjectAttribute(subjectAttributes);
 
-        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -143,7 +143,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("price", 15);
 
-        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -156,7 +156,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("appVersion", "1.15.5");
 
-        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
     
     @Test
@@ -169,7 +169,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("price", EppoValue.valueOf("abcd"));
 
-        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -182,7 +182,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("match", EppoValue.valueOf("abcd"));
 
-        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -195,7 +195,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("match", EppoValue.valueOf("123"));
 
-        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -208,7 +208,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("oneOf", EppoValue.valueOf("value3"));
 
-        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 
     @Test
@@ -221,7 +221,7 @@ public class RuleEvaluatorTest {
         SubjectAttributes subjectAttributes = new SubjectAttributes();
         subjectAttributes.put("oneOf", EppoValue.valueOf("value1"));
 
-        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules));
+        assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 }
 

@@ -8,6 +8,7 @@ import android.util.Log;
 import com.google.gson.JsonElement;
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.ParseException;
@@ -42,11 +43,18 @@ public class Utils {
     }
 
     public static String base64Encode(String input) {
-        return Base64.encodeToString(input.getBytes(), Base64.DEFAULT);
+        if (input == null) {
+            return null;
+        }
+
+        return Base64.encodeToString(input.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
     }
 
     public static String base64Decode(String input) {
-        return new String(Base64.decode(input, Base64.DEFAULT));
+        if (input == null) {
+            return null;
+        }
+        return new String(Base64.decode(input, Base64.NO_WRAP));
     }
 
     public static int getShard(String input, int maxShardValue) {

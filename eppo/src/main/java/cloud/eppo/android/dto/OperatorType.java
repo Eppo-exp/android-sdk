@@ -27,4 +27,15 @@ public enum OperatorType {
         }
         return null;
     }
+
+    public boolean isInequalityComparison() {
+        return this == GREATER_THAN_OR_EQUAL_TO
+                || this == GREATER_THAN
+                || this == LESS_THAN_OR_EQUAL_TO
+                || this == LESS_THAN;
+    }
+
+    public boolean isListComparison() {
+        return this == ONE_OF || this == NOT_ONE_OF;
+    }
 }

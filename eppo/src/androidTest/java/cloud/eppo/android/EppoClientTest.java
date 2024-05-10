@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
+import cloud.eppo.android.dto.VariationType;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
@@ -128,7 +129,7 @@ public class EppoClientTest {
         EppoClient spyClient = spy(realClient);
         doThrow(new RuntimeException("Exception thrown by mock"))
             .when(spyClient)
-            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class), any(EppoValue.class));
+            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class), any(EppoValue.class), any(VariationType.class));
 
         assertTrue(spyClient.getBooleanAssignment("experiment1", "subject1", true));
         assertFalse(spyClient.getBooleanAssignment("experiment1", "subject1", new SubjectAttributes(), false));
@@ -159,7 +160,7 @@ public class EppoClientTest {
         EppoClient spyClient = spy(realClient);
         doThrow(new RuntimeException("Exception thrown by mock"))
             .when(spyClient)
-            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class), any(EppoValue.class));
+            .getTypedAssignment(anyString(), anyString(), any(SubjectAttributes.class), any(EppoValue.class), any(VariationType.class));
 
         assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("experiment1", "subject1", true));
         assertThrows(RuntimeException.class, () -> spyClient.getBooleanAssignment("experiment1", "subject1", new SubjectAttributes(), false));

@@ -1,8 +1,13 @@
 package cloud.eppo.android;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+
 import static org.junit.Assert.*;
 
+import static cloud.eppo.android.util.Utils.base64Decode;
+import static cloud.eppo.android.util.Utils.base64Encode;
 import static cloud.eppo.android.util.Utils.parseUtcISODateElement;
 
 import com.google.gson.JsonElement;
@@ -16,6 +21,7 @@ import java.util.TimeZone;
 
 import cloud.eppo.android.util.Utils;
 
+@RunWith(RobolectricTestRunner.class) // Needed for anything that relies on Base64
 public class UtilsTest {
 
     @Test
@@ -79,5 +85,14 @@ public class UtilsTest {
             // Reset locale back to original
             Locale.setDefault(defaultLocale);
         }
+    }
+
+    @Test
+    public void testBase64EncodeAndDecode() {
+        String testInput = "a";
+        String encodedInput = base64Encode(testInput);
+        assertEquals("YQ==", encodedInput);
+        String decodedOutput = base64Decode(encodedInput);
+        assertEquals("a", decodedOutput);
     }
 }

@@ -29,7 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
         // for testing assignments on application/main activity start
         if (!TextUtils.isEmpty(INITIAL_FLAG_KEY)) {
-            EppoClient.getInstance().getAssignment(INITIAL_SUBJECT_ID, INITIAL_FLAG_KEY);
+            EppoClient.getInstance().getStringAssignment(INITIAL_SUBJECT_ID, INITIAL_FLAG_KEY, "");
         }
     }
 }

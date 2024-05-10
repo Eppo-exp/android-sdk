@@ -9,6 +9,8 @@ import static cloud.eppo.android.util.Utils.base64Encode;
 import static cloud.eppo.android.util.Utils.getMD5Hex;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
 
 import java.util.ArrayList;
 import java.util.Date;
@@ -31,6 +33,7 @@ import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
 
+@RunWith(RobolectricTestRunner.class) // Needed for anything that relies on Base64
 public class FlagEvaluatorTest {
 
     @Test
@@ -45,6 +48,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 new SubjectAttributes(),
                 false
@@ -66,6 +70,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 new SubjectAttributes(),
                 false
@@ -89,6 +94,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 new SubjectAttributes(),
                 false
@@ -120,6 +126,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "alice",
                 new SubjectAttributes(),
                 false
@@ -129,6 +136,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "bob",
                 new SubjectAttributes(),
                 false
@@ -138,6 +146,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "charlie",
                 new SubjectAttributes(),
                 false
@@ -151,6 +160,7 @@ public class FlagEvaluatorTest {
         aliceAttributes.put("id", "charlie");
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "alice",
                 aliceAttributes,
                 false
@@ -163,6 +173,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "charlie",
                 charlieAttributes,
                 false
@@ -180,6 +191,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 new SubjectAttributes(),
                 false
@@ -205,6 +217,7 @@ public class FlagEvaluatorTest {
         matchingEmailAttributes.put("email", "eppo@example.com");
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 matchingEmailAttributes,
                 false
@@ -215,6 +228,7 @@ public class FlagEvaluatorTest {
         unknownEmailAttributes.put("email", "eppo@test.com");
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 unknownEmailAttributes,
                 false
@@ -223,6 +237,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 new SubjectAttributes(),
                 false
@@ -252,6 +267,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subject4",
                 new SubjectAttributes(),
                 false
@@ -261,6 +277,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subject13",
                 new SubjectAttributes(),
                 false
@@ -270,6 +287,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subject14",
                 new SubjectAttributes(),
                 false
@@ -297,6 +315,7 @@ public class FlagEvaluatorTest {
 
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subject",
                 new SubjectAttributes(),
                 false
@@ -311,6 +330,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subject",
                 new SubjectAttributes(),
                 false
@@ -325,6 +345,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subject",
                 new SubjectAttributes(),
                 false
@@ -359,7 +380,7 @@ public class FlagEvaluatorTest {
             String encodedVariationKey = base64Encode(variationEntry.getKey());
             Variation variationToEncode = variationEntry.getValue();
             variationToEncode.setKey(encodedVariationKey);
-            variationToEncode.setValue(EppoValue.valueOf(variationToEncode.getValue().stringValue()));
+            variationToEncode.setValue(EppoValue.valueOf(base64Encode(variationToEncode.getValue().stringValue())));
             encodedVariations.put(encodedVariationKey, variationToEncode);
         }
         flag.setVariations(encodedVariations);
@@ -370,21 +391,32 @@ public class FlagEvaluatorTest {
         TargetingCondition condition = allocationToEncode.getRules().iterator().next().getConditions().iterator().next();
         condition.setAttribute(base64Encode(condition.getAttribute()));
         condition.setValue(EppoValue.valueOf(base64Encode(condition.getValue().stringValue())));
+        Split split = allocationToEncode.getSplits().get(0);
+        split.setVariationKey(base64Encode(split.getVariationKey()));
 
         SubjectAttributes matchingEmailAttributes = new SubjectAttributes();
         matchingEmailAttributes.put("email", "eppo@example.com");
         FlagEvaluationResult result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 matchingEmailAttributes,
                 true
         );
+
+        // Expect an unobfuscated evaluation result
+        assertEquals("flag", result.getFlagKey());
+        assertEquals("subjectKey", result.getSubjectKey());
+        assertEquals(new SubjectAttributes(), result.getSubjectAttributes());
+        assertEquals("first", result.getAllocationKey());
         assertEquals("B", result.getVariation().getValue().stringValue());
+        assertTrue(result.doLog());
 
         SubjectAttributes unknownEmailAttributes = new SubjectAttributes();
         unknownEmailAttributes.put("email", "eppo@test.com");
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 unknownEmailAttributes,
                 true
@@ -393,6 +425,7 @@ public class FlagEvaluatorTest {
 
         result = FlagEvaluator.evaluateFlag(
                 flag,
+                "flag",
                 "subjectKey",
                 new SubjectAttributes(),
                 true
