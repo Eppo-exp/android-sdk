@@ -1,5 +1,6 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.util.Utils.getMD5Hex;
 import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
@@ -28,6 +29,9 @@ public class EppoClient {
     private final AssignmentLogger assignmentLogger;
     private boolean isGracefulMode;
     private static EppoClient instance;
+
+    // Useful for development and testing
+    private static boolean isConfigObfuscated = true;
 
     // Useful for testing in situations where we want to mock the http client
     private static EppoHttpClient httpClientOverride = null;
@@ -91,7 +95,12 @@ public class EppoClient {
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
 
-        FlagConfig flag = requestor.getConfiguration(flagKey);
+        String flagKeyForLookup = flagKey;
+        if (isConfigObfuscated) {
+            flagKeyForLookup = getMD5Hex(flagKey);
+        }
+
+        FlagConfig flag = requestor.getConfiguration(flagKeyForLookup);
         if (flag == null) {
             Log.w(TAG, "no configuration found for key: " + flagKey);
             return defaultValue;
@@ -106,59 +115,9 @@ public class EppoClient {
             Log.w(TAG, "no assigned variation because the flag type doesn't match the requested type: "+flagKey+" has type "+flag.getVariationType()+", requested "+expectedType);
         }
 
+        FlagEvaluationResult evaluationResult = FlagEvaluator.evaluateFlag(flag, flagKey, subjectKey, subjectAttributes, isConfigObfuscated);
 
-
-
-
-        // TODO: new UFC logic
-        /*
-        TargetingRule rule = RuleEvaluator.findMatchingRule(subjectAttributes, flag.getRules());
-        if (rule == null) {
-            Log.i(TAG, "no assigned variation. The subject attributes did not match any targeting rules");
-            return null;
-        }
-
-        String allocationKey = rule.getAllocationKey();
-        Allocation allocation = flag.getAllocations().get(allocationKey);
-        if (allocation == null) {
-            Log.w(TAG, "unexpected unknown allocation key \"" + allocationKey + "\"");
-            return null;
-        }
-
-        if (!isInExperimentSample(subjectKey, flagKey, flag.getTotalShards(), allocation.getPercentExposure())) {
-            Log.i(TAG, "no assigned variation. The subject is not part of the sample population");
-            return null;
-        }
-
-        Variation assignedVariation = getAssignedVariation(subjectKey, flagKey, flag.getTotalShards(),
-                allocation.getVariations());
-        if (assignedVariation == null) {
-            Log.i(TAG, "no assigned variation. The subject was not bucketed to a variation.");
-            return null;
-        }
-
-        if (assignmentLogger != null) {
-            String experimentKey = Utils.generateExperimentKey(flagKey, allocationKey);
-            String variationToLog = null;
-            EppoValue typedValue = assignedVariation.getValue();
-            if (typedValue != null) {
-                variationToLog = typedValue.stringValue();
-            }
-
-            Assignment assignment = Assignment.createWithCurrentDate(
-                experimentKey,
-                flagKey, 
-                allocationKey, 
-                variationToLog,
-                subjectKey, 
-                subjectAttributes
-            );
-            assignmentLogger.logAssignment(assignment);
-        }
-
-        return assignedVariation.getValue();
-         */
-        return null;
+        return evaluationResult.getVariation() != null ? evaluationResult.getVariation().getValue() : defaultValue;
     }
 
     public boolean getBooleanAssignment(String flagKey, String subjectKey, boolean defaultValue) {

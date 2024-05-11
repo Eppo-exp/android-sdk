@@ -31,7 +31,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 
-import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -110,13 +110,17 @@ public class EppoClientTest {
         }
     }
 
-    @After
-    public void teardown() {
+    @Before
+    public void cleanUp() {
         deleteCacheFiles();
+        setHttpClientOverrideField(null);
+        setIsConfigObfuscatedField(true);
     }
 
     @Test
     public void testAssignments() {
+        setIsConfigObfuscatedField(false);
+        // TODO: have above function also change SDK name sent with request to something other than android
         initClient(TEST_HOST, true, true, false);
         runTestCases();
     }
@@ -282,27 +286,8 @@ public class EppoClientTest {
             return null; // doAnswer doesn't require a return value
         }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
 
-        Field httpClientOverrideField = null;
-        try {
-            // Use reflection to set the httpClientOverride field
-            httpClientOverrideField = EppoClient.class.getDeclaredField("httpClientOverride");
-            httpClientOverrideField.setAccessible(true);
-            httpClientOverrideField.set(null, mockHttpClient);
-
-
-            initClient(TEST_HOST, true, true, false);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (httpClientOverrideField != null) {
-                try {
-                    httpClientOverrideField.set(null, null);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-                httpClientOverrideField.setAccessible(false);
-            }
-        }
+        setHttpClientOverrideField(mockHttpClient);
+        initClient(TEST_HOST, true, true, false);
 
         String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag", "not-populated");
         assertEquals("not-populated", result);
@@ -369,6 +354,30 @@ public class EppoClientTest {
                 }
             }
         } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setHttpClientOverrideField(EppoHttpClient httpClient) {
+        try {
+            // Use reflection to set the httpClientOverride field
+            Field httpClientOverrideField = EppoClient.class.getDeclaredField("httpClientOverride");
+            httpClientOverrideField.setAccessible(true);
+            httpClientOverrideField.set(null, httpClient);
+            httpClientOverrideField.setAccessible(false);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void setIsConfigObfuscatedField(boolean isConfigObfuscated) {
+        try {
+            // Use reflection to set the httpClientOverride field
+            Field isConfigObfuscatedField = EppoClient.class.getDeclaredField("isConfigObfuscated");
+            isConfigObfuscatedField.setAccessible(true);
+            isConfigObfuscatedField.set(null, isConfigObfuscated);
+            isConfigObfuscatedField.setAccessible(false);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
