@@ -46,15 +46,22 @@ public class Utils {
         if (input == null) {
             return null;
         }
-
-        return Base64.encodeToString(input.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
+        String result = Base64.encodeToString(input.getBytes(StandardCharsets.UTF_8), Base64.NO_WRAP);
+        if (result == null) {
+            throw new RuntimeException("null output from Base64; if not running on Android hardware be sure to use RobolectricTestRunner");
+        }
+        return result;
     }
 
     public static String base64Decode(String input) {
         if (input == null) {
             return null;
         }
-        return new String(Base64.decode(input, Base64.NO_WRAP));
+        byte[] decodedBytes = Base64.decode(input, Base64.NO_WRAP);
+        if (decodedBytes.length == 0 && !input.isEmpty()) {
+            throw new RuntimeException("zero byte output from Base64; if not running on Android hardware be sure to use RobolectricTestRunner");
+        }
+        return new String(decodedBytes);
     }
 
     public static int getShard(String input, int maxShardValue) {

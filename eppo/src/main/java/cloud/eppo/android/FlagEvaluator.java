@@ -2,6 +2,8 @@ package cloud.eppo.android;
 
 import static cloud.eppo.android.util.Utils.base64Decode;
 
+import com.google.gson.JsonParser;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import cloud.eppo.android.dto.Allocation;
+import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.Range;
 import cloud.eppo.android.dto.Shard;
@@ -44,9 +47,8 @@ public class FlagEvaluator {
             }
 
             // For convenience, we will automatically include the subject key as the "id" attribute if none is provided
-            SubjectAttributes subjectAttributesToEvaluate = subjectAttributes;
-            if (!subjectAttributes.containsKey("id")) {
-                subjectAttributesToEvaluate = new SubjectAttributes(subjectAttributes);
+            SubjectAttributes subjectAttributesToEvaluate = new SubjectAttributes(subjectAttributes);
+            if (!subjectAttributesToEvaluate.containsKey("id")) {
                 subjectAttributesToEvaluate.put("id", subjectKey);
             }
 
@@ -63,6 +65,9 @@ public class FlagEvaluator {
                 if (allShardsMatch(split, subjectKey, flag.getTotalShards())) {
                     // Variation and extra logging is determined by the relevant split
                     variation = flag.getVariations().get(split.getVariationKey());
+                    if (variation == null) {
+                        throw new RuntimeException("Unknown split variation key: "+split.getVariationKey());
+                    }
                     extraLogging = split.getExtraLogging();
                     break;
                 }
@@ -87,11 +92,36 @@ public class FlagEvaluator {
         evaluationResult.setDoLog(doLog);
 
         if (isConfigObfuscated) {
-            // Need to unobfuscate result
+            // Need to unobfuscate the evaluation result
             evaluationResult.setFlagKey(flagKey);
             evaluationResult.setAllocationKey(base64Decode(allocationKey));
-
-            //TODO: partially decode flags upon ingesting
+            if (variation != null) {
+                Variation decodedVariation = new Variation();
+                decodedVariation.setKey(base64Decode(variation.getKey()));
+                EppoValue decodedValue = EppoValue.nullValue();
+                if (!variation.getValue().isNull()) {
+                    String stringValue = base64Decode(variation.getValue().stringValue());
+                    switch (flag.getVariationType()) {
+                        case BOOLEAN:
+                            decodedValue = EppoValue.valueOf("true".equals(stringValue));
+                            break;
+                        case INTEGER:
+                        case NUMERIC:
+                            decodedValue = EppoValue.valueOf(Double.parseDouble(stringValue));
+                            break;
+                        case STRING:
+                            decodedValue = EppoValue.valueOf(stringValue);
+                            break;
+                        case JSON:
+                            decodedValue = EppoValue.valueOf(JsonParser.parseString(stringValue));
+                            break;
+                        default:
+                            throw new UnsupportedOperationException("Unexpected variation type for decoding obfuscated variation: " + flag.getVariationType());
+                    }
+                }
+                decodedVariation.setValue(decodedValue);
+                evaluationResult.setVariation(decodedVariation);
+            }
         }
 
         return evaluationResult;

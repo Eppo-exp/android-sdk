@@ -32,6 +32,7 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
+import cloud.eppo.android.dto.VariationType;
 
 @RunWith(RobolectricTestRunner.class) // Needed for anything that relies on Base64
 public class FlagEvaluatorTest {
@@ -385,14 +386,19 @@ public class FlagEvaluatorTest {
         }
         flag.setVariations(encodedVariations);
 
-        // Encode the allocation (done in-place)
-        Allocation allocationToEncode = allocations.get(0);
-        allocationToEncode.setKey(base64Encode(allocationToEncode.getKey()));
-        TargetingCondition condition = allocationToEncode.getRules().iterator().next().getConditions().iterator().next();
-        condition.setAttribute(base64Encode(condition.getAttribute()));
-        condition.setValue(EppoValue.valueOf(base64Encode(condition.getValue().stringValue())));
-        Split split = allocationToEncode.getSplits().get(0);
-        split.setVariationKey(base64Encode(split.getVariationKey()));
+        // Encode the allocations (done in-place)
+        for (Allocation allocationToEncode : allocations) {
+            allocationToEncode.setKey(base64Encode(allocationToEncode.getKey()));
+            if (allocationToEncode.getRules() != null) {
+                // assume just a single rule with a single string-valued condition
+                TargetingCondition conditionToEncode = allocationToEncode.getRules().iterator().next().getConditions().iterator().next();
+                conditionToEncode.setAttribute(base64Encode(conditionToEncode.getAttribute()));
+                conditionToEncode.setValue(EppoValue.valueOf(base64Encode(conditionToEncode.getValue().stringValue())));
+            }
+            for (Split splitToEncode : allocationToEncode.getSplits()) {
+                splitToEncode.setVariationKey(base64Encode(splitToEncode.getVariationKey()));
+            }
+        }
 
         SubjectAttributes matchingEmailAttributes = new SubjectAttributes();
         matchingEmailAttributes.put("email", "eppo@example.com");
@@ -407,7 +413,7 @@ public class FlagEvaluatorTest {
         // Expect an unobfuscated evaluation result
         assertEquals("flag", result.getFlagKey());
         assertEquals("subjectKey", result.getSubjectKey());
-        assertEquals(new SubjectAttributes(), result.getSubjectAttributes());
+        assertEquals(matchingEmailAttributes, result.getSubjectAttributes());
         assertEquals("first", result.getAllocationKey());
         assertEquals("B", result.getVariation().getValue().stringValue());
         assertTrue(result.doLog());
@@ -523,6 +529,7 @@ public class FlagEvaluatorTest {
         flag.setKey("flag");
         flag.setTotalShards(10);
         flag.setEnabled(true);
+        flag.setVariationType(VariationType.STRING);
         flag.setVariations(variations);
         flag.setAllocations(allocations);
         return flag;
