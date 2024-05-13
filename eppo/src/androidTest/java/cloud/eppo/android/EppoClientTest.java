@@ -120,7 +120,6 @@ public class EppoClientTest {
     @Test
     public void testAssignments() {
         setIsConfigObfuscatedField(false);
-        // TODO: have above function also change SDK name sent with request to something other than android
         initClient(TEST_HOST, true, true, false);
         runTestCases();
     }
@@ -226,18 +225,23 @@ public class EppoClientTest {
                 case BOOLEAN:
                     boolean boolAssignment = eppoClient.getBooleanAssignment(flagKey, subjectKey, subjectAttributes, defaultValue.booleanValue());
                     assertAssignment(flagKey, subjectAssignment, boolAssignment);
+                    break;
                 case INTEGER:
                     int intAssignment = eppoClient.getIntegerAssignment(flagKey, subjectKey, subjectAttributes, Double.valueOf(defaultValue.doubleValue()).intValue());
                     assertAssignment(flagKey, subjectAssignment, intAssignment);
+                    break;
                 case NUMERIC:
                     double doubleAssignment = eppoClient.getDoubleAssignment(flagKey, subjectKey, subjectAttributes, defaultValue.doubleValue());
                     assertAssignment(flagKey, subjectAssignment, doubleAssignment);
+                    break;
                 case STRING:
                     String stringAssignment = eppoClient.getStringAssignment(flagKey, subjectKey, subjectAttributes, defaultValue.stringValue());
                     assertAssignment(flagKey, subjectAssignment, stringAssignment);
+                    break;
                 case JSON:
                     JsonElement jsonAssignment = eppoClient.getJSONAssignment(flagKey, subjectKey, subjectAttributes, defaultValue.jsonValue());
                     assertAssignment(flagKey, subjectAssignment, jsonAssignment);
+                    break;
                 default:
                     throw new UnsupportedOperationException("Unexpected variation type "+testCase.getVariationType()+" for "+flagKey+" test case");
             }
@@ -255,20 +259,18 @@ public class EppoClientTest {
             fail("Unexpected null "+flagKey+" assignment for subject "+expectedSubjectAssignment.getSubjectKey());
         }
 
-        String failureMessage = "Incorrect "+flagKey+" assignment for subject "+expectedSubjectAssignment.getSubjectKey()+
-                "\n  Expected: "+expectedSubjectAssignment.getAssignment().toString()+
-                "\n  Received: "+assignment.toString();
+        String failureMessage = "Incorrect "+flagKey+" assignment for subject "+expectedSubjectAssignment.getSubjectKey();
 
         if (assignment instanceof Boolean) {
-            assertEquals(failureMessage, (Boolean)assignment, expectedSubjectAssignment.getAssignment().booleanValue());
+            assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().booleanValue(), (Boolean)((Boolean) assignment).booleanValue());
         } else if (assignment instanceof Integer) {
-            assertEquals(failureMessage, ((Integer)assignment).intValue(), Double.valueOf(expectedSubjectAssignment.getAssignment().doubleValue()).intValue());
+            assertEquals(failureMessage, Double.valueOf(expectedSubjectAssignment.getAssignment().doubleValue()).intValue(), ((Integer)assignment).intValue());
         } else if (assignment instanceof Double) {
-            assertEquals(failureMessage, (Double)assignment, expectedSubjectAssignment.getAssignment().doubleValue(), 0.000001);
+            assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().doubleValue(), (Double)assignment, 0.000001);
         } else if (assignment instanceof String) {
-            assertEquals(failureMessage, assignment, expectedSubjectAssignment.getAssignment().stringValue());
+            assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().stringValue(), assignment);
         } else if (assignment instanceof JsonElement) {
-            assertEquals(failureMessage, assignment, expectedSubjectAssignment.getAssignment().jsonValue());
+            assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().jsonValue(), assignment);
         } else {
             throw new IllegalArgumentException("Unexpected assignment type "+assignment.getClass().getCanonicalName());
         }
@@ -349,7 +351,7 @@ public class EppoClientTest {
                 // TODO: update
                 // Uses third subject in test-case-0
                 assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo", "");
-                if (assignment.equals("")) {
+                if (assignment.isEmpty()) {
                     Thread.sleep(100);
                 }
             }

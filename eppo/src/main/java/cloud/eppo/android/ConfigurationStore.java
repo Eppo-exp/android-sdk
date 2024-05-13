@@ -144,15 +144,14 @@ public class ConfigurationStore {
     }
 
     public FlagConfig getFlag(String flagKey) {
-        String hashedFlagKey = Utils.getMD5Hex(flagKey);
         if (flags == null) {
-            FlagConfig flagFromSharedPrefs = getFlagFromSharedPrefs(hashedFlagKey);
+            FlagConfig flagFromSharedPrefs = getFlagFromSharedPrefs(flagKey);
             if (flagFromSharedPrefs != null) {
                 return flagFromSharedPrefs;
             }
             flagConfigsToSaveToPrefs.add(flagKey);
             return null;
         }
-        return flags.get(hashedFlagKey);
+        return flags.get(flagKey);
     }
 }

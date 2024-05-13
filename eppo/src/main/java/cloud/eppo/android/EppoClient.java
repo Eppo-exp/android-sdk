@@ -11,6 +11,9 @@ import android.util.Log;
 
 import com.google.gson.JsonElement;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.SubjectAttributes;
@@ -18,6 +21,7 @@ import cloud.eppo.android.dto.VariationType;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
+import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
 
 public class EppoClient {
@@ -27,7 +31,7 @@ public class EppoClient {
 
     private final ConfigurationRequestor requestor;
     private final AssignmentLogger assignmentLogger;
-    private boolean isGracefulMode;
+    private final boolean isGracefulMode;
     private static EppoClient instance;
 
     // Useful for development and testing
@@ -38,11 +42,31 @@ public class EppoClient {
 
     private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger,
             boolean isGracefulMode) {
-        EppoHttpClient httpClient = httpClientOverride == null ? new EppoHttpClient(host, apiKey) : httpClientOverride;
+        EppoHttpClient httpClient = buildHttpClient(apiKey, host);
         ConfigurationStore configStore = new ConfigurationStore(application);
         requestor = new ConfigurationRequestor(configStore, httpClient);
         this.isGracefulMode = isGracefulMode;
         this.assignmentLogger = assignmentLogger;
+    }
+
+    private EppoHttpClient buildHttpClient(String apiKey, String host) {
+        EppoHttpClient httpClient;
+        if (httpClientOverride != null) {
+            // Test/Debug - Client is mocked entirely
+            httpClient = httpClientOverride;
+        } else if (!isConfigObfuscated) {
+            // Test/Debug - Client should request unobfuscated configurations; done by changing SDK name
+            httpClient = new EppoHttpClient(host, apiKey) {
+                @Override
+                protected String getSdkName() {
+                    return "android-debug";
+                }
+            };
+        } else {
+            // Normal operation
+            httpClient = new EppoHttpClient(host, apiKey);
+        }
+        return httpClient;
     }
 
     public static EppoClient init(Application application, String apiKey) {
@@ -76,21 +100,6 @@ public class EppoClient {
         requestor.load(callback);
     }
 
-    /*
-    private Variation getAssignedVariation(String subjectKey, String experimentKey, int subjectShards,
-            List<Variation> variations) {
-        int shard = Utils.getShard("assignment-" + subjectKey + "-" + experimentKey, subjectShards);
-
-        for (Variation variation : variations) {
-            if (Utils.isShardInRange(shard, variation.getShardRange())) {
-                return variation;
-            }
-        }
-        return null;
-    }
-     */
-
-    //TODO: Include expected variation type in here?
     protected EppoValue getTypedAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, EppoValue defaultValue, VariationType expectedType) {
         validateNotEmptyOrNull(flagKey, "flagKey must not be empty");
         validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
@@ -113,11 +122,73 @@ public class EppoClient {
 
         if (flag.getVariationType() != expectedType) {
             Log.w(TAG, "no assigned variation because the flag type doesn't match the requested type: "+flagKey+" has type "+flag.getVariationType()+", requested "+expectedType);
+            return defaultValue;
         }
 
         FlagEvaluationResult evaluationResult = FlagEvaluator.evaluateFlag(flag, flagKey, subjectKey, subjectAttributes, isConfigObfuscated);
+        EppoValue assignedValue = evaluationResult.getVariation() != null ? evaluationResult.getVariation().getValue() : null;
 
-        return evaluationResult.getVariation() != null ? evaluationResult.getVariation().getValue() : defaultValue;
+        if (assignedValue != null && !valueTypeMatchesExpected(expectedType, assignedValue)) {
+            Log.w(TAG, "no assigned variation because the flag type doesn't match the variation type: "+flagKey+" has type "+flag.getVariationType()+", variation value is "+assignedValue);
+            return defaultValue;
+        }
+
+        if (assignedValue != null && assignmentLogger != null && evaluationResult.doLog()) {
+            String experimentKey = evaluationResult.getFlagKey();
+            String variationKey = evaluationResult.getVariation().getKey();
+            String allocationKey = evaluationResult.getAllocationKey();
+            Map<String, String> extraLogging = evaluationResult.getExtraLogging();
+            Map<String, String> metaData = new HashMap<>();
+            metaData.put("obfuscated", Boolean.valueOf(isConfigObfuscated).toString());
+            metaData.put("sdkLanguage", "Java (Android)");
+            metaData.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
+
+            Assignment assignment = Assignment.createWithCurrentDate(
+                    experimentKey,
+                    flagKey,
+                    allocationKey,
+                    variationKey,
+                    subjectKey,
+                    subjectAttributes,
+                    extraLogging,
+                    metaData
+            );
+            try {
+                assignmentLogger.logAssignment(assignment);
+            } catch (Exception e) {
+                Log.w(TAG, "Error logging assignment: "+e.getMessage(), e);
+            }
+        }
+
+        return assignedValue != null ? assignedValue : defaultValue;
+    }
+
+    private boolean valueTypeMatchesExpected(VariationType expectedType, EppoValue value) {
+        boolean typeMatch;
+        switch (expectedType) {
+            case BOOLEAN:
+                typeMatch = value.isBoolean();
+                break;
+            case INTEGER:
+                typeMatch = value.isNumeric()
+                        // Java has no isInteger check so we check value == floor == ceil
+                        && Math.floor(value.doubleValue()) == Math.ceil(value.doubleValue())
+                        && Math.floor(value.doubleValue()) == value.doubleValue();
+                break;
+            case NUMERIC:
+                typeMatch = value.isNumeric();
+                break;
+            case STRING:
+                typeMatch = value.isString();
+                break;
+            case JSON:
+                typeMatch = value.isJson();
+                break;
+            default:
+                throw new IllegalArgumentException("Unexpected type for type checking: "+expectedType);
+        }
+
+        return typeMatch;
     }
 
     public boolean getBooleanAssignment(String flagKey, String subjectKey, boolean defaultValue) {
@@ -152,7 +223,7 @@ public class EppoClient {
 
     public Double getDoubleAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, double defaultValue) {
         try {
-            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes, EppoValue.valueOf(defaultValue), VariationType.NUMERIC);
+            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue), VariationType.NUMERIC);
             return value.doubleValue();
         } catch (Exception e) {
             return throwIfNotGraceful(e, defaultValue);
@@ -178,7 +249,7 @@ public class EppoClient {
 
     public JsonElement getJSONAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, JsonElement defaultValue) {
         try {
-            EppoValue value = this.getTypedAssignment(subjectKey, flagKey, subjectAttributes, EppoValue.valueOf(defaultValue), VariationType.JSON);
+            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue), VariationType.JSON);
             return value.jsonValue();
         } catch (Exception e) {
             return throwIfNotGraceful(e, defaultValue);

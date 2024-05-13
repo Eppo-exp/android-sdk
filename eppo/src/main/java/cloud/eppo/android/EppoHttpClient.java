@@ -50,7 +50,7 @@ public class EppoHttpClient {
         HttpUrl httpUrl = HttpUrl.parse(baseUrl + path)
                 .newBuilder()
                 .addQueryParameter("apiKey", apiKey)
-                .addQueryParameter("sdkName", "android")
+                .addQueryParameter("sdkName", getSdkName())
                 .addQueryParameter("sdkVersion", BuildConfig.EPPO_VERSION)
                 .build();
 
@@ -82,6 +82,14 @@ public class EppoHttpClient {
                 callback.onFailure("Unable to fetch from URL "+httpUrl);
             }
         });
+    }
+
+    /**
+     * SDK name pulled out into its own function so it can be overridden by tests to force
+     * unobfuscated configurations
+     */
+    protected String getSdkName() {
+        return "android";
     }
 }
 

@@ -48,10 +48,12 @@ public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonS
                 result = EppoValue.valueOf(jsonPrimitive.getAsDouble());
             } else {
                 result = EppoValue.valueOf(jsonPrimitive.getAsString());
+                // TODO: how to handle JSON?
             }
         } else {
-            // If here, its a JSON object, so we treat as JSON-typed
-            result = EppoValue.valueOf(jsonElement);
+            // If here, we don't know what to do; fail to null with a warning
+            Log.w(TAG, "Unexpected JSON for parsing a value: "+jsonElement);
+            result = EppoValue.nullValue();
         }
 
         return result;

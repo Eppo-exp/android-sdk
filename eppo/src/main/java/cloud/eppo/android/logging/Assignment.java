@@ -4,24 +4,29 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.util.Utils;
 
 import java.util.Date;
+import java.util.Map;
 
 public class Assignment {
-    private String experiment;
-    private String featureFlag;
-    private String allocation;
-    private String variation;
-    private String subject;
-    private String timestamp;
-    private SubjectAttributes subjectAttributes;
+    private final String experiment;
+    private final String featureFlag;
+    private final String allocation;
+    private final String variation;
+    private final String subject;
+    private final String timestamp;
+    private final SubjectAttributes subjectAttributes;
+    private final Map<String, String> extraLogging;
+    private final Map<String, String> metaData;
 
-    public Assignment(
+    private Assignment(
             String experiment,
             String featureFlag,
             String allocation,
             String variation,
             String subject,
             String timestamp,
-            SubjectAttributes subjectAttributes) {
+            SubjectAttributes subjectAttributes,
+            Map<String, String> extraLogging,
+            Map<String, String> metaData) {
         this.experiment = experiment;
         this.featureFlag = featureFlag;
         this.allocation = allocation;
@@ -29,6 +34,8 @@ public class Assignment {
         this.subject = subject;
         this.timestamp = timestamp;
         this.subjectAttributes = subjectAttributes;
+        this.extraLogging = extraLogging;
+        this.metaData = metaData;
     }
 
     public static Assignment createWithCurrentDate(
@@ -37,9 +44,12 @@ public class Assignment {
             String allocation,
             String variation,
             String subject,
-            SubjectAttributes subjectAttributes) {
+            SubjectAttributes subjectAttributes,
+            Map<String, String> extraLogging,
+            Map<String, String> metaData
+    ) {
         return new Assignment(experiment, featureFlag, allocation, variation, subject,
-                Utils.getISODate(new Date()), subjectAttributes);
+                Utils.getISODate(new Date()), subjectAttributes, extraLogging, metaData);
     }
 
     public String getExperiment() {
