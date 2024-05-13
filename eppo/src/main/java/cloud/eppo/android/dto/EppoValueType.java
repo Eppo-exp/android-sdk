@@ -6,5 +6,4 @@ public enum EppoValueType {
     NUMBER,
     STRING,
     ARRAY_OF_STRING,
-    JSON
 }

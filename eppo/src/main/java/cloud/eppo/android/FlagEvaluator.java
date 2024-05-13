@@ -110,10 +110,8 @@ public class FlagEvaluator {
                             decodedValue = EppoValue.valueOf(Double.parseDouble(stringValue));
                             break;
                         case STRING:
-                            decodedValue = EppoValue.valueOf(stringValue);
-                            break;
                         case JSON:
-                            decodedValue = EppoValue.valueOf(JsonParser.parseString(stringValue));
+                            decodedValue = EppoValue.valueOf(stringValue);
                             break;
                         default:
                             throw new UnsupportedOperationException("Unexpected variation type for decoding obfuscated variation: " + flag.getVariationType());

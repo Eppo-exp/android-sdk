@@ -10,6 +10,8 @@ import android.os.Build;
 import android.util.Log;
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -182,7 +184,9 @@ public class EppoClient {
                 typeMatch = value.isString();
                 break;
             case JSON:
-                typeMatch = value.isJson();
+                typeMatch = value.isString()
+                        // Eppo leaves JSON as a JSON string; to verify it's valid we attempt to parse
+                        && parseJsonString(value.stringValue()) != null;
                 break;
             default:
                 throw new IllegalArgumentException("Unexpected type for type checking: "+expectedType);
@@ -249,11 +253,22 @@ public class EppoClient {
 
     public JsonElement getJSONAssignment(String flagKey, String subjectKey, SubjectAttributes subjectAttributes, JsonElement defaultValue) {
         try {
-            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue), VariationType.JSON);
-            return value.jsonValue();
+            EppoValue value = this.getTypedAssignment(flagKey, subjectKey, subjectAttributes, EppoValue.valueOf(defaultValue.toString()), VariationType.JSON);
+            return parseJsonString(value.stringValue());
         } catch (Exception e) {
             return throwIfNotGraceful(e, defaultValue);
         }
+    }
+
+    private JsonElement parseJsonString(String jsonString) {
+
+        JsonElement result = null;
+        try {
+            result = JsonParser.parseString(jsonString);
+        } catch (JsonSyntaxException e) {
+            // no-op
+        }
+        return result;
     }
 
     private <T> T throwIfNotGraceful(Exception e, T defaultValue) {

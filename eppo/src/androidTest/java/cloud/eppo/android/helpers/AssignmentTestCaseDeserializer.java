@@ -25,7 +25,7 @@ public class AssignmentTestCaseDeserializer implements JsonDeserializer<Assignme
         JsonObject testCaseObject = rootElement.getAsJsonObject();
         String flag = testCaseObject.get("flag").getAsString();
         VariationType variationType = VariationType.fromString(testCaseObject.get("variationType").getAsString());
-        EppoValue defaultValue = eppoValueDeserializer.deserialize(testCaseObject.get("defaultValue"), type, context);
+        TestCaseValue defaultValue = deserializeTestCaseValue(testCaseObject.get("defaultValue"), type, context);
         List<SubjectAssignment> subjects = deserializeSubjectAssignments(testCaseObject.get("subjects"), type, context);
 
         AssignmentTestCase assignmentTestCase = new AssignmentTestCase();
@@ -50,7 +50,7 @@ public class AssignmentTestCaseDeserializer implements JsonDeserializer<Assignme
                 subjectAttributes.put(attributeName, attributeValue);
             }
 
-            EppoValue assignment = eppoValueDeserializer.deserialize(subjectAssignmentObject.get("assignment"), type, context);
+            TestCaseValue assignment = deserializeTestCaseValue(subjectAssignmentObject.get("assignment"), type, context);
 
             SubjectAssignment subjectAssignment = new SubjectAssignment();
             subjectAssignment.setSubjectKey(subjectKey);
@@ -60,6 +60,15 @@ public class AssignmentTestCaseDeserializer implements JsonDeserializer<Assignme
         }
 
         return subjectAssignments;
+    }
+
+    /**
+     * Test cases can also have raw JSON (i.e. not encoded into a string)
+     */
+    private TestCaseValue deserializeTestCaseValue(JsonElement jsonElement, Type type, JsonDeserializationContext context) {
+        return jsonElement != null && jsonElement.isJsonObject()
+                ? TestCaseValue.valueOf(jsonElement)
+                : TestCaseValue.copyOf(eppoValueDeserializer.deserialize(jsonElement, type, context));
     }
 }
 

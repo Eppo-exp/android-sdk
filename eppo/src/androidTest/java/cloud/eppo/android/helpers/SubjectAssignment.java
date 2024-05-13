@@ -6,7 +6,7 @@ import cloud.eppo.android.dto.SubjectAttributes;
 public class SubjectAssignment {
     String subjectKey;
     SubjectAttributes subjectAttributes;
-    EppoValue assignment;
+    TestCaseValue assignment;
 
     public String getSubjectKey() {
         return subjectKey;
@@ -24,11 +24,11 @@ public class SubjectAssignment {
         this.subjectAttributes = subjectAttributes;
     }
 
-    public EppoValue getAssignment() {
+    public TestCaseValue getAssignment() {
         return assignment;
     }
 
-    public void setAssignment(EppoValue assignment) {
+    public void setAssignment(TestCaseValue assignment) {
         this.assignment = assignment;
     }
 }

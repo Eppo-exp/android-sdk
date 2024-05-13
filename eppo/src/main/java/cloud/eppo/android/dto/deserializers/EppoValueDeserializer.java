@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
@@ -36,7 +37,7 @@ public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonS
                 if (arrayElement.isJsonPrimitive() && arrayElement.getAsJsonPrimitive().isString()) {
                     stringArray.add(arrayElement.getAsJsonPrimitive().getAsString());
                 } else {
-                    Log.e(TAG, "only Strings are supported");
+                    Log.w(TAG, "only Strings are supported for array-valued values; received: "+arrayElement);
                 }
             }
             result = EppoValue.valueOf(stringArray);
@@ -48,7 +49,6 @@ public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonS
                 result = EppoValue.valueOf(jsonPrimitive.getAsDouble());
             } else {
                 result = EppoValue.valueOf(jsonPrimitive.getAsString());
-                // TODO: how to handle JSON?
             }
         } else {
             // If here, we don't know what to do; fail to null with a warning
@@ -61,6 +61,18 @@ public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonS
 
     @Override
     public JsonElement serialize(EppoValue src, Type typeOfSrc, JsonSerializationContext context) {
+        if (src.isBoolean()) {
+            return new JsonPrimitive(src.booleanValue());
+        }
+
+        if (src.isNumeric()) {
+            return new JsonPrimitive(src.doubleValue());
+        }
+
+        if (src.isString()) {
+            return new JsonPrimitive(src.stringValue());
+        }
+
         if (src.isStringArray()) {
             JsonArray array = new JsonArray();
             for (String value : src.stringArrayValue()) {
@@ -69,25 +81,6 @@ public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonS
             return array;
         }
 
-        if (src.isBoolean()) {
-            return new JsonPrimitive(src.booleanValue());
-        }
-
-        if (src.isNumeric()) {
-            try {
-                return new JsonPrimitive(src.doubleValue());
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (src.isNumeric()) {
-            return null;
-        }
-
-        if (src.isJson()) {
-            return src.jsonValue();
-        }
-
-        return new JsonPrimitive(src.stringValue());
+        return JsonNull.INSTANCE;
     }
 }

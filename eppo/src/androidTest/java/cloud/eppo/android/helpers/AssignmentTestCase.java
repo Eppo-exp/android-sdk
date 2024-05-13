@@ -8,7 +8,7 @@ import cloud.eppo.android.dto.VariationType;
 public class AssignmentTestCase {
     String flag;
     VariationType variationType;
-    EppoValue defaultValue;
+    TestCaseValue defaultValue;
     List<SubjectAssignment> subjects;
 
     public String getFlag() {
@@ -27,11 +27,11 @@ public class AssignmentTestCase {
         this.variationType = variationType;
     }
 
-    public EppoValue getDefaultValue() {
+    public TestCaseValue getDefaultValue() {
         return defaultValue;
     }
 
-    public void setDefaultValue(EppoValue defaultValue) {
+    public void setDefaultValue(TestCaseValue defaultValue) {
         this.defaultValue = defaultValue;
     }
 

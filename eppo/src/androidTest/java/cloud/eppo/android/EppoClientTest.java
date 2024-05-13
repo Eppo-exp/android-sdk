@@ -48,6 +48,7 @@ import cloud.eppo.android.dto.VariationType;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
+import cloud.eppo.android.helpers.TestCaseValue;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
@@ -213,7 +214,7 @@ public class EppoClientTest {
         String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
         AssignmentTestCase testCase = gson.fromJson(json, AssignmentTestCase.class);
         String flagKey = testCase.getFlag();
-        EppoValue defaultValue = testCase.getDefaultValue();
+        TestCaseValue defaultValue = testCase.getDefaultValue();
         EppoClient eppoClient = EppoClient.getInstance();
 
         for (SubjectAssignment subjectAssignment : testCase.getSubjects()) {
@@ -262,9 +263,9 @@ public class EppoClientTest {
         String failureMessage = "Incorrect "+flagKey+" assignment for subject "+expectedSubjectAssignment.getSubjectKey();
 
         if (assignment instanceof Boolean) {
-            assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().booleanValue(), (Boolean)((Boolean) assignment).booleanValue());
+            assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().booleanValue(), assignment);
         } else if (assignment instanceof Integer) {
-            assertEquals(failureMessage, Double.valueOf(expectedSubjectAssignment.getAssignment().doubleValue()).intValue(), ((Integer)assignment).intValue());
+            assertEquals(failureMessage, Double.valueOf(expectedSubjectAssignment.getAssignment().doubleValue()).intValue(), assignment);
         } else if (assignment instanceof Double) {
             assertEquals(failureMessage, expectedSubjectAssignment.getAssignment().doubleValue(), (Double)assignment, 0.000001);
         } else if (assignment instanceof String) {

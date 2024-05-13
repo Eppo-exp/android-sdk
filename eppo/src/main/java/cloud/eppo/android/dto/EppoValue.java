@@ -1,45 +1,38 @@
 package cloud.eppo.android.dto;
 
-import com.google.gson.JsonElement;
+import androidx.annotation.NonNull;
 
-import java.util.Collections;
 import java.util.List;
 
 public class EppoValue {
-    private final EppoValueType type;
-    private Boolean boolValue;
-    private Double doubleValue;
-    private String stringValue;
-    private List<String> stringArrayValue;
-    private JsonElement jsonValue;
+    protected final EppoValueType type;
+    protected Boolean boolValue;
+    protected Double doubleValue;
+    protected String stringValue;
+    protected List<String> stringArrayValue;
 
-    private EppoValue() {
+    protected EppoValue() {
         this.type = EppoValueType.NULL;
     }
 
-    private EppoValue(boolean boolValue) {
+    protected EppoValue(boolean boolValue) {
         this.boolValue = boolValue;
         this.type = EppoValueType.BOOLEAN;
     }
 
-    private EppoValue(double doubleValue) {
+    protected EppoValue(double doubleValue) {
         this.doubleValue = doubleValue;
         this.type = EppoValueType.NUMBER;
     }
 
-    private EppoValue(String stringValue) {
+    protected EppoValue(String stringValue) {
         this.stringValue = stringValue;
         this.type = EppoValueType.STRING;
     }
 
-    private EppoValue(List<String> stringArrayValue) {
+    protected EppoValue(List<String> stringArrayValue) {
         this.stringArrayValue = stringArrayValue;
         this.type = EppoValueType.ARRAY_OF_STRING;
-    }
-
-    private EppoValue(JsonElement jsonValue) {
-        this.jsonValue = jsonValue;
-        this.type = EppoValueType.JSON;
     }
 
     public static EppoValue nullValue() {
@@ -62,10 +55,6 @@ public class EppoValue {
         return new EppoValue(value);
     }
 
-    public static EppoValue valueOf(JsonElement jsonValue) {
-        return new EppoValue(jsonValue);
-    }
-
     public boolean booleanValue() {
         return this.boolValue;
     }
@@ -80,10 +69,6 @@ public class EppoValue {
 
     public List<String> stringArrayValue() {
         return this.stringArrayValue;
-    }
-
-    public JsonElement jsonValue() {
-        return this.jsonValue;
     }
 
     public boolean isNull() {
@@ -106,23 +91,18 @@ public class EppoValue {
         return type == EppoValueType.ARRAY_OF_STRING;
     }
 
-    public boolean isJson() {
-        return type == EppoValueType.JSON;
-    }
-
+    @NonNull
     @Override
     public String toString() {
         switch(this.type) {
-            case STRING:
-                return this.stringValue;
-            case NUMBER:
-                return this.doubleValue.toString();
             case BOOLEAN:
                 return this.boolValue.toString();
+            case NUMBER:
+                return this.doubleValue.toString();
+            case STRING:
+                return this.stringValue;
             case ARRAY_OF_STRING:
-                return Collections.singletonList(this.stringArrayValue).toString();
-            case JSON:
-                return this.jsonValue.toString();
+                return String.join(" ,", this.stringArrayValue);
             default: // NULL
                 return "";
         }
