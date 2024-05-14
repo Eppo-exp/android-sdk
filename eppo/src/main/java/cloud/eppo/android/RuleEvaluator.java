@@ -141,7 +141,7 @@ public class RuleEvaluator {
             boolean expectMatch = condition.getOperator() == OperatorType.ONE_OF;
             boolean matchFound = false;
             for (String arrayString : conditionValue.stringArrayValue()) {
-                String comparisonString = attributeValue.stringValue();
+                String comparisonString = attributeValue.stringValue(); // TODO: need to cast non strings to string; probably by updating EppoValue
                 if (isObfuscated) {
                     // List comparisons use hashes for checking exact match
                     comparisonString = getMD5Hex(comparisonString);
