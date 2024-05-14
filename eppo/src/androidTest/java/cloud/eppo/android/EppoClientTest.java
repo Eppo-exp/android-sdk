@@ -119,8 +119,14 @@ public class EppoClientTest {
     }
 
     @Test
-    public void testAssignments() {
+    public void testUnobfuscatedAssignments() {
         setIsConfigObfuscatedField(false);
+        initClient(TEST_HOST, true, true, false);
+        runTestCases();
+    }
+
+    @Test
+    public void testAssignments() {
         initClient(TEST_HOST, true, true, false);
         runTestCases();
     }

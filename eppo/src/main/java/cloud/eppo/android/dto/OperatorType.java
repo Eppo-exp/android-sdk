@@ -20,8 +20,7 @@ public enum OperatorType {
 
     public static OperatorType fromString(String value) {
         for (OperatorType type : OperatorType.values()) {
-            // TODO: also check hashed version
-            if (type.value.equals(value) || type.value.equals(getMD5Hex(value))) {
+            if (type.value.equals(value) || getMD5Hex(type.value).equals(value)) {
                 return type;
             }
         }

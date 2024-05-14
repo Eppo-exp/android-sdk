@@ -91,8 +91,19 @@ public class Utils {
         try {
             result = isoUtcDateFormat.parse(isoDateString);
         } catch (ParseException e) {
-            Log.w(TAG, "Date \"+isoDateString+\" not in ISO date format");
+            /* no-op; leave result null for now */
         }
+
+        if (result == null) {
+            // Date may be encoded
+            String decodedIsoDateString = base64Decode(isoDateString);
+            try {
+                result = isoUtcDateFormat.parse(decodedIsoDateString);
+            } catch (ParseException e) {
+                Log.w(TAG, "Date \""+isoDateString+"\" not in ISO date format");
+            }
+        }
+
         return result;
     }
 
