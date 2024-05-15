@@ -5,6 +5,7 @@ import static cloud.eppo.android.util.Utils.getMD5Hex;
 
 import com.github.zafarkhaja.semver.Version;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -37,10 +38,18 @@ public class RuleEvaluator {
     private static boolean evaluateCondition(SubjectAttributes subjectAttributes, TargetingCondition condition, boolean isObfuscated) {
         EppoValue conditionValue = condition.getValue();
         String attributeKey = condition.getAttribute();
+        EppoValue attributeValue = null;
         if (isObfuscated) {
-            attributeKey = base64Decode(attributeKey);
+            // attribute names are hashed
+            for (Map.Entry<String, EppoValue> entry : subjectAttributes.entrySet()) {
+                if (getMD5Hex(entry.getKey()).equals(attributeKey)) {
+                    attributeValue = entry.getValue();
+                    break;
+                }
+            }
+        } else {
+            attributeValue = subjectAttributes.get(attributeKey);
         }
-        EppoValue attributeValue = subjectAttributes.get(attributeKey);
 
         // First we do any NULL check
         boolean attributeValueIsNull = attributeValue == null || attributeValue.isNull();
@@ -94,7 +103,7 @@ public class RuleEvaluator {
             switch (condition.getOperator()) {
                 case GREATER_THAN_OR_EQUAL_TO:
                     if (numericComparison) {
-                        return attributeValue.doubleValue() >= conditionValue.doubleValue();
+                        return attributeValue.doubleValue() >= conditionNumber;
                     }
 
                     if (semVerComparison) {
@@ -104,7 +113,7 @@ public class RuleEvaluator {
                     return false;
                 case GREATER_THAN:
                     if (numericComparison) {
-                        return attributeValue.doubleValue() > conditionValue.doubleValue();
+                        return attributeValue.doubleValue() > conditionNumber;
                     }
 
                     if (semVerComparison) {
@@ -114,7 +123,7 @@ public class RuleEvaluator {
                     return false;
                 case LESS_THAN_OR_EQUAL_TO:
                     if (numericComparison) {
-                        return attributeValue.doubleValue() <= conditionValue.doubleValue();
+                        return attributeValue.doubleValue() <= conditionNumber;
                     }
 
                     if (semVerComparison) {
@@ -124,7 +133,7 @@ public class RuleEvaluator {
                     return false;
                 case LESS_THAN:
                     if (numericComparison) {
-                        return attributeValue.doubleValue() < conditionValue.doubleValue();
+                        return attributeValue.doubleValue() < conditionNumber;
                     }
 
                     if (semVerComparison) {
