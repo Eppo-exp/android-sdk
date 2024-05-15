@@ -10,13 +10,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class ConfigCacheFile {
-    static final String CACHE_FILE_NAME = "eppo-sdk-config-v2.json";
-    private final File filesDir;
     private final File cacheFile;
 
-    public ConfigCacheFile(Application application) {
-        filesDir = application.getFilesDir();
-        cacheFile = new File(filesDir, CACHE_FILE_NAME);
+    public ConfigCacheFile(Application application, String keySuffix) {
+        File filesDir = application.getFilesDir();
+        cacheFile = new File(filesDir, cacheFileName(keySuffix));
+    }
+
+    public static String cacheFileName(String keySuffix) {
+        return "eppo-sdk-config-v3-" + keySuffix + ".json";
     }
 
     public boolean exists() {

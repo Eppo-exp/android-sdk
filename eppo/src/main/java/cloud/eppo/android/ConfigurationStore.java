@@ -41,9 +41,9 @@ public class ConfigurationStore {
 
     private ConcurrentHashMap<String, FlagConfig> flags;
 
-    public ConfigurationStore(Application application) {
-        cacheFile = new ConfigCacheFile(application);
-        this.sharedPrefs = Utils.getSharedPrefs(application);
+    public ConfigurationStore(Application application, String keySuffix) {
+        cacheFile = new ConfigCacheFile(application, keySuffix);
+        this.sharedPrefs = Utils.getSharedPrefs(application, keySuffix);
     }
 
     public void loadFromCache(CacheLoadCallback callback) {
