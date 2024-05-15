@@ -35,7 +35,11 @@ import static org.mockito.Matchers.anyString;
 import org.junit.After;
 import org.junit.Test;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -263,13 +267,13 @@ public class EppoClientTest {
     @Test
     public void testCachedAssignments() {
         // First initialize successfully
-        initClient(TEST_HOST, false, true, false); // ensure cache is populated
+        initClient(TEST_HOST, true, true, false); // ensure cache is populated
 
         // wait for a bit since cache file is loaded asynchronously
         waitForPopulatedCache();
 
         // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
-        initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
+        initClient(INVALID_HOST, true, false, false); // invalid port to force to use cache
 
         runTestCases();
     }
@@ -401,26 +405,31 @@ public class EppoClientTest {
     }
 
     @Test
-    public void testCachedBadResponseAllowsLaterFetching() {
+    public void testCachedBadResponseRequiresFetch() {
         // Populate the cache with a bad response
         ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext());
-        cacheFile.delete();
-        try {
-            cacheFile.getOutputWriter().write("{}");
-            cacheFile.getOutputWriter().close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        cacheFile.setContents("{ invalid }");
 
-        initClient(TEST_HOST, false, false, false);
+        initClient(TEST_HOST, true, false, false);
 
-        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
-        assertNull(result);
-        // Failure callback will have fired from cache read error, but configuration request will still be fired off on init
-        // Wait for the configuration request to load the configuration
-        waitForNonNullAssignment();
-        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
-        assertEquals("control", assignment);
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7d1a3025a26078b95", "randomization_algo");
+        assertEquals("green", assignment);
+    }
+
+    @Test
+    public void testEmptyFlagsResponseRequiresFetch() {
+        // Populate the cache with a bad response
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext());
+        cacheFile.setContents("{\"flags\": {}}");
+
+        initClient(TEST_HOST, true, false, false);
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7d1a3025a26078b95", "randomization_algo");
+        assertEquals("green", assignment);
+    }
+
+    @Test
+    public void testDifferentCacheFilesPerKey() {
+        // TODO
     }
 
     private void waitForPopulatedCache() {

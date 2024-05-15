@@ -2,12 +2,12 @@ package cloud.eppo.android;
 
 import android.app.Application;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 
 public class ConfigCacheFile {
     static final String CACHE_FILE_NAME = "eppo-sdk-config-v2.json";
@@ -29,13 +29,31 @@ public class ConfigCacheFile {
         }
     }
 
-    public OutputStreamWriter getOutputWriter() throws IOException {
-        FileOutputStream fos = new FileOutputStream(cacheFile);
-        return new OutputStreamWriter(fos);
+    /**
+     * Useful for passing in as a writer for gson serialization
+     */
+    public BufferedWriter getWriter() throws IOException {
+        return new BufferedWriter(new FileWriter(cacheFile));
     }
 
-    public InputStreamReader getInputReader() throws IOException {
-        FileInputStream fis = new FileInputStream(cacheFile);
-        return new InputStreamReader(fis);
+    /**
+     * Useful for passing in as a reader for gson deserialization
+     */
+    public BufferedReader getReader() throws IOException {
+        return new BufferedReader(new FileReader(cacheFile));
+    }
+
+    /**
+     * Useful for mocking caches in automated tests
+     */
+    public void setContents(String contents) {
+        delete();
+        try {
+            BufferedWriter writer = getWriter();
+            writer.write(contents);
+            writer.close();
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 }

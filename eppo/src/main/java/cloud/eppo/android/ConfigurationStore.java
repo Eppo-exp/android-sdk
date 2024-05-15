@@ -11,8 +11,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
@@ -56,13 +57,16 @@ public class ConfigurationStore {
             Log.d(TAG, "Loading from cache");
             try {
                 synchronized (cacheFile) {
-                    InputStreamReader reader = cacheFile.getInputReader();
+                    BufferedReader reader = cacheFile.getReader();
                     RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
                     reader.close();
                     if (configResponse == null || configResponse.getFlags() == null) {
                         throw new JsonSyntaxException("Configuration file missing flags");
                     }
                     flags = configResponse.getFlags();
+                    if (flags.isEmpty()) {
+                        throw new IllegalStateException("Cached configuration file has empty flags");
+                    }
                     updateConfigsInSharedPrefs();
                 }
                 Log.d(TAG, "Cache loaded successfully");
@@ -123,7 +127,7 @@ public class ConfigurationStore {
         AsyncTask.execute(() -> {
             try {
                 synchronized (cacheFile) {
-                    OutputStreamWriter writer = cacheFile.getOutputWriter();
+                    BufferedWriter writer = cacheFile.getWriter();
                     gson.toJson(config, writer);
                     writer.close();
                 }
