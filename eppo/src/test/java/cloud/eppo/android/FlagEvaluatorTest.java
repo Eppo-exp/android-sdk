@@ -392,7 +392,7 @@ public class FlagEvaluatorTest {
             if (allocationToEncode.getRules() != null) {
                 // assume just a single rule with a single string-valued condition
                 TargetingCondition conditionToEncode = allocationToEncode.getRules().iterator().next().getConditions().iterator().next();
-                conditionToEncode.setAttribute(base64Encode(conditionToEncode.getAttribute()));
+                conditionToEncode.setAttribute(getMD5Hex(conditionToEncode.getAttribute()));
                 conditionToEncode.setValue(EppoValue.valueOf(base64Encode(conditionToEncode.getValue().stringValue())));
             }
             for (Split splitToEncode : allocationToEncode.getSplits()) {
