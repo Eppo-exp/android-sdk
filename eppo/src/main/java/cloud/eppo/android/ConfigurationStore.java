@@ -13,7 +13,6 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.HashSet;
 import java.util.Set;
@@ -86,6 +85,7 @@ public class ConfigurationStore {
             flags = new ConcurrentHashMap<>();
         } else {
             flags = config.getFlags();
+            Log.d(TAG, "Loaded" + flags.size() + "flags");
         }
 
         // update any existing flags already in shared prefs
@@ -138,6 +138,7 @@ public class ConfigurationStore {
     }
 
     private FlagConfig getFlagFromSharedPrefs(String hashedFlagKey) {
+        Log.d(TAG, "Attempting to load flag from shared preferences");
         try {
             return gson.fromJson(sharedPrefs.getString(hashedFlagKey, null), FlagConfig.class);
         } catch (Exception e) {
@@ -149,6 +150,7 @@ public class ConfigurationStore {
     public FlagConfig getFlag(String flagKey) {
         String hashedFlagKey = Utils.getMD5Hex(flagKey);
         if (flags == null) {
+            Log.d(TAG, "Flags not loaded yet");
             FlagConfig flagFromSharedPrefs = getFlagFromSharedPrefs(hashedFlagKey);
             if (flagFromSharedPrefs != null) {
                 return flagFromSharedPrefs;
