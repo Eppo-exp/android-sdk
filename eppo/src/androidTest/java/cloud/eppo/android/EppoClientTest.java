@@ -10,8 +10,6 @@ import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
 import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.safeCacheKey;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.util.Log;
 
@@ -55,6 +53,7 @@ import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
     private static final String DUMMY_API_KEY = "mock-api-key";
+    private static final String DUMMY_OTHER_API_KEY = "another-mock-api-key";
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
@@ -127,16 +126,9 @@ public class EppoClientTest {
         List<String> expectedAssignments;
     }
 
-    private void deleteCacheFiles() {
-        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), DUMMY_API_KEY);
-        cacheFile.delete();
-        SharedPreferences sharedPreferences = ApplicationProvider.getApplicationContext().getSharedPreferences("eppo", Context.MODE_PRIVATE);
-        sharedPreferences.edit().clear().commit();
-    }
-
     private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode, String apiKey) {
         if (shouldDeleteCacheFiles) {
-            deleteCacheFiles();
+            clearCacheFile(apiKey);
         }
 
         CountDownLatch lock = new CountDownLatch(1);
@@ -175,8 +167,16 @@ public class EppoClientTest {
     }
 
     @After
-    public void teardown() {
-        deleteCacheFiles();
+    public void clearCaches() {
+        String[] apiKeys = { DUMMY_API_KEY, DUMMY_OTHER_API_KEY };
+        for (String apiKey : apiKeys) {
+            clearCacheFile(apiKey);
+        }
+    }
+
+    private void clearCacheFile(String apiKey) {
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), apiKey);
+        cacheFile.delete();
     }
 
     @Test
@@ -422,16 +422,13 @@ public class EppoClientTest {
 
     @Test
     public void testDifferentCacheFilesPerKey() {
-        String apiKey1 = "abcdef01234567890";
-
-        initClient(TEST_HOST, true, true, false, apiKey1);
+        initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
         // API Key 1 will fetch and then populate its cache with the usual test data
         Boolean apiKey1Assignment = EppoClient.getInstance().getBooleanAssignment("subject-2", "experiment_with_boolean_variations");
         assertFalse(apiKey1Assignment);
 
-        // Pre-seed a different flag configuration for API Key 2
-        String apiKey2 = "0987654321fedcba";
-        ConfigCacheFile cacheFile2 = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), safeCacheKey(apiKey2));
+        // Pre-seed a different flag configuration for the other API Key
+        ConfigCacheFile cacheFile2 = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_OTHER_API_KEY));
         cacheFile2.setContents("{\n" +
                 "  \"flags\": {\n" +
                 "    \"8fc1fb33379d78c8a9edbf43afd6703a\": {\n" +
@@ -466,14 +463,14 @@ public class EppoClientTest {
                 "  }\n" +
                 "}");
 
-        initClient(TEST_HOST, true, false, false, apiKey2);
+        initClient(TEST_HOST, true, false, false, DUMMY_OTHER_API_KEY);
 
         // Ensure API key 2 uses its cache
         Boolean apiKey2Assignment = EppoClient.getInstance().getBooleanAssignment("subject-2", "experiment_with_boolean_variations");
         assertTrue(apiKey2Assignment);
 
         // Reinitialize API key 1 to be sure it used its cache
-        initClient(TEST_HOST, true, false, false, apiKey1);
+        initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
         // API Key 1 will fetch and then populate its cache with the usual test data
         apiKey1Assignment = EppoClient.getInstance().getBooleanAssignment("subject-2", "experiment_with_boolean_variations");
         assertFalse(apiKey1Assignment);

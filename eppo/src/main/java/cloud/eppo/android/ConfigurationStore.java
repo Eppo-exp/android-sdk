@@ -3,7 +3,6 @@ package cloud.eppo.android;
 import static cloud.eppo.android.util.Utils.logTag;
 
 import android.app.Application;
-import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -14,8 +13,6 @@ import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Reader;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import cloud.eppo.android.dto.EppoValue;
@@ -34,15 +31,12 @@ public class ConfigurationStore {
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
             .create();
-    private final Set<String> flagConfigsToSaveToPrefs = new HashSet<>();
-    private final SharedPreferences sharedPrefs;
     private final ConfigCacheFile cacheFile;
 
     private ConcurrentHashMap<String, FlagConfig> flags;
 
     public ConfigurationStore(Application application, String keySuffix) {
         cacheFile = new ConfigCacheFile(application, keySuffix);
-        this.sharedPrefs = Utils.getSharedPrefs(application, keySuffix);
     }
 
     public void loadFromCache(CacheLoadCallback callback) {
@@ -55,18 +49,18 @@ public class ConfigurationStore {
         AsyncTask.execute(() -> {
             Log.d(TAG, "Loading from cache");
             try {
+                RandomizationConfigResponse configResponse;
                 synchronized (cacheFile) {
                     BufferedReader reader = cacheFile.getReader();
-                    RandomizationConfigResponse configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
+                    configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
                     reader.close();
-                    if (configResponse == null || configResponse.getFlags() == null) {
-                        throw new JsonSyntaxException("Configuration file missing flags");
-                    }
-                    flags = configResponse.getFlags();
-                    if (flags.isEmpty()) {
-                        throw new IllegalStateException("Cached configuration file has empty flags");
-                    }
-                    updateConfigsInSharedPrefs();
+                }
+                if (configResponse == null || configResponse.getFlags() == null) {
+                    throw new JsonSyntaxException("Configuration file missing flags");
+                }
+                flags = configResponse.getFlags();
+                if (flags.isEmpty()) {
+                    throw new IllegalStateException("Cached configuration file has empty flags");
                 }
                 Log.d(TAG, "Cache loaded successfully");
                 callback.onCacheLoadSuccess();
@@ -78,49 +72,17 @@ public class ConfigurationStore {
         });
     }
 
-    public void setFlags(Reader response) {
+    public void setFlagsFromResponse(Reader response) {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
         if (config == null || config.getFlags() == null) {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
         } else {
             flags = config.getFlags();
-            Log.d(TAG, "Loaded" + flags.size() + "flags");
-        }
-
-        // update any existing flags already in shared prefs
-        updateConfigsInSharedPrefs();
-
-        if (!flagConfigsToSaveToPrefs.isEmpty()) {
-            SharedPreferences.Editor editor = sharedPrefs.edit();
-            for (String plaintextFlagKey : flagConfigsToSaveToPrefs) {
-                FlagConfig flagConfig = getFlag(plaintextFlagKey);
-                if (flagConfig == null) {
-                    continue;
-                }
-
-                String hashedFlagKey = Utils.getMD5Hex(plaintextFlagKey);
-                writeFlagToSharedPrefs(hashedFlagKey, flagConfig, editor);
-            }
-            editor.apply();
-            flagConfigsToSaveToPrefs.clear();
+            Log.d(TAG, "Loaded" + flags.size() + "flags from configuration response");
         }
 
         writeConfigToFile(config);
-    }
-
-    private void updateConfigsInSharedPrefs() {
-        SharedPreferences.Editor editor = sharedPrefs.edit();
-        for (String hashedFlagKey : flags.keySet()) {
-            if (sharedPrefs.contains(hashedFlagKey)) {
-                writeFlagToSharedPrefs(hashedFlagKey, flags.get(hashedFlagKey), editor);
-            }
-        }
-        editor.apply();
-    }
-
-    private void writeFlagToSharedPrefs(String hashedFlagKey, FlagConfig config, SharedPreferences.Editor editor) {
-        editor.putString(hashedFlagKey, gson.toJson(config));
     }
 
     private void writeConfigToFile(RandomizationConfigResponse config) {
@@ -137,26 +99,13 @@ public class ConfigurationStore {
         });
     }
 
-    private FlagConfig getFlagFromSharedPrefs(String hashedFlagKey) {
-        Log.d(TAG, "Attempting to load flag from shared preferences");
-        try {
-            return gson.fromJson(sharedPrefs.getString(hashedFlagKey, null), FlagConfig.class);
-        } catch (Exception e) {
-            Log.e(TAG, "Unable to load flag from prefs", e);
-        }
-        return null;
-    }
-
     public FlagConfig getFlag(String flagKey) {
         String hashedFlagKey = Utils.getMD5Hex(flagKey);
         if (flags == null) {
-            Log.d(TAG, "Flags not loaded yet");
-            FlagConfig flagFromSharedPrefs = getFlagFromSharedPrefs(hashedFlagKey);
-            if (flagFromSharedPrefs != null) {
-                return flagFromSharedPrefs;
-            }
-            flagConfigsToSaveToPrefs.add(flagKey);
+            Log.w(TAG, "Request for flag " + flagKey + " before flags have been loaded");
             return null;
+        } else if (flags.isEmpty()) {
+            Log.w(TAG, "Request for flag " + flagKey + " with empty flags");
         }
         return flags.get(hashedFlagKey);
     }
