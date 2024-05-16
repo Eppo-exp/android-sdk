@@ -62,7 +62,7 @@ public class FlagEvaluator {
 
             // This allocation has matched; find variation
             for (Split split : allocation.getSplits()) {
-                if (allShardsMatch(split, subjectKey, flag.getTotalShards())) {
+                if (allShardsMatch(split, subjectKey, flag.getTotalShards(), isConfigObfuscated)) {
                     // Variation and extra logging is determined by the relevant split
                     variation = flag.getVariations().get(split.getVariationKey());
                     if (variation == null) {
@@ -125,7 +125,7 @@ public class FlagEvaluator {
         return evaluationResult;
     }
 
-    private static boolean allShardsMatch(Split split, String subjectKey, int totalShards) {
+    private static boolean allShardsMatch(Split split, String subjectKey, int totalShards, boolean isObfuscated) {
         if (split.getShards() == null || split.getShards().isEmpty()) {
             // Default to matching if no explicit shards
             return true;
@@ -133,7 +133,7 @@ public class FlagEvaluator {
 
         boolean allShardsMatch = true;
         for (Shard shard : split.getShards()) {
-            if (!matchesShard(shard, subjectKey, totalShards)) {
+            if (!matchesShard(shard, subjectKey, totalShards, isObfuscated)) {
                 allShardsMatch = false;
                 break;
             }
@@ -141,8 +141,12 @@ public class FlagEvaluator {
         return allShardsMatch;
     }
 
-    private static boolean matchesShard(Shard shard, String subjectKey, int totalShards) {
-        String hashKey = shard.getSalt()+"-"+subjectKey;
+    private static boolean matchesShard(Shard shard, String subjectKey, int totalShards, boolean isObfuscated) {
+        String salt = shard.getSalt();
+        if (isObfuscated) {
+            salt = base64Decode(salt);
+        }
+        String hashKey = salt+"-"+subjectKey;
         int assignedShard = Utils.getShard(hashKey, totalShards);
         boolean inRange = false;
         for (Range range : shard.getRanges()) {
