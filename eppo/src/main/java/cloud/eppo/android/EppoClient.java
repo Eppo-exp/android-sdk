@@ -42,8 +42,8 @@ public class EppoClient {
     private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger,
             boolean isGracefulMode) {
         EppoHttpClient httpClient = httpClientOverride == null ? new EppoHttpClient(host, apiKey) : httpClientOverride;
-        String cacheKeySuffix = safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
-        ConfigurationStore configStore = new ConfigurationStore(application, cacheKeySuffix);
+        String cacheFileNameSuffix = safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
+        ConfigurationStore configStore = new ConfigurationStore(application, cacheFileNameSuffix);
         requestor = new ConfigurationRequestor(configStore, httpClient);
         this.isGracefulMode = isGracefulMode;
         this.assignmentLogger = assignmentLogger;

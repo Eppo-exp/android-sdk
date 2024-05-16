@@ -35,8 +35,8 @@ public class ConfigurationStore {
 
     private ConcurrentHashMap<String, FlagConfig> flags;
 
-    public ConfigurationStore(Application application, String keySuffix) {
-        cacheFile = new ConfigCacheFile(application, keySuffix);
+    public ConfigurationStore(Application application, String cacheFileNameSuffix) {
+        cacheFile = new ConfigCacheFile(application, cacheFileNameSuffix);
     }
 
     public void loadFromCache(CacheLoadCallback callback) {

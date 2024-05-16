@@ -12,13 +12,13 @@ import java.io.IOException;
 public class ConfigCacheFile {
     private final File cacheFile;
 
-    public ConfigCacheFile(Application application, String keySuffix) {
+    public ConfigCacheFile(Application application, String fileNameSuffix) {
         File filesDir = application.getFilesDir();
-        cacheFile = new File(filesDir, cacheFileName(keySuffix));
+        cacheFile = new File(filesDir, cacheFileName(fileNameSuffix));
     }
 
-    public static String cacheFileName(String keySuffix) {
-        return "eppo-sdk-config-v3-" + keySuffix + ".json";
+    public static String cacheFileName(String suffix) {
+        return "eppo-sdk-config-v3-" + suffix + ".json";
     }
 
     public boolean exists() {
