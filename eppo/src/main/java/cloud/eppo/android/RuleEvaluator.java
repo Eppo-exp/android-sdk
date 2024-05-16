@@ -170,7 +170,8 @@ public class RuleEvaluator {
                 patternString = base64Decode(patternString);
             }
 
-            return Pattern.compile(patternString).matcher(attributeValue.stringValue()).matches();
+            // Use find() to support partial matching
+            return Pattern.compile(patternString).matcher(attributeValue.stringValue()).find();
         }
 
         throw new IllegalStateException("Unexpected rule operator: " + condition.getOperator());

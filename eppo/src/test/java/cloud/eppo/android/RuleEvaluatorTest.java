@@ -60,7 +60,7 @@ public class RuleEvaluatorTest {
 
     public void addRegexConditionToRule(TargetingRule TargetingRule) {
         TargetingCondition condition = new TargetingCondition();
-        condition.setValue(EppoValue.valueOf("[a-z]+"));
+        condition.setValue(EppoValue.valueOf("example\\.(com|org)"));
         condition.setAttribute("match");
         condition.setOperator(OperatorType.MATCHES);
 
@@ -180,7 +180,7 @@ public class RuleEvaluatorTest {
         targetingRules.add(targetingRule);
 
         SubjectAttributes subjectAttributes = new SubjectAttributes();
-        subjectAttributes.put("match", EppoValue.valueOf("abcd"));
+        subjectAttributes.put("match", EppoValue.valueOf("test@example.com"));
 
         assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
