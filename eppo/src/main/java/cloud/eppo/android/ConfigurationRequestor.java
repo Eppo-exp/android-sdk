@@ -15,8 +15,8 @@ import cloud.eppo.android.dto.FlagConfig;
 public class ConfigurationRequestor {
     private static final String TAG = logTag(ConfigurationRequestor.class);
 
-    private EppoHttpClient client;
-    private ConfigurationStore configurationStore;
+    private final EppoHttpClient client;
+    private final ConfigurationStore configurationStore;
 
     public ConfigurationRequestor(ConfigurationStore configurationStore, EppoHttpClient client) {
         this.configurationStore = configurationStore;
@@ -44,7 +44,8 @@ public class ConfigurationRequestor {
             @Override
             public void onSuccess(Reader response) {
                 try {
-                    configurationStore.setFlags(response);
+                    configurationStore.setFlagsFromResponse(response);
+                    Log.d(TAG, "Configuration fetch successful");
                 } catch (JsonSyntaxException | JsonIOException e) {
                     Log.e(TAG, "Error loading configuration response", e);
                     if (callback != null && !cachedUsed.get()) {
@@ -60,7 +61,7 @@ public class ConfigurationRequestor {
 
             @Override
             public void onFailure(String errorMessage) {
-                Log.e(TAG, errorMessage);
+                Log.e(TAG, "Error fetching configuration: " + errorMessage);
                 if (callback != null && !cachedUsed.get()) {
                     callback.onError(errorMessage);
                 }

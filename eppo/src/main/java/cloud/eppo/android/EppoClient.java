@@ -2,8 +2,10 @@ package cloud.eppo.android;
 
 import static cloud.eppo.android.util.Utils.getMD5Hex;
 import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.os.Build;
@@ -36,16 +38,17 @@ public class EppoClient {
     private final boolean isGracefulMode;
     private static EppoClient instance;
 
-    // Useful for development and testing
+    // Useful for development and testing (accessed via reflection)
     private static boolean isConfigObfuscated = true;
 
-    // Useful for testing in situations where we want to mock the http client
+    // Useful for testing in situations where we want to mock the http client (accessed via reflection)
     private static EppoHttpClient httpClientOverride = null;
 
     private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger,
             boolean isGracefulMode) {
         EppoHttpClient httpClient = buildHttpClient(apiKey, host);
-        ConfigurationStore configStore = new ConfigurationStore(application);
+        String cacheFileNameSuffix = safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
+        ConfigurationStore configStore = new ConfigurationStore(application, cacheFileNameSuffix);
         requestor = new ConfigurationRequestor(configStore, httpClient);
         this.isGracefulMode = isGracefulMode;
         this.assignmentLogger = assignmentLogger;
@@ -71,12 +74,13 @@ public class EppoClient {
         return httpClient;
     }
 
+    /** @noinspection unused*/
     public static EppoClient init(Application application, String apiKey) {
         return init(application, apiKey, DEFAULT_HOST, null, null, DEFAULT_IS_GRACEFUL_MODE);
     }
 
     public static EppoClient init(Application application, String apiKey, String host, InitializationCallback callback,
-            AssignmentLogger assignmentLogger, boolean isGracefulMode) {
+                                  AssignmentLogger assignmentLogger, boolean isGracefulMode) {
         if (application == null) {
             throw new MissingApplicationException();
         }
@@ -86,8 +90,12 @@ public class EppoClient {
         }
 
         boolean shouldCreateInstance = instance == null;
-        if (!shouldCreateInstance && Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-            shouldCreateInstance = ActivityManager.isRunningInTestHarness();
+        if (!shouldCreateInstance && ActivityManager.isRunningInTestHarness()) {
+            // Always recreate for tests
+            Log.d(TAG, "Recreating instance on init() for test");
+            shouldCreateInstance = true;
+        } else {
+            Log.w(TAG, "Eppo Client instance already initialized");
         }
 
         if (shouldCreateInstance) {
@@ -221,7 +229,7 @@ public class EppoClient {
         }
     }
 
-    public Double getDoubleAssignment(String subjectKey, String flagKey, double defaultValue) {
+    public Double getDoubleAssignment(String flagKey, String subjectKey, double defaultValue) {
        return getDoubleAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
     }
 
@@ -234,7 +242,7 @@ public class EppoClient {
         }
     }
 
-    public String getStringAssignment(String subjectKey, String flagKey, String defaultValue) {
+    public String getStringAssignment(String flagKey, String subjectKey, String defaultValue) {
         return this.getStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
     }
 
@@ -247,7 +255,7 @@ public class EppoClient {
         }
     }
 
-    public JsonElement getJSONAssignment(String subjectKey, String flagKey, JsonElement defaultValue) {
+    public JsonElement getJSONAssignment(String flagKey, String subjectKey, JsonElement defaultValue) {
         return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
     }
 

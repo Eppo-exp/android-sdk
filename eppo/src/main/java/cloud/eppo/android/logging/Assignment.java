@@ -1,11 +1,14 @@
 package cloud.eppo.android.logging;
 
+import androidx.annotation.NonNull;
+
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.util.Utils;
 
 import java.util.Date;
 import java.util.Map;
 
+/** @noinspection unused*/
 public class Assignment {
     private final String experiment;
     private final String featureFlag;
@@ -56,6 +59,14 @@ public class Assignment {
         return experiment;
     }
 
+    public String getFeatureFlag() {
+        return featureFlag;
+    }
+
+    public String getAllocation() {
+        return allocation;
+    }
+
     public String getVariation() {
         return variation;
     }
@@ -72,6 +83,15 @@ public class Assignment {
         return subjectAttributes;
     }
 
+    public Map<String, String> getExtraLogging() {
+        return extraLogging;
+    }
+
+    public Map<String, String> getMetaData() {
+        return metaData;
+    }
+
+    @NonNull
     @Override
     public String toString() {
         return "Subject " + subject + " assigned to variation " + variation + " in experiment " + experiment;

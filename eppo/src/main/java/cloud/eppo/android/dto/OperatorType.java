@@ -20,7 +20,13 @@ public enum OperatorType {
 
     public static OperatorType fromString(String value) {
         for (OperatorType type : OperatorType.values()) {
-            if (type.value.equals(value) || getMD5Hex(type.value).equals(value)) {
+            if (type.value.equals(value)
+                || getMD5Hex(type.value).equals(value)
+                || getMD5Hex(type.value).equals(value)
+                // gson deserializes enums using their names so check it to in case we are reading from cache
+                || type.name().equals(value)
+                || getMD5Hex(type.name()).equals(value)
+            ) {
                 return type;
             }
         }
