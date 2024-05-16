@@ -54,8 +54,14 @@ public class Utils {
         return dateFormat.format(date);
     }
 
-    public static SharedPreferences getSharedPrefs(Context context) {
-        return context.getSharedPreferences("eppo", Context.MODE_PRIVATE);
+    public static String safeCacheKey(String key) {
+        // Take the first eight characters to avoid the key being sensitive information
+        // Remove non-alphanumeric characters so it plays nice with filesystem
+        return key.substring(0,8).replaceAll("\\W", "");
+    }
+
+    public static SharedPreferences getSharedPrefs(Context context, String keySuffix) {
+        return context.getSharedPreferences("eppo-"+keySuffix, Context.MODE_PRIVATE);
     }
 
     public static String generateExperimentKey(String featureFlagKey, String allocationKey) {

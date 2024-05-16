@@ -1,15 +1,15 @@
 package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import static cloud.eppo.android.ConfigCacheFile.CACHE_FILE_NAME;
+import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
 import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.util.Log;
 
@@ -52,6 +52,8 @@ import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
+    private static final String DUMMY_API_KEY = "mock-api-key";
+    private static final String DUMMY_OTHER_API_KEY = "another-mock-api-key";
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
     private Gson gson = new GsonBuilder()
@@ -124,29 +126,16 @@ public class EppoClientTest {
         List<String> expectedAssignments;
     }
 
-    private void deleteFileIfExists(String fileName) {
-        File file = new File(ApplicationProvider.getApplicationContext().getFilesDir(), fileName);
-        if (file.exists()) {
-            file.delete();
-        }
-    }
-
-    private void deleteCacheFiles() {
-        deleteFileIfExists(CACHE_FILE_NAME);
-        SharedPreferences sharedPreferences = ApplicationProvider.getApplicationContext().getSharedPreferences("eppo", Context.MODE_PRIVATE);
-        sharedPreferences.edit().clear().commit();
-    }
-
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode) {
+    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode, String apiKey) {
         if (shouldDeleteCacheFiles) {
-            deleteCacheFiles();
+            clearCacheFile(apiKey);
         }
 
         CountDownLatch lock = new CountDownLatch(1);
 
         new EppoClient.Builder()
                 .application(ApplicationProvider.getApplicationContext())
-                .apiKey("mock-api-key")
+                .apiKey(apiKey)
                 .isGracefulMode(isGracefulMode)
                 .host(host)
                 .callback(new InitializationCallback() {
@@ -178,19 +167,27 @@ public class EppoClientTest {
     }
 
     @After
-    public void teardown() {
-        deleteCacheFiles();
+    public void clearCaches() {
+        String[] apiKeys = { DUMMY_API_KEY, DUMMY_OTHER_API_KEY };
+        for (String apiKey : apiKeys) {
+            clearCacheFile(apiKey);
+        }
+    }
+
+    private void clearCacheFile(String apiKey) {
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), apiKey);
+        cacheFile.delete();
     }
 
     @Test
     public void testAssignments() {
-        initClient(TEST_HOST, true, true, false);
+        initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
         runTestCases();
     }
 
     @Test
     public void testErrorGracefulModeOn() {
-        initClient(TEST_HOST, false, true, true);
+        initClient(TEST_HOST, false, true, true, DUMMY_API_KEY);
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -219,7 +216,7 @@ public class EppoClientTest {
 
     @Test
     public void testErrorGracefulModeOff() {
-        initClient(TEST_HOST, false, true, false);
+        initClient(TEST_HOST, false, true, false, DUMMY_API_KEY);
 
         EppoClient realClient = EppoClient.getInstance();
         EppoClient spyClient = spy(realClient);
@@ -263,13 +260,13 @@ public class EppoClientTest {
     @Test
     public void testCachedAssignments() {
         // First initialize successfully
-        initClient(TEST_HOST, false, true, false); // ensure cache is populated
+        initClient(TEST_HOST, true, true, false, DUMMY_API_KEY); // ensure cache is populated
 
         // wait for a bit since cache file is loaded asynchronously
         waitForPopulatedCache();
 
         // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
-        initClient(INVALID_HOST, false, false, false); // invalid port to force to use cache
+        initClient(INVALID_HOST, true, false, false, DUMMY_API_KEY); // invalid port to force to use cache
 
         runTestCases();
     }
@@ -382,7 +379,7 @@ public class EppoClientTest {
             httpClientOverrideField.set(null, mockHttpClient);
 
 
-            initClient(TEST_HOST, true, true, false);
+            initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         } finally {
@@ -401,26 +398,82 @@ public class EppoClientTest {
     }
 
     @Test
-    public void testCachedBadResponseAllowsLaterFetching() {
+    public void testCachedBadResponseRequiresFetch() {
         // Populate the cache with a bad response
-        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext());
-        cacheFile.delete();
-        try {
-            cacheFile.getOutputWriter().write("{}");
-            cacheFile.getOutputWriter().close();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
+        cacheFile.setContents("{ invalid }");
 
-        initClient(TEST_HOST, false, false, false);
+        initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
 
-        String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
-        assertNull(result);
-        // Failure callback will have fired from cache read error, but configuration request will still be fired off on init
-        // Wait for the configuration request to load the configuration
-        waitForNonNullAssignment();
-        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
-        assertEquals("control", assignment);
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7d1a3025a26078b95", "randomization_algo");
+        assertEquals("green", assignment);
+    }
+
+    @Test
+    public void testEmptyFlagsResponseRequiresFetch() {
+        // Populate the cache with a bad response
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
+        cacheFile.setContents("{\"flags\": {}}");
+
+        initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7d1a3025a26078b95", "randomization_algo");
+        assertEquals("green", assignment);
+    }
+
+    @Test
+    public void testDifferentCacheFilesPerKey() {
+        initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
+        // API Key 1 will fetch and then populate its cache with the usual test data
+        Boolean apiKey1Assignment = EppoClient.getInstance().getBooleanAssignment("subject-2", "experiment_with_boolean_variations");
+        assertFalse(apiKey1Assignment);
+
+        // Pre-seed a different flag configuration for the other API Key
+        ConfigCacheFile cacheFile2 = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_OTHER_API_KEY));
+        cacheFile2.setContents("{\n" +
+                "  \"flags\": {\n" +
+                "    \"8fc1fb33379d78c8a9edbf43afd6703a\": {\n" +
+                "      \"subjectShards\": 10000,\n" +
+                "      \"enabled\": true,\n" +
+                "      \"rules\": [\n" +
+                "        {\n" +
+                "          \"allocationKey\": \"mock-allocation\",\n" +
+                "          \"conditions\": []\n" +
+                "        }\n" +
+                "      ],\n" +
+                "      \"allocations\": {\n" +
+                "        \"mock-allocation\": {\n" +
+                "          \"percentExposure\": 1,\n" +
+                "          \"statusQuoVariationKey\": null,\n" +
+                "          \"shippedVariationKey\": null,\n" +
+                "          \"holdouts\": [],\n" +
+                "          \"variations\": [\n" +
+                "            {\n" +
+                "              \"name\": \"on\",\n" +
+                "              \"value\": \"true\",\n" +
+                "              \"typedValue\": true,\n" +
+                "              \"shardRange\": {\n" +
+                "                \"start\": 0,\n" +
+                "                \"end\": 10000\n" +
+                "              }\n" +
+                "            }" +
+                "          ]\n" +
+                "        }\n" +
+                "      }\n" +
+                "    }\n" +
+                "  }\n" +
+                "}");
+
+        initClient(TEST_HOST, true, false, false, DUMMY_OTHER_API_KEY);
+
+        // Ensure API key 2 uses its cache
+        Boolean apiKey2Assignment = EppoClient.getInstance().getBooleanAssignment("subject-2", "experiment_with_boolean_variations");
+        assertTrue(apiKey2Assignment);
+
+        // Reinitialize API key 1 to be sure it used its cache
+        initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+        // API Key 1 will fetch and then populate its cache with the usual test data
+        apiKey1Assignment = EppoClient.getInstance().getBooleanAssignment("subject-2", "experiment_with_boolean_variations");
+        assertFalse(apiKey1Assignment);
     }
 
     private void waitForPopulatedCache() {
@@ -428,7 +481,7 @@ public class EppoClientTest {
         long waitEnd = waitStart + 10 * 1000; // allow up to 10 seconds
         boolean cachePopulated = false;
         try {
-            File file = new File(ApplicationProvider.getApplicationContext().getFilesDir(), CACHE_FILE_NAME);
+            File file = new File(ApplicationProvider.getApplicationContext().getFilesDir(), cacheFileName(safeCacheKey(DUMMY_API_KEY)));
             while (!cachePopulated) {
                 if (System.currentTimeMillis() > waitEnd) {
                     throw new InterruptedException("Cache file never populated; assuming configuration error");

@@ -1,6 +1,7 @@
 package cloud.eppo.android;
 
 import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
 import android.app.ActivityManager;
@@ -10,7 +11,6 @@ import android.util.Log;
 
 import com.google.gson.JsonElement;
 
-import java.util.Date;
 import java.util.List;
 
 import cloud.eppo.android.dto.Allocation;
@@ -42,7 +42,8 @@ public class EppoClient {
     private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger,
             boolean isGracefulMode) {
         EppoHttpClient httpClient = httpClientOverride == null ? new EppoHttpClient(host, apiKey) : httpClientOverride;
-        ConfigurationStore configStore = new ConfigurationStore(application);
+        String cacheFileNameSuffix = safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
+        ConfigurationStore configStore = new ConfigurationStore(application, cacheFileNameSuffix);
         requestor = new ConfigurationRequestor(configStore, httpClient);
         this.isGracefulMode = isGracefulMode;
         this.assignmentLogger = assignmentLogger;

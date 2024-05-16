@@ -46,6 +46,14 @@ public class Assignment {
         return experiment;
     }
 
+    public String getFeatureFlag() {
+        return featureFlag;
+    }
+
+    public String getAllocation() {
+        return allocation;
+    }
+
     public String getVariation() {
         return variation;
     }
