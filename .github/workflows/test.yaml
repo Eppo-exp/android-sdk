@@ -35,7 +35,7 @@ jobs:
       - name: Set up test data
         run: make test-data
 
-      - name: Wait for mock RAC DNS to resolve
+      - name: Wait for mock UFC DNS to resolve
         run: |
           for i in {1..15}
           do

@@ -34,7 +34,9 @@ import static org.mockito.Matchers.anyString;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -212,8 +214,30 @@ public class EppoClientTest {
         // wait for a bit since cache file is loaded asynchronously
         waitForPopulatedCache();
 
-        // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
-        initClient(INVALID_HOST, true, false, false, DUMMY_API_KEY); // invalid port to force to use cache
+        String cacheFileNameSuffix = safeCacheKey(DUMMY_API_KEY);
+        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), cacheFileNameSuffix);
+        try {
+            BufferedReader reader = cacheFile.getReader();
+            String line;
+            StringBuilder data = new StringBuilder();
+            while((line = reader.readLine()) != null) {
+                data.append(line);
+            }
+            reader.close();
+            System.out.println(data);
+            System.out.println("========================");
+            System.out.println("Size: "+data.length());
+            System.out.println("========================");
+            for (int i = 0; i < data.length(); i += 1000) {
+                System.out.println(data.subSequence(i, Math.min(i+1000, data.length())));
+            }
+            System.out.println("========================");
+        } catch (IOException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        // Then reinitialize with a bad host so we know it's using the cached UFC built from the first initialization
+        initClient(INVALID_HOST, false, false, false, DUMMY_API_KEY); // invalid host to force to use cache
 
         runTestCases();
     }
