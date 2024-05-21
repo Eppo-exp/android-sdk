@@ -93,7 +93,7 @@ public class ConfigurationStore {
             flags = new ConcurrentHashMap<>();
         } else {
             flags = config.getFlags();
-            loadedFromFetchResponse.set(true); // Record flags set from a response so we don't later clobber them with a slow cache read
+            loadedFromFetchResponse.set(true); // Record that flags were set from a response so we don't later clobber them with a slow cache read
             Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
 

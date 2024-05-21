@@ -48,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
@@ -473,14 +474,16 @@ public class EppoClientTest {
                   throw new RuntimeException(ex);
               }
               RandomizationConfigResponse response = new RandomizationConfigResponse();
-              response.setFlags(new ConcurrentHashMap<>());
+              ConcurrentHashMap<String, FlagConfig> mockFlags = new ConcurrentHashMap<>();
+              mockFlags.put("dummy", new FlagConfig()); // make the map non-empty
+              response.setFlags(mockFlags);
+
               Log.d(TAG, "Simulating slow cache read end");
               return response;
           }
         };
-        setConfigurationStoreOverrideField(slowStore);
 
-        // Init the client after locking the file so that fetch will finish first
+        setConfigurationStoreOverrideField(slowStore);
         initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
 
         // Give time for async slow cache read to finish
