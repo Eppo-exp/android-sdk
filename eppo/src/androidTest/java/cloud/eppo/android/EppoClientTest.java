@@ -158,7 +158,7 @@ public class EppoClientTest {
         // Wait for initialization to succeed or fail, up to 10 seconds, before continuing
         try {
             if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
-                throw new InterruptedException("Request for RAC did not complete within timeout");
+                throw new InterruptedException("Client initialization not complete within timeout");
             }
             Log.d(TAG, "Test client initialized");
         } catch (InterruptedException e) {
@@ -375,6 +375,7 @@ public class EppoClientTest {
         }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
 
         setHttpClientOverrideField(mockHttpClient);
+        initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
 
         String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
         assertNull(result);
@@ -467,7 +468,7 @@ public class EppoClientTest {
           protected RandomizationConfigResponse readCacheFile() {
               Log.d(TAG, "Simulating slow cache read start");
               try {
-                  Thread.sleep(1000);
+                  Thread.sleep(2000);
               } catch (InterruptedException ex) {
                   throw new RuntimeException(ex);
               }
@@ -484,7 +485,7 @@ public class EppoClientTest {
 
         // Give time for async slow cache read to finish
         try {
-            Thread.sleep(1200);
+            Thread.sleep(2500);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
         }

@@ -15,6 +15,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
@@ -34,6 +35,7 @@ public class ConfigurationStore {
             .create();
     private final ConfigCacheFile cacheFile;
 
+    private AtomicBoolean loadedFromFetchResponse = new AtomicBoolean(false);
     private ConcurrentHashMap<String, FlagConfig> flags;
 
     public ConfigurationStore(Application application, String cacheFileNameSuffix) {
@@ -52,12 +54,18 @@ public class ConfigurationStore {
             try {
                 RandomizationConfigResponse configResponse = readCacheFile();
                 if (configResponse == null || configResponse.getFlags() == null) {
-                    throw new JsonSyntaxException("Configuration file missing flags");
+                    throw new JsonSyntaxException("Cached configuration file missing flags");
                 }
-                flags = configResponse.getFlags();
-                if (flags.isEmpty()) {
+                if (configResponse.getFlags().isEmpty()) {
                     throw new IllegalStateException("Cached configuration file has empty flags");
                 }
+                if (loadedFromFetchResponse.get()) {
+                    Log.w(TAG, "Configuration already updated via fetch; ignoring cache");
+                    callback.onCacheLoadFail();
+                    return;
+                }
+
+                flags = configResponse.getFlags();
                 Log.d(TAG, "Cache loaded successfully");
                 callback.onCacheLoadSuccess();
             } catch (Exception e) {
@@ -85,6 +93,7 @@ public class ConfigurationStore {
             flags = new ConcurrentHashMap<>();
         } else {
             flags = config.getFlags();
+            loadedFromFetchResponse.set(true); // Record flags set from a response so we don't later clobber them with a slow cache read
             Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
 
