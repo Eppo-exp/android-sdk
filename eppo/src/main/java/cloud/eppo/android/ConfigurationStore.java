@@ -92,8 +92,8 @@ public class ConfigurationStore {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
         } else {
-            flags = config.getFlags();
             loadedFromFetchResponse.set(true); // Record that flags were set from a response so we don't later clobber them with a slow cache read
+            flags = config.getFlags();
             Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
 
