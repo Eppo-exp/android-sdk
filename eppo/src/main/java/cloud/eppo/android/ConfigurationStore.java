@@ -12,6 +12,7 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -49,12 +50,7 @@ public class ConfigurationStore {
         AsyncTask.execute(() -> {
             Log.d(TAG, "Loading from cache");
             try {
-                RandomizationConfigResponse configResponse;
-                synchronized (cacheFile) {
-                    BufferedReader reader = cacheFile.getReader();
-                    configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
-                    reader.close();
-                }
+                RandomizationConfigResponse configResponse = readCacheFile();
                 if (configResponse == null || configResponse.getFlags() == null) {
                     throw new JsonSyntaxException("Configuration file missing flags");
                 }
@@ -72,6 +68,16 @@ public class ConfigurationStore {
         });
     }
 
+    protected RandomizationConfigResponse readCacheFile() throws IOException {
+        RandomizationConfigResponse configResponse;
+        synchronized (cacheFile) {
+            BufferedReader reader = cacheFile.getReader();
+            configResponse = gson.fromJson(reader, RandomizationConfigResponse.class);
+            reader.close();
+        }
+        return configResponse;
+    }
+
     public void setFlagsFromResponse(Reader response) {
         RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
         if (config == null || config.getFlags() == null) {
@@ -79,7 +85,7 @@ public class ConfigurationStore {
             flags = new ConcurrentHashMap<>();
         } else {
             flags = config.getFlags();
-            Log.d(TAG, "Loaded" + flags.size() + "flags from configuration response");
+            Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
 
         writeConfigToFile(config);

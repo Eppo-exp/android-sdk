@@ -42,11 +42,13 @@ import java.io.StringReader;
 import java.lang.reflect.Type;
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.android.dto.RandomizationConfigResponse;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
 
@@ -97,9 +99,6 @@ public class EppoClientTest {
 
         AssignmentValueTypeAdapter(AssignmentValueType defaultValue) {
             this.defaultValue = defaultValue;
-        }
-
-        AssignmentValueTypeAdapter() {
         }
 
         @Override
@@ -161,6 +160,7 @@ public class EppoClientTest {
             if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
                 throw new InterruptedException("Request for RAC did not complete within timeout");
             }
+            Log.d(TAG, "Test client initialized");
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -172,6 +172,9 @@ public class EppoClientTest {
         for (String apiKey : apiKeys) {
             clearCacheFile(apiKey);
         }
+        // Reset any development overrides
+        setHttpClientOverrideField(null);
+        setConfigurationStoreOverrideField(null);
     }
 
     private void clearCacheFile(String apiKey) {
@@ -371,27 +374,7 @@ public class EppoClientTest {
             return null; // doAnswer doesn't require a return value
         }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
 
-        Field httpClientOverrideField = null;
-        try {
-            // Use reflection to set the httpClientOverride field
-            httpClientOverrideField = EppoClient.class.getDeclaredField("httpClientOverride");
-            httpClientOverrideField.setAccessible(true);
-            httpClientOverrideField.set(null, mockHttpClient);
-
-
-            initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } finally {
-            if (httpClientOverrideField != null) {
-                try {
-                    httpClientOverrideField.set(null, null);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException(e);
-                }
-                httpClientOverrideField.setAccessible(false);
-            }
-        }
+        setHttpClientOverrideField(mockHttpClient);
 
         String result = EppoClient.getInstance().getStringAssignment("dummy subject", "dummy flag");
         assertNull(result);
@@ -429,6 +412,7 @@ public class EppoClientTest {
 
         // Pre-seed a different flag configuration for the other API Key
         ConfigCacheFile cacheFile2 = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_OTHER_API_KEY));
+        // Set the experiment_with_boolean_variations flag to always return true
         cacheFile2.setContents("{\n" +
                 "  \"flags\": {\n" +
                 "    \"8fc1fb33379d78c8a9edbf43afd6703a\": {\n" +
@@ -476,6 +460,39 @@ public class EppoClientTest {
         assertFalse(apiKey1Assignment);
     }
 
+    @Test
+    public void testFetchCompletesBeforeCacheLoad() {
+        ConfigurationStore slowStore = new ConfigurationStore(ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY)) {
+          @Override
+          protected RandomizationConfigResponse readCacheFile() {
+              Log.d(TAG, "Simulating slow cache read start");
+              try {
+                  Thread.sleep(1000);
+              } catch (InterruptedException ex) {
+                  throw new RuntimeException(ex);
+              }
+              RandomizationConfigResponse response = new RandomizationConfigResponse();
+              response.setFlags(new ConcurrentHashMap<>());
+              Log.d(TAG, "Simulating slow cache read end");
+              return response;
+          }
+        };
+        setConfigurationStoreOverrideField(slowStore);
+
+        // Init the client after locking the file so that fetch will finish first
+        initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+
+        // Give time for async slow cache read to finish
+        try {
+            Thread.sleep(1200);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        String assignment = EppoClient.getInstance().getStringAssignment("6255e1a7d1a3025a26078b95", "randomization_algo");
+        assertEquals("green", assignment);
+    }
+
     private void waitForPopulatedCache() {
         long waitStart = System.currentTimeMillis();
         long waitEnd = waitStart + 10 * 1000; // allow up to 10 seconds
@@ -497,22 +514,22 @@ public class EppoClientTest {
         }
     }
 
-    private void waitForNonNullAssignment() {
-        long waitStart = System.currentTimeMillis();
-        long waitEnd = waitStart + 15 * 1000; // allow up to 15 seconds
-        String assignment = null;
+    private void setHttpClientOverrideField(EppoHttpClient httpClient) {
+        setOverrideField("httpClientOverride", httpClient);
+    }
+
+    private void setConfigurationStoreOverrideField(ConfigurationStore configurationStore) {
+        setOverrideField("configurationStoreOverride", configurationStore);
+    }
+
+    private <T> void setOverrideField(String fieldName, T override) {
         try {
-            while (assignment == null) {
-                if (System.currentTimeMillis() > waitEnd) {
-                    throw new InterruptedException("Non-null assignment never received; assuming configuration not loaded");
-                }
-                // Uses third subject in test-case-0
-                assignment = EppoClient.getInstance().getStringAssignment("6255e1a7fc33a9c050ce9508", "randomization_algo");
-                if (assignment == null) {
-                    Thread.sleep(100);
-                }
-            }
-        } catch (InterruptedException e) {
+            // Use reflection to set the httpClientOverride field
+            Field httpClientOverrideField = EppoClient.class.getDeclaredField(fieldName);
+            httpClientOverrideField.setAccessible(true);
+            httpClientOverrideField.set(null, override);
+            httpClientOverrideField.setAccessible(false);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             throw new RuntimeException(e);
         }
     }
