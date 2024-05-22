@@ -67,16 +67,55 @@ public class RuleEvaluatorTest {
         addConditionToRule(TargetingRule, condition);
     }
 
-    public void addOneOfTargetingCondition(TargetingRule TargetingRule) {
+    public void addOneOfConditionWithStrings(TargetingRule rule) {
         TargetingCondition condition = new TargetingCondition();
         List<String> values = new ArrayList<>();
         values.add("value1");
         values.add("value2");
+
         condition.setValue(EppoValue.valueOf(values));
         condition.setAttribute("oneOf");
         condition.setOperator(OperatorType.ONE_OF);
 
-        addConditionToRule(TargetingRule, condition);
+        addConditionToRule(rule, condition);
+    }
+
+    public void addOneOfConditionWithIntegers(TargetingRule rule) {
+        TargetingCondition condition = new TargetingCondition();
+        List<String> values = new ArrayList<>();
+        values.add("1");
+        values.add("2");
+
+        condition.setValue(EppoValue.valueOf(values));
+        condition.setAttribute("oneOf");
+        condition.setOperator(OperatorType.ONE_OF);
+
+        addConditionToRule(rule, condition);
+    }
+
+    public void addOneOfConditionWithDoubles(TargetingRule rule) {
+        TargetingCondition condition = new TargetingCondition();
+        List<String> values = new ArrayList<>();
+        values.add("1.5");
+        values.add("2.7");
+
+        condition.setValue(EppoValue.valueOf(values));
+        condition.setAttribute("oneOf");
+        condition.setOperator(OperatorType.ONE_OF);
+
+        addConditionToRule(rule, condition);
+    }
+
+    public void addOneOfConditionWithBoolean(TargetingRule rule) {
+        TargetingCondition condition = new TargetingCondition();
+        List<String> values = new ArrayList<>();
+        values.add("true");
+
+        condition.setValue(EppoValue.valueOf(values));
+        condition.setAttribute("oneOf");
+        condition.setOperator(OperatorType.ONE_OF);
+
+        addConditionToRule(rule, condition);
     }
 
     public void addNotOneOfTargetingCondition(TargetingRule TargetingRule) {
@@ -222,6 +261,58 @@ public class RuleEvaluatorTest {
         subjectAttributes.put("oneOf", EppoValue.valueOf("value1"));
 
         assertNull(RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
+    }
+
+    @Test
+    public void testMatchesAnyRuleWithOneOfRuleOnString() {
+        Set<TargetingRule> targetingRules = new HashSet<>();
+        TargetingRule targetingRule = createRule(new HashSet<>());
+        addOneOfConditionWithStrings(targetingRule);
+        targetingRules.add(targetingRule);
+
+        SubjectAttributes subjectAttributes = new SubjectAttributes();
+        subjectAttributes.put("oneOf", EppoValue.valueOf("value1"));
+
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
+    }
+
+    @Test
+    public void testMatchesAnyRuleWithOneOfRuleOnInteger() {
+        Set<TargetingRule> targetingRules = new HashSet<>();
+        TargetingRule targetingRule = createRule(new HashSet<>());
+        addOneOfConditionWithIntegers(targetingRule);
+        targetingRules.add(targetingRule);
+
+        SubjectAttributes subjectAttributes = new SubjectAttributes();
+        subjectAttributes.put("oneOf", EppoValue.valueOf(2));
+
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
+    }
+
+    @Test
+    public void testMatchesAnyRuleWithOneOfRuleOnDouble() {
+        Set<TargetingRule> targetingRules = new HashSet<>();
+        TargetingRule targetingRule = createRule(new HashSet<>());
+        addOneOfConditionWithDoubles(targetingRule);
+        targetingRules.add(targetingRule);
+
+        SubjectAttributes subjectAttributes = new SubjectAttributes();
+        subjectAttributes.put("oneOf", EppoValue.valueOf(1.5));
+
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
+    }
+
+    @Test
+    public void testMatchesAnyRuleWithOneOfRuleOnBoolean() {
+        Set<TargetingRule> targetingRules = new HashSet<>();
+        TargetingRule targetingRule = createRule(new HashSet<>());
+        addOneOfConditionWithBoolean(targetingRule);
+        targetingRules.add(targetingRule);
+
+        SubjectAttributes subjectAttributes = new SubjectAttributes();
+        subjectAttributes.put("oneOf", EppoValue.valueOf(true));
+
+        assertEquals(targetingRule, RuleEvaluator.findMatchingRule(subjectAttributes, targetingRules, false));
     }
 }
 

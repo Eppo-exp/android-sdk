@@ -5,6 +5,7 @@ import static cloud.eppo.android.util.Utils.getMD5Hex;
 
 import com.github.zafarkhaja.semver.Version;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -150,7 +151,7 @@ public class RuleEvaluator {
             boolean expectMatch = condition.getOperator() == OperatorType.ONE_OF;
             boolean matchFound = false;
             for (String arrayString : conditionValue.stringArrayValue()) {
-                String comparisonString = attributeValue.stringValue(); // TODO: need to cast non strings to string; probably by updating EppoValue
+                String comparisonString = castAttributeForListComparison(attributeValue);
                 if (isObfuscated) {
                     // List comparisons use hashes for checking exact match
                     comparisonString = getMD5Hex(comparisonString);
@@ -176,4 +177,29 @@ public class RuleEvaluator {
 
         throw new IllegalStateException("Unexpected rule operator: " + condition.getOperator());
     }
+
+    /**
+     * IN and NOT IN checks are not strongly typed, as the user is only entering in strings
+     * Thus we need to cast the attribute to a string before hashing and checking
+     */
+    private static String castAttributeForListComparison(EppoValue attributeValue) {
+        if (attributeValue.isBoolean()) {
+            return Boolean.valueOf(attributeValue.booleanValue()).toString();
+        } else if (attributeValue.isNumeric()) {
+            double doubleValue = attributeValue.doubleValue();
+            int intValue = Double.valueOf(attributeValue.doubleValue()).intValue();
+            return doubleValue == intValue
+                    ? String.valueOf(intValue)
+                    : String.valueOf(doubleValue);
+        } else if (attributeValue.isString()) {
+            return attributeValue.stringValue();
+        } else if (attributeValue.isStringArray()) {
+            return Collections.singletonList(attributeValue.stringArrayValue()).toString();
+        } else if (attributeValue.isNull()) {
+            return "";
+        } else {
+            throw new IllegalArgumentException("Unknown EppoValue type for casting for list comparison: "+attributeValue);
+        }
+    }
+
 }
