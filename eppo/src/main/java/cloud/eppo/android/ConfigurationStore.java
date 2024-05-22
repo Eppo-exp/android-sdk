@@ -72,7 +72,9 @@ public class ConfigurationStore {
                 callback.onCacheLoadSuccess();
             } catch (Exception e) {
                 Log.e(TAG, "Error loading from local cache", e);
-                cacheFile.delete();
+                synchronized (cacheFile) {
+                    cacheFile.delete();
+                }
                 callback.onCacheLoadFail();
             }
         });

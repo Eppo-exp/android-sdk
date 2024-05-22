@@ -6,7 +6,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
 
-import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
 import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.safeCacheKey;
 
@@ -34,7 +33,6 @@ import static org.mockito.Matchers.anyString;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -64,7 +62,7 @@ public class EppoClientTest {
             .registerTypeAdapter(AssignmentTestCase.class, new AssignmentTestCaseDeserializer())
             .create();
 
-    private void initClient(String host, boolean throwOnCallackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode, String apiKey) {
+    private void initClient(String host, boolean throwOnCallbackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode, String apiKey) {
         if (shouldDeleteCacheFiles) {
             clearCacheFile(apiKey);
         }
@@ -86,7 +84,7 @@ public class EppoClientTest {
                     @Override
                     public void onError(String errorMessage) {
                         Log.w(TAG, "Test client onError callback");
-                        if (throwOnCallackError) {
+                        if (throwOnCallbackError) {
                             throw new RuntimeException("Unable to initialize: "+errorMessage);
                         }
                         lock.countDown();
@@ -214,9 +212,6 @@ public class EppoClientTest {
     public void testCachedAssignments() {
         // First initialize successfully
         initClient(TEST_HOST, true, true, false, DUMMY_API_KEY); // ensure cache is populated
-
-        // wait for a bit since cache file is loaded asynchronously
-        waitForPopulatedCache();
 
         // Then reinitialize with a bad host so we know it's using the cached UFC built from the first initialization
         initClient(INVALID_HOST, false, false, false, DUMMY_API_KEY); // invalid host to force to use cache
@@ -419,28 +414,6 @@ public class EppoClientTest {
 
         double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
         assertEquals(3.1415926, assignment, 0.0000001);
-    }
-
-    private void waitForPopulatedCache() {
-        long waitStart = System.currentTimeMillis();
-        long waitEnd = waitStart + 10 * 1000; // allow up to 10 seconds
-        boolean cachePopulated = false;
-        try {
-            File file = new File(ApplicationProvider.getApplicationContext().getFilesDir(), cacheFileName(safeCacheKey(DUMMY_API_KEY)));
-            while (!cachePopulated) {
-                if (System.currentTimeMillis() > waitEnd) {
-                    throw new InterruptedException("Cache file never populated; assuming configuration error");
-                }
-                long expectedMinimumSizeInBytes = 12000; // Last time this test was updated, cache size was 12,946 bytes
-                cachePopulated = file.exists() && file.length() > expectedMinimumSizeInBytes;
-                System.out.println(">>>> size: "+(file.exists() ? file.length() : 0));
-                if (!cachePopulated) {
-                    Thread.sleep(8000);
-                }
-            }
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private void setHttpClientOverrideField(EppoHttpClient httpClient) {

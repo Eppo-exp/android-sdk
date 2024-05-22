@@ -36,11 +36,14 @@ public class EppoClient {
     private final boolean isGracefulMode;
     private static EppoClient instance;
 
-    // Useful for development and testing (accessed via reflection)
+    // Field useful for toggling off obfuscation for development and testing (accessed via reflection)
+    /** @noinspection FieldMayBeFinal*/
     private static boolean isConfigObfuscated = true;
 
-    // Useful for testing in situations where we want to mock the http client or configuration store (accessed via reflection)
+    // Fields useful for testing in situations where we want to mock the http client or configuration store (accessed via reflection)
+    /** @noinspection FieldMayBeFinal*/
     private static EppoHttpClient httpClientOverride = null;
+    /** @noinspection FieldMayBeFinal*/
     private static ConfigurationStore configurationStoreOverride = null;
 
 

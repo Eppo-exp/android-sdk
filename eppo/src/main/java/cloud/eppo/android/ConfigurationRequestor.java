@@ -9,6 +9,7 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.Reader;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import cloud.eppo.android.dto.FlagConfig;
 
@@ -24,10 +25,15 @@ public class ConfigurationRequestor {
     }
 
     public void load(InitializationCallback callback) {
+        // We have two at-bats to load the configuration; track their success
+        AtomicBoolean cacheLoadInProgress = new AtomicBoolean(false);
+        AtomicReference<String> fetchErrorMessage = new AtomicReference<>(null);
+        // We only want to fire the callback off once; track whether or not we have yet
         AtomicBoolean callbackCalled = new AtomicBoolean(false);
         configurationStore.loadFromCache(new CacheLoadCallback() {
             @Override
             public void onCacheLoadSuccess() {
+                cacheLoadInProgress.set(false);
                 if (callback != null && callbackCalled.compareAndSet(false, true)) {
                     Log.d(TAG, "Initialized from cache");
                     callback.onCompleted();
@@ -36,7 +42,11 @@ public class ConfigurationRequestor {
 
             @Override
             public void onCacheLoadFail() {
-                // no-op; fall-back to Fetch
+                cacheLoadInProgress.set(false);
+                if (callback != null && fetchErrorMessage.get() != null && callbackCalled.compareAndSet(false, true)) {
+                    Log.e(TAG, "Failed to initialize from fetching or by cache");
+                    callback.onError("Cache and fetch failed "+fetchErrorMessage.get());
+                }
             }
         });
 
@@ -49,10 +59,12 @@ public class ConfigurationRequestor {
                     configurationStore.setFlagsFromResponse(response);
                     Log.d(TAG, "Configuration fetch successful");
                 } catch (JsonSyntaxException | JsonIOException e) {
+                    fetchErrorMessage.set(e.getMessage());
                     Log.e(TAG, "Error loading configuration response", e);
-                    if (callback != null && callbackCalled.compareAndSet(false, true)) {
-                        Log.d(TAG, "Initialization failure due to fetch response");
-                        callback.onError("Unable to request configuration");
+                    // If cache loading in progress, defer to it's outcome for firing the success or failure callback
+                    if (callback != null && !cacheLoadInProgress.get() && callbackCalled.compareAndSet(false, true)) {
+                        Log.d(TAG, "Failed to initialize from cache or by fetching");
+                        callback.onError("Cache and fetch failed "+e.getMessage());
                     }
                     return;
                 }
@@ -65,6 +77,7 @@ public class ConfigurationRequestor {
 
             @Override
             public void onFailure(String errorMessage) {
+                fetchErrorMessage.set(errorMessage);
                 Log.e(TAG, "Error fetching configuration: " + errorMessage);
                 if (callback != null && callbackCalled.compareAndSet(false, true)) {
                     Log.d(TAG, "Initialization failure due to fetch error");
