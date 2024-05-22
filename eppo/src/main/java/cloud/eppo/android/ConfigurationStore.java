@@ -13,21 +13,24 @@ import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.Reader;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.FlagConfigResponse;
-import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
-import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
+import cloud.eppo.android.dto.adapters.DateAdapter;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
 
 public class ConfigurationStore {
 
     private static final String TAG = logTag(ConfigurationStore.class);
 
     private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseDeserializer())
-            .registerTypeAdapter(EppoValue.class, new EppoValueDeserializer())
+            .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseAdapter())
+            .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
+            .registerTypeAdapter(Date.class, new DateAdapter())
             .serializeNulls()
             .create();
     private final ConfigCacheFile cacheFile;

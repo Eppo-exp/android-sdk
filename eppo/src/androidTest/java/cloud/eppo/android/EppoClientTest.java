@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -49,7 +48,7 @@ import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.VariationType;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
-import cloud.eppo.android.helpers.SubjectAssignment;
+import cloud.eppo.android.helpers.SubjectAssignment;››
 import cloud.eppo.android.helpers.TestCaseValue;
 
 public class EppoClientTest {
@@ -213,28 +212,6 @@ public class EppoClientTest {
 
         // wait for a bit since cache file is loaded asynchronously
         waitForPopulatedCache();
-
-        String cacheFileNameSuffix = safeCacheKey(DUMMY_API_KEY);
-        ConfigCacheFile cacheFile = new ConfigCacheFile(ApplicationProvider.getApplicationContext(), cacheFileNameSuffix);
-        try {
-            BufferedReader reader = cacheFile.getReader();
-            String line;
-            StringBuilder data = new StringBuilder();
-            while((line = reader.readLine()) != null) {
-                data.append(line);
-            }
-            reader.close();
-            System.out.println(data);
-            System.out.println("========================");
-            System.out.println("Size: "+data.length());
-            System.out.println("========================");
-            for (int i = 0; i < data.length(); i += 1000) {
-                System.out.println(data.subSequence(i, Math.min(i+1000, data.length())));
-            }
-            System.out.println("========================");
-        } catch (IOException ex) {
-            throw new RuntimeException(ex);
-        }
 
         // Then reinitialize with a bad host so we know it's using the cached UFC built from the first initialization
         initClient(INVALID_HOST, false, false, false, DUMMY_API_KEY); // invalid host to force to use cache

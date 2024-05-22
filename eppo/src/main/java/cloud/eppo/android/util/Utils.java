@@ -17,11 +17,11 @@ import java.util.Date;
 import java.util.Locale;
 
 import cloud.eppo.android.dto.Range;
-import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
+import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
 
 public class Utils {
 
-    private static final String TAG = logTag(FlagConfigResponseDeserializer.class);
+    private static final String TAG = logTag(FlagConfigResponseAdapter.class);
 
     private static final SimpleDateFormat isoUtcDateFormat = buildUtcIsoDateFormat();
 

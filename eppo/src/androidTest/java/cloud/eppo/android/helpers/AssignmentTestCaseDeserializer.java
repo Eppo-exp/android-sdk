@@ -14,11 +14,11 @@ import java.util.Map;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.SubjectAttributes;
 import cloud.eppo.android.dto.VariationType;
-import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class AssignmentTestCaseDeserializer implements JsonDeserializer<AssignmentTestCase> {
 
-    private final EppoValueDeserializer eppoValueDeserializer = new EppoValueDeserializer();
+    private final EppoValueAdapter eppoValueDeserializer = new EppoValueAdapter();
 
     @Override
     public AssignmentTestCase deserialize(JsonElement rootElement, Type type, JsonDeserializationContext context) throws JsonParseException {

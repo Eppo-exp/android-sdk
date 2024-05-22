@@ -1,4 +1,4 @@
-package cloud.eppo.android.dto.deserializers;
+package cloud.eppo.android.dto.adapters;
 
 import static cloud.eppo.android.util.Utils.logTag;
 
@@ -20,8 +20,8 @@ import java.util.List;
 
 import cloud.eppo.android.dto.EppoValue;
 
-public class EppoValueDeserializer implements JsonDeserializer<EppoValue>, JsonSerializer<EppoValue> {
-    public static final String TAG = logTag(EppoValueDeserializer.class);
+public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerializer<EppoValue> {
+    public static final String TAG = logTag(EppoValueAdapter.class);
 
     @Override
     public EppoValue deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context)

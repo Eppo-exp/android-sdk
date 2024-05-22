@@ -27,12 +27,12 @@ import cloud.eppo.android.dto.Split;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.Variation;
 import cloud.eppo.android.dto.VariationType;
-import cloud.eppo.android.dto.deserializers.FlagConfigResponseDeserializer;
+import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
 
 public class FlagConfigResponseDeserializerTest {
 
     private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseDeserializer())
+            .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseAdapter())
             .create();
 
     @Test

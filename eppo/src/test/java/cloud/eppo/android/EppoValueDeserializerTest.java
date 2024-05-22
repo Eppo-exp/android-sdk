@@ -10,10 +10,10 @@ import com.google.gson.JsonParser;
 import org.junit.Test;
 
 import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.deserializers.EppoValueDeserializer;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoValueDeserializerTest {
-    private final EppoValueDeserializer deserializer = new EppoValueDeserializer();
+    private final EppoValueAdapter deserializer = new EppoValueAdapter();
 
     @Test
     public void testDeserializingDouble() {

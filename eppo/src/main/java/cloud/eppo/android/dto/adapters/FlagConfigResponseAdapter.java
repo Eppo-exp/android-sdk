@@ -1,4 +1,4 @@
-package cloud.eppo.android.dto.deserializers;
+package cloud.eppo.android.dto.adapters;
 
 import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.parseUtcISODateElement;
@@ -39,10 +39,10 @@ import cloud.eppo.android.dto.VariationType;
  *  unreliable when ProGuard minification is in-use and not configured to protect
  *  JSON-deserialization-related classes and annotations.
  */
-public class FlagConfigResponseDeserializer implements JsonDeserializer<FlagConfigResponse> {
-    private static final String TAG = logTag(FlagConfigResponseDeserializer.class);
+public class FlagConfigResponseAdapter implements JsonDeserializer<FlagConfigResponse> {
+    private static final String TAG = logTag(FlagConfigResponseAdapter.class);
 
-    private final EppoValueDeserializer eppoValueDeserializer = new EppoValueDeserializer();
+    private final EppoValueAdapter eppoValueDeserializer = new EppoValueAdapter();
 
     @Override
     public FlagConfigResponse deserialize(JsonElement rootElement, Type type, JsonDeserializationContext context) throws JsonParseException {
