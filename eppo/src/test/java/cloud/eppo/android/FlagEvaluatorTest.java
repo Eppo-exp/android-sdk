@@ -360,6 +360,7 @@ public class FlagEvaluatorTest {
     public void testObfuscated() {
         // Note: this is NOT a comprehensive test of obfuscation (many operators and value types are
         // excluded, as are startAt and endAt)
+        // Much more is covered by EppoClientTest
 
         Map<String, Variation> variations = createVariations("a", "b");
         List<Split> firstAllocationSplits = createSplits("b");

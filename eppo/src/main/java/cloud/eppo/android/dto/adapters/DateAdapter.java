@@ -10,6 +10,9 @@ import com.google.gson.JsonSerializer;
 import java.lang.reflect.Type;
 import java.util.Date;
 
+/**
+ * This adapter for Date allows gson to serialize to UTC ISO 8601 (vs. its default of local timezone)
+ */
 public class DateAdapter implements JsonSerializer<Date> {
 
     @Override

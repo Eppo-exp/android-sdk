@@ -201,5 +201,4 @@ public class RuleEvaluator {
             throw new IllegalArgumentException("Unknown EppoValue type for casting for list comparison: "+attributeValue);
         }
     }
-
 }

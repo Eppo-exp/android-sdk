@@ -25,10 +25,11 @@ public class ConfigurationRequestor {
     }
 
     public void load(InitializationCallback callback) {
-        // We have two at-bats to load the configuration; track their success
-        AtomicBoolean cacheLoadInProgress = new AtomicBoolean(false);
+        // We have two at-bats to load the configuration: loading from cache and fetching
+        // The below variables help them keep track of each other's progress
+        AtomicBoolean cacheLoadInProgress = new AtomicBoolean(true);
         AtomicReference<String> fetchErrorMessage = new AtomicReference<>(null);
-        // We only want to fire the callback off once; track whether or not we have yet
+        // We only want to fire the callback off once; so track whether or not we have yet
         AtomicBoolean callbackCalled = new AtomicBoolean(false);
         configurationStore.loadFromCache(new CacheLoadCallback() {
             @Override
@@ -61,7 +62,7 @@ public class ConfigurationRequestor {
                 } catch (JsonSyntaxException | JsonIOException e) {
                     fetchErrorMessage.set(e.getMessage());
                     Log.e(TAG, "Error loading configuration response", e);
-                    // If cache loading in progress, defer to it's outcome for firing the success or failure callback
+                    // Below includes a check for cache loading in progress, as if so, we'll defer to it's outcome for firing the success or failure callback
                     if (callback != null && !cacheLoadInProgress.get() && callbackCalled.compareAndSet(false, true)) {
                         Log.d(TAG, "Failed to initialize from cache or by fetching");
                         callback.onError("Cache and fetch failed "+e.getMessage());

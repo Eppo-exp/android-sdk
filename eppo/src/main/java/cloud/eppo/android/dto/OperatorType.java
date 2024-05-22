@@ -23,7 +23,7 @@ public enum OperatorType {
             if (type.value.equals(value)
                 || getMD5Hex(type.value).equals(value)
                 || getMD5Hex(type.value).equals(value)
-                // gson deserializes enums using their names so check it to in case we are reading from cache
+                // gson deserializes enums using their names so check that too in case we are reading from cache
                 || type.name().equals(value)
                 || getMD5Hex(type.name()).equals(value)
             ) {
