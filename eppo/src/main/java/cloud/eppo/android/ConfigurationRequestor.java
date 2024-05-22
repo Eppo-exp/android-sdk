@@ -35,6 +35,7 @@ public class ConfigurationRequestor {
             @Override
             public void onCacheLoadSuccess() {
                 cacheLoadInProgress.set(false);
+                // If cache loaded successfully, fire off success callback if not yet done so by fetching
                 if (callback != null && callbackCalled.compareAndSet(false, true)) {
                     Log.d(TAG, "Initialized from cache");
                     callback.onCompleted();
@@ -44,6 +45,8 @@ public class ConfigurationRequestor {
             @Override
             public void onCacheLoadFail() {
                 cacheLoadInProgress.set(false);
+                // If cache loading failed, and fetching failed, fire off the failure callback if not yet done so
+                // Otherwise, if fetching has not failed yet, defer to it for firing off callbacks
                 if (callback != null && fetchErrorMessage.get() != null && callbackCalled.compareAndSet(false, true)) {
                     Log.e(TAG, "Failed to initialize from fetching or by cache");
                     callback.onError("Cache and fetch failed "+fetchErrorMessage.get());
@@ -62,7 +65,8 @@ public class ConfigurationRequestor {
                 } catch (JsonSyntaxException | JsonIOException e) {
                     fetchErrorMessage.set(e.getMessage());
                     Log.e(TAG, "Error loading configuration response", e);
-                    // Below includes a check for cache loading in progress, as if so, we'll defer to it's outcome for firing the success or failure callback
+                    // If fetching failed, and cache loading failed, fire off the failure callback if not yet done so
+                    // Otherwise, if cache has not finished yet, defer to it for firing off callbacks
                     if (callback != null && !cacheLoadInProgress.get() && callbackCalled.compareAndSet(false, true)) {
                         Log.d(TAG, "Failed to initialize from cache or by fetching");
                         callback.onError("Cache and fetch failed "+e.getMessage());
@@ -70,6 +74,7 @@ public class ConfigurationRequestor {
                     return;
                 }
 
+                // If fetching succeeded, fire off success callback if not yet done so from cache loading
                 if (callback != null && callbackCalled.compareAndSet(false, true)) {
                     Log.d(TAG, "Initialized from fetch");
                     callback.onCompleted();
@@ -80,7 +85,9 @@ public class ConfigurationRequestor {
             public void onFailure(String errorMessage) {
                 fetchErrorMessage.set(errorMessage);
                 Log.e(TAG, "Error fetching configuration: " + errorMessage);
-                if (callback != null && callbackCalled.compareAndSet(false, true)) {
+                // If fetching failed, and cache loading failed, fire off the failure callback if not yet done so
+                // Otherwise, if cache has not finished yet, defer to it for firing off callbacks
+                if (callback != null && !cacheLoadInProgress.get() && callbackCalled.compareAndSet(false, true)) {
                     Log.d(TAG, "Initialization failure due to fetch error");
                     callback.onError(errorMessage);
                 }
