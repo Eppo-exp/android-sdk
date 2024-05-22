@@ -5,10 +5,8 @@ import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 
-import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.app.Application;
-import android.os.Build;
 import android.util.Log;
 
 import com.google.gson.JsonElement;
@@ -41,14 +39,16 @@ public class EppoClient {
     // Useful for development and testing (accessed via reflection)
     private static boolean isConfigObfuscated = true;
 
-    // Useful for testing in situations where we want to mock the http client (accessed via reflection)
+    // Useful for testing in situations where we want to mock the http client or configuration store (accessed via reflection)
     private static EppoHttpClient httpClientOverride = null;
+    private static ConfigurationStore configurationStoreOverride = null;
+
 
     private EppoClient(Application application, String apiKey, String host, AssignmentLogger assignmentLogger,
             boolean isGracefulMode) {
         EppoHttpClient httpClient = buildHttpClient(apiKey, host);
         String cacheFileNameSuffix = safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
-        ConfigurationStore configStore = new ConfigurationStore(application, cacheFileNameSuffix);
+        ConfigurationStore configStore = configurationStoreOverride == null ? new ConfigurationStore(application, cacheFileNameSuffix) : configurationStoreOverride;
         requestor = new ConfigurationRequestor(configStore, httpClient);
         this.isGracefulMode = isGracefulMode;
         this.assignmentLogger = assignmentLogger;

@@ -24,37 +24,41 @@ public class ConfigurationRequestor {
     }
 
     public void load(InitializationCallback callback) {
-        AtomicBoolean cachedUsed = new AtomicBoolean(false);
+        AtomicBoolean callbackCalled = new AtomicBoolean(false);
         configurationStore.loadFromCache(new CacheLoadCallback() {
             @Override
             public void onCacheLoadSuccess() {
-                cachedUsed.set(true);
-                if (callback != null) {
+                if (callback != null && callbackCalled.compareAndSet(false, true)) {
+                    Log.d(TAG, "Initialized from cache");
                     callback.onCompleted();
                 }
             }
 
             @Override
             public void onCacheLoadFail() {
-                cachedUsed.set(false);
+                // no-op; fall-back to Fetch
             }
         });
 
+        Log.d(TAG, "Fetching configuration");
         client.get("/api/flag-config/v1/config", new RequestCallback() {
             @Override
             public void onSuccess(Reader response) {
                 try {
+                    Log.d(TAG, "Processing fetch response");
                     configurationStore.setFlagsFromResponse(response);
                     Log.d(TAG, "Configuration fetch successful");
                 } catch (JsonSyntaxException | JsonIOException e) {
                     Log.e(TAG, "Error loading configuration response", e);
-                    if (callback != null && !cachedUsed.get()) {
+                    if (callback != null && callbackCalled.compareAndSet(false, true)) {
+                        Log.d(TAG, "Initialization failure due to fetch response");
                         callback.onError("Unable to request configuration");
                     }
                     return;
                 }
 
-                if (callback != null && !cachedUsed.get()) {
+                if (callback != null && callbackCalled.compareAndSet(false, true)) {
+                    Log.d(TAG, "Initialized from fetch");
                     callback.onCompleted();
                 }
             }
@@ -62,7 +66,8 @@ public class ConfigurationRequestor {
             @Override
             public void onFailure(String errorMessage) {
                 Log.e(TAG, "Error fetching configuration: " + errorMessage);
-                if (callback != null && !cachedUsed.get()) {
+                if (callback != null && callbackCalled.compareAndSet(false, true)) {
+                    Log.d(TAG, "Initialization failure due to fetch error");
                     callback.onError(errorMessage);
                 }
             }

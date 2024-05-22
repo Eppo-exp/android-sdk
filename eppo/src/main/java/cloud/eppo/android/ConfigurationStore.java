@@ -12,9 +12,11 @@ import com.google.gson.JsonSyntaxException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.IOException;
 import java.io.Reader;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
@@ -35,6 +37,7 @@ public class ConfigurationStore {
             .create();
     private final ConfigCacheFile cacheFile;
 
+    private final AtomicBoolean loadedFromFetchResponse = new AtomicBoolean(false);
     private ConcurrentHashMap<String, FlagConfig> flags;
 
     public ConfigurationStore(Application application, String cacheFileNameSuffix) {
@@ -51,20 +54,21 @@ public class ConfigurationStore {
         AsyncTask.execute(() -> {
             Log.d(TAG, "Loading from cache");
             try {
-                FlagConfigResponse configResponse;
-                synchronized (cacheFile) {
-                    BufferedReader reader = cacheFile.getReader();
-                    configResponse = gson.fromJson(reader, FlagConfigResponse.class);
-                    reader.close();
-                }
+                FlagConfigResponse configResponse = readCacheFile();
                 if (configResponse == null || configResponse.getFlags() == null) {
-                    throw new JsonSyntaxException("Configuration file missing flags");
+                    throw new JsonSyntaxException("Cached configuration file missing flags");
                 }
                 if (configResponse.getFlags().isEmpty()) {
                     throw new IllegalStateException("Cached configuration file has empty flags");
                 }
+                if (loadedFromFetchResponse.get()) {
+                    Log.w(TAG, "Configuration already updated via fetch; ignoring cache");
+                    callback.onCacheLoadFail();
+                    return;
+                }
+
                 flags = new ConcurrentHashMap<>(configResponse.getFlags());
-                Log.d(TAG, "Loaded " + flags.size() + " flags from cached configuration");
+                Log.d(TAG, "Successfully loaded " + flags.size() + " flags from cached configuration");
                 callback.onCacheLoadSuccess();
             } catch (Exception e) {
                 Log.e(TAG, "Error loading from local cache", e);
@@ -74,12 +78,23 @@ public class ConfigurationStore {
         });
     }
 
+    protected FlagConfigResponse readCacheFile() throws IOException {
+        FlagConfigResponse configResponse;
+        synchronized (cacheFile) {
+            BufferedReader reader = cacheFile.getReader();
+            configResponse = gson.fromJson(reader, FlagConfigResponse.class);
+            reader.close();
+        }
+        return configResponse;
+    }
+
     public void setFlagsFromResponse(Reader response) {
         FlagConfigResponse config = gson.fromJson(response, FlagConfigResponse.class);
         if (config == null || config.getFlags() == null) {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
         } else {
+            loadedFromFetchResponse.set(true); // Record that flags were set from a response so we don't later clobber them with a slow cache read
             flags = new ConcurrentHashMap<>(config.getFlags());
             Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
@@ -89,12 +104,14 @@ public class ConfigurationStore {
 
     private void writeConfigToFile(FlagConfigResponse config) {
         AsyncTask.execute(() -> {
+            Log.d(TAG, "Saving configuration to file");
             try {
                 synchronized (cacheFile) {
                     BufferedWriter writer = cacheFile.getWriter();
                     gson.toJson(config, writer);
                     writer.close();
                 }
+                Log.d(TAG, "Configuration saved");
             } catch (Exception e) {
                 Log.e(TAG, "Unable to cache config to file", e);
             }
