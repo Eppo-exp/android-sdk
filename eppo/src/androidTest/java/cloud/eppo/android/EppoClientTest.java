@@ -265,7 +265,7 @@ public class EppoClientTest {
         // First initialize successfully
         initClient(TEST_HOST, true, true, false, DUMMY_API_KEY); // ensure cache is populated
 
-        // wait for a bit since cache file is loaded asynchronously
+        // wait for a bit since cache file is written asynchronously
         waitForPopulatedCache();
 
         // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
