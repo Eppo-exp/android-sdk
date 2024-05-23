@@ -45,6 +45,7 @@ public class ConfigurationRequestor {
             @Override
             public void onCacheLoadFail() {
                 cacheLoadInProgress.set(false);
+                Log.d(TAG, "Did not initialize from cache");
                 // If cache loading failed, and fetching failed, fire off the failure callback if not yet done so
                 // Otherwise, if fetching has not failed yet, defer to it for firing off callbacks
                 if (callback != null && fetchErrorMessage.get() != null && callbackCalled.compareAndSet(false, true)) {
