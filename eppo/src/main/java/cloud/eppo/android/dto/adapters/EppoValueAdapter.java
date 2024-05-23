@@ -1,4 +1,4 @@
-package cloud.eppo.android.dto.deserializers;
+package cloud.eppo.android.dto.adapters;
 
 import static cloud.eppo.android.util.Utils.logTag;
 
@@ -45,9 +45,6 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerial
 
             try {
                 String stringValue = json.getAsString();
-                if (stringValue == "null") {
-                    return EppoValue.valueOf();
-                }
                 return EppoValue.valueOf(stringValue);
             } catch (Exception ignored) {
             }
