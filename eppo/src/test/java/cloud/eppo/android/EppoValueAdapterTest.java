@@ -12,7 +12,7 @@ import org.junit.Test;
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
-public class EppoValueDeserializerTest {
+public class EppoValueAdapterTest {
     private final EppoValueAdapter deserializer = new EppoValueAdapter();
 
     @Test

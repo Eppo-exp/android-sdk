@@ -7,7 +7,6 @@ import android.util.Log;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
 
-import java.io.Reader;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -58,11 +57,12 @@ public class ConfigurationRequestor {
         Log.d(TAG, "Fetching configuration");
         client.get("/api/flag-config/v1/config", new RequestCallback() {
             @Override
-            public void onSuccess(Reader response) {
+            public void onSuccess(String responseBody) {
                 try {
                     Log.d(TAG, "Processing fetch response");
-                    configurationStore.setFlagsFromResponse(response);
+                    configurationStore.setFlagsFromJsonString(responseBody);
                     Log.d(TAG, "Configuration fetch successful");
+                    configurationStore.asyncWriteToCache(responseBody);
                 } catch (JsonSyntaxException | JsonIOException e) {
                     fetchErrorMessage.set(e.getMessage());
                     Log.e(TAG, "Error loading configuration response", e);

@@ -13,7 +13,6 @@ import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -90,8 +89,8 @@ public class ConfigurationStore {
         return configResponse;
     }
 
-    public void setFlagsFromResponse(Reader response) {
-        FlagConfigResponse config = gson.fromJson(response, FlagConfigResponse.class);
+    public void setFlagsFromJsonString(String jsonString) {
+        FlagConfigResponse config = gson.fromJson(jsonString, FlagConfigResponse.class);
         if (config == null || config.getFlags() == null) {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
@@ -100,20 +99,18 @@ public class ConfigurationStore {
             flags = new ConcurrentHashMap<>(config.getFlags());
             Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
-
-        writeConfigToFile(config);
     }
 
-    private void writeConfigToFile(FlagConfigResponse config) {
+    public void asyncWriteToCache(String jsonString) {
         AsyncTask.execute(() -> {
-            Log.d(TAG, "Saving configuration to file");
+            Log.d(TAG, "Saving configuration to cache file");
             try {
                 synchronized (cacheFile) {
                     BufferedWriter writer = cacheFile.getWriter();
-                    gson.toJson(config, writer);
+                    writer.write(jsonString);
                     writer.close();
                 }
-                Log.d(TAG, "Configuration saved");
+                Log.d(TAG, "Updated cache file");
             } catch (Exception e) {
                 Log.e(TAG, "Unable to cache config to file", e);
             }

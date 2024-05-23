@@ -4,21 +4,13 @@ import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.io.IOException;
-import java.io.Reader;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.Callback;
-import okhttp3.Dns;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -60,7 +52,11 @@ public class EppoHttpClient {
             public void onResponse(Call call, Response response) {
                 if (response.isSuccessful()) {
                     Log.d(TAG, "Fetch successful");
-                    callback.onSuccess(response.body().charStream());
+                    try {
+                        callback.onSuccess(response.body().string());
+                    } catch (IOException ex) {
+                        callback.onFailure("Failed to read response from URL "+httpUrl);
+                    }
                 } else {
                     switch (response.code()) {
                         case HttpURLConnection.HTTP_FORBIDDEN:
@@ -94,6 +90,6 @@ public class EppoHttpClient {
 }
 
 interface RequestCallback {
-    void onSuccess(Reader response);
+    void onSuccess(String responseBody);
     void onFailure(String errorMessage);
 }

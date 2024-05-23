@@ -37,7 +37,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
@@ -299,7 +298,7 @@ public class EppoClientTest {
 
         doAnswer(invocation -> {
             RequestCallback callback = invocation.getArgument(1);
-            callback.onSuccess(new StringReader("{}"));
+            callback.onSuccess("{}");
             return null; // doAnswer doesn't require a return value
         }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
 
@@ -431,7 +430,7 @@ public class EppoClientTest {
                 if (System.currentTimeMillis() > waitEnd) {
                     throw new InterruptedException("Cache file never populated; assuming configuration error");
                 }
-                long expectedMinimumSizeInBytes = 12000; // Last time this test was updated, cache size was 12,946 bytes
+                long expectedMinimumSizeInBytes = 8000; // Last time this test was updated, cache size was 11,506 bytes
                 cachePopulated = file.exists() && file.length() > expectedMinimumSizeInBytes;
                 if (!cachePopulated) {
                     Thread.sleep(8000);
