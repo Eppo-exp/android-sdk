@@ -25,13 +25,13 @@ import cloud.eppo.android.dto.ShardRange;
 import cloud.eppo.android.dto.TargetingCondition;
 import cloud.eppo.android.dto.TargetingRule;
 import cloud.eppo.android.dto.Variation;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
-import cloud.eppo.android.dto.deserializers.RandomizationConfigResponseDeserializer;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.adapters.RandomizationConfigResponseAdapter;
 
-public class RandomizationConfigResponseDeserializerTest {
+public class RandomizationConfigResponseAdapterTest {
 
     private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(RandomizationConfigResponse.class, new RandomizationConfigResponseDeserializer())
+            .registerTypeAdapter(RandomizationConfigResponse.class, new RandomizationConfigResponseAdapter())
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
             .create();

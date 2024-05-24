@@ -1,4 +1,4 @@
-package cloud.eppo.android.dto.deserializers;
+package cloud.eppo.android.dto.adapters;
 
 import static cloud.eppo.android.util.Utils.logTag;
 
@@ -32,8 +32,8 @@ import cloud.eppo.android.dto.Variation;
  *  unreliable when ProGuard minification is in-use and not configured to protect
  *  JSON-deserialization-related classes and annotations.
  */
-public class RandomizationConfigResponseDeserializer implements JsonDeserializer<RandomizationConfigResponse> {
-    private static final String TAG = logTag(RandomizationConfigResponseDeserializer.class);
+public class RandomizationConfigResponseAdapter implements JsonDeserializer<RandomizationConfigResponse> {
+    private static final String TAG = logTag(RandomizationConfigResponseAdapter.class);
 
     private final EppoValueAdapter eppoValueAdapter = new EppoValueAdapter();
 

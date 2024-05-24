@@ -38,7 +38,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
 import java.lang.reflect.Type;
 import java.lang.reflect.Field;
 import java.util.List;
@@ -51,7 +50,7 @@ import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
 import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
@@ -59,7 +58,7 @@ public class EppoClientTest {
     private static final String DUMMY_OTHER_API_KEY = "another-mock-api-key";
     private static final String TEST_HOST = "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
     private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
-    private Gson gson = new GsonBuilder()
+    private final Gson gson = new GsonBuilder()
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .registerTypeAdapter(AssignmentValueType.class, new AssignmentValueTypeAdapter(AssignmentValueType.STRING))
             .create();
@@ -266,7 +265,7 @@ public class EppoClientTest {
         // First initialize successfully
         initClient(TEST_HOST, true, true, false, DUMMY_API_KEY); // ensure cache is populated
 
-        // wait for a bit since cache file is loaded asynchronously
+        // wait for a bit since cache file is written asynchronously
         waitForPopulatedCache();
 
         // Then reinitialize with a bad host so we know it's using the cached RAC built from the first initialization
@@ -371,7 +370,7 @@ public class EppoClientTest {
 
         doAnswer(invocation -> {
             RequestCallback callback = invocation.getArgument(1);
-            callback.onSuccess(new StringReader("{}"));
+            callback.onSuccess("{}");
             return null; // doAnswer doesn't require a return value
         }).when(mockHttpClient).get(anyString(), any(RequestCallback.class));
 

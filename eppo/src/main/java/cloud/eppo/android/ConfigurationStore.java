@@ -13,15 +13,14 @@ import com.google.gson.JsonSyntaxException;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Reader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import cloud.eppo.android.dto.EppoValue;
 import cloud.eppo.android.dto.FlagConfig;
 import cloud.eppo.android.dto.RandomizationConfigResponse;
-import cloud.eppo.android.dto.deserializers.EppoValueAdapter;
-import cloud.eppo.android.dto.deserializers.RandomizationConfigResponseDeserializer;
+import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.android.dto.adapters.RandomizationConfigResponseAdapter;
 import cloud.eppo.android.util.Utils;
 
 public class ConfigurationStore {
@@ -29,13 +28,13 @@ public class ConfigurationStore {
     private static final String TAG = logTag(ConfigurationStore.class);
 
     private final Gson gson = new GsonBuilder()
-            .registerTypeAdapter(RandomizationConfigResponse.class, new RandomizationConfigResponseDeserializer())
+            .registerTypeAdapter(RandomizationConfigResponse.class, new RandomizationConfigResponseAdapter())
             .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
             .serializeNulls()
             .create();
     private final ConfigCacheFile cacheFile;
 
-    private AtomicBoolean loadedFromFetchResponse = new AtomicBoolean(false);
+    private final AtomicBoolean loadedFromFetchResponse = new AtomicBoolean(false);
     private ConcurrentHashMap<String, FlagConfig> flags;
 
     public ConfigurationStore(Application application, String cacheFileNameSuffix) {
@@ -86,8 +85,8 @@ public class ConfigurationStore {
         return configResponse;
     }
 
-    public void setFlagsFromResponse(Reader response) {
-        RandomizationConfigResponse config = gson.fromJson(response, RandomizationConfigResponse.class);
+    public void setFlagsFromJsonString(String jsonString) {
+        RandomizationConfigResponse config = gson.fromJson(jsonString, RandomizationConfigResponse.class);
         if (config == null || config.getFlags() == null) {
             Log.w(TAG, "Flags missing in configuration response");
             flags = new ConcurrentHashMap<>();
@@ -96,18 +95,17 @@ public class ConfigurationStore {
             flags = config.getFlags();
             Log.d(TAG, "Loaded " + flags.size() + " flags from configuration response");
         }
-
-        writeConfigToFile(config);
     }
 
-    private void writeConfigToFile(RandomizationConfigResponse config) {
+    public void asyncWriteToCache(String jsonString) {
         AsyncTask.execute(() -> {
             try {
                 synchronized (cacheFile) {
                     BufferedWriter writer = cacheFile.getWriter();
-                    gson.toJson(config, writer);
+                    writer.write(jsonString);
                     writer.close();
                 }
+                Log.d(TAG, "Updated cache file");
             } catch (Exception e) {
                 Log.e(TAG, "Unable to cache config to file", e);
             }
