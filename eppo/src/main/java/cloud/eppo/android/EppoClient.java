@@ -78,7 +78,7 @@ public class EppoClient {
         return instance;
     }
 
-    private void refreshConfiguration(InitializationCallback callback) {
+    public void refreshConfiguration(InitializationCallback callback) {
         requestor.load(callback);
     }
 
