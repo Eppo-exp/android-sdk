@@ -214,7 +214,7 @@ public class EppoClientTest {
         // First initialize successfully
         initClient(TEST_HOST, true, true, false, DUMMY_API_KEY); // ensure cache is populated
 
-        // wait for the cache to be written (as it is done so asynchronously)
+        // wait for a bit since cache file is written asynchronously
         waitForPopulatedCache();
 
         // Then reinitialize with a bad host so we know it's using the cached UFC built from the first initialization

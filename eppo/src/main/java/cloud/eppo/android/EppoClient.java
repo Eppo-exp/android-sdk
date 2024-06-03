@@ -109,7 +109,20 @@ public class EppoClient {
         return instance;
     }
 
-    private void refreshConfiguration(InitializationCallback callback) {
+    /**
+     * Ability to ad-hoc kick off a configuration load.
+     * Will load from a filesystem cached file as well as fire off a HTTPS request for an updated
+     * configuration. If the cache load finishes first, those assignments will be used until the
+     * fetch completes.
+     *
+     * Deprecated, as we plan to make a more targeted and configurable way to do so in the future.
+     * @param callback methods to call when loading succeeds/fails. Note that the success callback
+     *                 will be called as soon as either a configuration is loaded from the cache or
+     *                 fetched--whichever finishes first. Error callback will called if both
+     *                 attempts fail.
+     */
+    @Deprecated
+    public void refreshConfiguration(InitializationCallback callback) {
         requestor.load(callback);
     }
 
