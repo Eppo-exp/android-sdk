@@ -7,9 +7,11 @@ env:
   ANDROID_API_LEVEL: 33
 
 jobs:
-  lint-test-sdk:
+  test:
+    uses: ./.github/workflows/test.yaml
+  publish:
+    needs: test
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -31,4 +33,4 @@ jobs:
           echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
 
       - name: Publish
-        run: make publish-release
+        run: make check-maven-credentials-and-publish
