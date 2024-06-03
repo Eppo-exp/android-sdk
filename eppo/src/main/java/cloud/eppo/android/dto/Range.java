@@ -1,6 +1,6 @@
 package cloud.eppo.android.dto;
 
-public class ShardRange {
+public class Range {
     private int start;
     private int end;
 

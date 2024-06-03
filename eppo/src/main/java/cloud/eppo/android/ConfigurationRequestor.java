@@ -55,7 +55,7 @@ public class ConfigurationRequestor {
         });
 
         Log.d(TAG, "Fetching configuration");
-        client.get("/api/randomized_assignment/v3/config", new RequestCallback() {
+        client.get("/api/flag-config/v1/config", new RequestCallback() {
             @Override
             public void onSuccess(String responseBody) {
                 try {

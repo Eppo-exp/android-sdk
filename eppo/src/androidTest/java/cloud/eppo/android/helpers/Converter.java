@@ -1,8 +1,7 @@
-package cloud.eppo.android;
+package cloud.eppo.android.helpers;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class Converter {
     public static List<Double> convertToDouble(List<String> input) {

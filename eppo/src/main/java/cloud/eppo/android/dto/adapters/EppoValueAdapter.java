@@ -8,6 +8,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonDeserializationContext;
 import com.google.gson.JsonDeserializer;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
@@ -23,74 +24,63 @@ public class EppoValueAdapter implements JsonDeserializer<EppoValue>, JsonSerial
     public static final String TAG = logTag(EppoValueAdapter.class);
 
     @Override
-    public EppoValue deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+    public EppoValue deserialize(JsonElement jsonElement, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
-        if (json.isJsonArray()) {
-            List<String> array = new ArrayList<>();
-            for (JsonElement element : json.getAsJsonArray()) {
-                try {
-                    array.add(element.getAsString());
-                } catch (Exception e) {
-                    Log.e(TAG, "only Strings are supported");
+
+        EppoValue result;
+
+        if (jsonElement == null || jsonElement.isJsonNull()) {
+            result = EppoValue.nullValue();
+        } else if (jsonElement.isJsonArray()) {
+            List<String> stringArray = new ArrayList<>();
+            for (JsonElement arrayElement : jsonElement.getAsJsonArray()) {
+                if (arrayElement.isJsonPrimitive() && arrayElement.getAsJsonPrimitive().isString()) {
+                    stringArray.add(arrayElement.getAsJsonPrimitive().getAsString());
+                } else {
+                    Log.w(TAG, "only Strings are supported for array-valued values; received: "+arrayElement);
                 }
             }
-            return EppoValue.valueOf(array);
+            result = EppoValue.valueOf(stringArray);
+        } else if (jsonElement.isJsonPrimitive()) {
+            JsonPrimitive jsonPrimitive = jsonElement.getAsJsonPrimitive();
+            if (jsonPrimitive.isBoolean()) {
+                result = EppoValue.valueOf(jsonPrimitive.getAsBoolean());
+            } else if (jsonPrimitive.isNumber()) {
+                result = EppoValue.valueOf(jsonPrimitive.getAsDouble());
+            } else {
+                result = EppoValue.valueOf(jsonPrimitive.getAsString());
+            }
+        } else {
+            // If here, we don't know what to do; fail to null with a warning
+            Log.w(TAG, "Unexpected JSON for parsing a value: "+jsonElement);
+            result = EppoValue.nullValue();
         }
 
-        if (json.isJsonPrimitive()) {
-            try {
-                return EppoValue.valueOf(json.getAsDouble());
-            } catch (Exception ignored) {
-            }
-
-            try {
-                String stringValue = json.getAsString();
-                return EppoValue.valueOf(stringValue);
-            } catch (Exception ignored) {
-            }
-
-            try {
-                return EppoValue.valueOf(json.getAsBoolean());
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (!json.isJsonNull()) {
-            return EppoValue.valueOf(json);
-        }
-
-        return EppoValue.valueOf();
+        return result;
     }
 
     @Override
     public JsonElement serialize(EppoValue src, Type typeOfSrc, JsonSerializationContext context) {
-        if (src.isArray()) {
+        if (src.isBoolean()) {
+            return new JsonPrimitive(src.booleanValue());
+        }
+
+        if (src.isNumeric()) {
+            return new JsonPrimitive(src.doubleValue());
+        }
+
+        if (src.isString()) {
+            return new JsonPrimitive(src.stringValue());
+        }
+
+        if (src.isStringArray()) {
             JsonArray array = new JsonArray();
-            for (String value : src.arrayValue()) {
+            for (String value : src.stringArrayValue()) {
                 array.add(value);
             }
             return array;
         }
 
-        if (src.isBool()) {
-            return new JsonPrimitive(src.boolValue());
-        }
-
-        if (src.isNumeric()) {
-            try {
-                return new JsonPrimitive(src.doubleValue());
-            } catch (Exception ignored) {
-            }
-        }
-
-        if (src.isNumeric()) {
-            return null;
-        }
-
-        if (src.isJSON()) {
-            return src.jsonValue();
-        }
-
-        return new JsonPrimitive(src.stringValue());
+        return JsonNull.INSTANCE;
     }
 }

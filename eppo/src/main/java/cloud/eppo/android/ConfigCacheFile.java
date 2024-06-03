@@ -25,6 +25,7 @@ public class ConfigCacheFile {
         return cacheFile.exists();
     }
 
+    /** @noinspection ResultOfMethodCallIgnored*/
     public void delete() {
         if (cacheFile.exists()) {
             cacheFile.delete();

@@ -2,25 +2,34 @@ package cloud.eppo.android.dto;
 
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 
 public class FlagConfig {
-    private int subjectShards;
+    private String key;
 
     private boolean enabled;
 
-    private Map<String, String> typedOverrides = new HashMap<>();
+    private int totalShards;
 
-    private List<TargetingRule> rules;
+    private VariationType variationType;
 
-    private Map<String, Allocation> allocations;
+    private Map<String, Variation> variations;
 
-    public int getSubjectShards() {
-        return subjectShards;
+    private List<Allocation> allocations;
+
+    public String getKey() {
+        return this.key;
     }
 
-    public void setSubjectShards(int subjectShards) {
-        this.subjectShards = subjectShards;
+    public void setKey(String key) {
+        this.key = key;
+    }
+
+    public int getTotalShards() {
+        return totalShards;
+    }
+
+    public void setTotalShards(int totalShards) {
+        this.totalShards = totalShards;
     }
 
     public boolean isEnabled() {
@@ -31,27 +40,27 @@ public class FlagConfig {
         this.enabled = enabled;
     }
 
-    public Map<String, String> getTypedOverrides() {
-        return typedOverrides;
+    public VariationType getVariationType() {
+        return variationType;
     }
 
-    public void setTypedOverrides(Map<String, String> typedOverrides) {
-        this.typedOverrides = typedOverrides;
+    public void setVariationType(VariationType variationType) {
+        this.variationType = variationType;
     }
 
-    public Map<String, Allocation> getAllocations() {
+    public Map<String, Variation> getVariations() {
+        return variations;
+    }
+
+    public void setVariations(Map<String, Variation> variations) {
+        this.variations = variations;
+    }
+
+    public List<Allocation> getAllocations() {
         return allocations;
     }
 
-    public  void setAllocations(Map<String, Allocation> allocations) {
+    public void setAllocations(List<Allocation> allocations) {
         this.allocations = allocations;
-    }
-
-    public List<TargetingRule> getRules() {
-        return rules;
-    }
-
-    public void setRules(List<TargetingRule> rules) {
-        this.rules = rules;
     }
 }
