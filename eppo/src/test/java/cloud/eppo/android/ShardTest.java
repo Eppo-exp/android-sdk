@@ -8,7 +8,7 @@ import cloud.eppo.android.dto.Range;
 import cloud.eppo.android.util.Utils;
 
 public class ShardTest {
-    Range createShardRange(int start, int end) {
+    Range createRange(int start, int end) {
         Range range = new Range();
         range.setStart(start);
         range.setEnd(end);
@@ -17,13 +17,13 @@ public class ShardTest {
 
     @Test
     public void testIsShardInRangePositiveCase() {
-        Range range = createShardRange(10, 20);
+        Range range = createRange(10, 20);
         assertTrue(Utils.isShardInRange(15, range));
     }
 
     @Test
     public void testIsShardInRangeNegativeCase() {
-        Range range = createShardRange(10, 20);
+        Range range = createRange(10, 20);
         assertTrue(Utils.isShardInRange(15, range));
     }
 

@@ -184,9 +184,8 @@ public class EppoClient {
                 break;
             case INTEGER:
                 typeMatch = value.isNumeric()
-                        // Java has no isInteger check so we check value == floor == ceil
-                        && Math.floor(value.doubleValue()) == Math.ceil(value.doubleValue())
-                        && Math.floor(value.doubleValue()) == value.doubleValue();
+                        // Java has no isInteger check so we check using mod
+                        && value.doubleValue() % 1 == 0;
                 break;
             case NUMERIC:
                 typeMatch = value.isNumeric();

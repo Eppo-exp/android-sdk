@@ -131,14 +131,14 @@ public class FlagEvaluator {
             return true;
         }
 
-        boolean allShardsMatch = true;
         for (Shard shard : split.getShards()) {
             if (!matchesShard(shard, subjectKey, totalShards, isObfuscated)) {
-                allShardsMatch = false;
-                break;
+                return false;
             }
         }
-        return allShardsMatch;
+
+        // If here, matchesShard() was true for each shards
+        return true;
     }
 
     private static boolean matchesShard(Shard shard, String subjectKey, int totalShards, boolean isObfuscated) {
@@ -148,13 +148,13 @@ public class FlagEvaluator {
         }
         String hashKey = salt+"-"+subjectKey;
         int assignedShard = Utils.getShard(hashKey, totalShards);
-        boolean inRange = false;
         for (Range range : shard.getRanges()) {
             if (assignedShard >= range.getStart() && assignedShard < range.getEnd()) {
-                inRange = true;
-                break;
+                return true;
             }
         }
-        return inRange;
+
+        // If here, the shard was not in any of the shard's ranges
+        return false;
     }
 }

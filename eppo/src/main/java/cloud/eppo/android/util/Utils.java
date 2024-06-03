@@ -91,7 +91,8 @@ public class Utils {
         try {
             result = isoUtcDateFormat.parse(isoDateString);
         } catch (ParseException e) {
-            /* no-op; leave result null for now */
+            // We expect to fail parsing if the date is base 64 encoded
+            // Thus we'll leave the result null for now and try again with the decoded value
         }
 
         if (result == null) {

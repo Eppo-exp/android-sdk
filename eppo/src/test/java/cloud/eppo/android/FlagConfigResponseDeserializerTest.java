@@ -37,8 +37,8 @@ public class FlagConfigResponseDeserializerTest {
 
     @Test
     public void testDeserializePlainText() throws IOException {
-        File testRac = new File("src/androidTest/assets/flags-v1.json");
-        FileReader fileReader = new FileReader(testRac);
+        File testUfc = new File("src/androidTest/assets/flags-v1.json");
+        FileReader fileReader = new FileReader(testUfc);
         FlagConfigResponse configResponse = gson.fromJson(fileReader, FlagConfigResponse.class);
 
         assertTrue(configResponse.getFlags().size() >= 13);

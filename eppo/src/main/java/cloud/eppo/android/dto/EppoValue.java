@@ -103,8 +103,10 @@ public class EppoValue {
                 return this.stringValue;
             case ARRAY_OF_STRING:
                 return String.join(" ,", this.stringArrayValue);
-            default: // NULL
+            case NULL:
                 return "";
+            default:
+                throw new UnsupportedOperationException("Cannot stringify Eppo Value type "+this.type.name());
         }
     }
 }
