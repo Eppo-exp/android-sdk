@@ -161,9 +161,9 @@ public class EppoClient {
         }
 
         if (assignedValue != null && assignmentLogger != null && evaluationResult.doLog()) {
-            String experimentKey = Utils.generateExperimentKey(evaluationResult.getFlagKey(), evaluationResult.getAllocationKey());
-            String variationKey = evaluationResult.getVariation().getKey();
             String allocationKey = evaluationResult.getAllocationKey();
+            String experimentKey = flagKey + '-' + allocationKey; // Our experiment key is derived by hyphenating the flag key and allocation key
+            String variationKey = evaluationResult.getVariation().getKey();
             Map<String, String> extraLogging = evaluationResult.getExtraLogging();
             Map<String, String> metaData = new HashMap<>();
             metaData.put("obfuscated", Boolean.valueOf(isConfigObfuscated).toString());
