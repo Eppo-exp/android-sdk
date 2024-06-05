@@ -25,6 +25,7 @@ import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
+import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
     private static final String TAG = logTag(EppoClient.class);
@@ -160,9 +161,9 @@ public class EppoClient {
         }
 
         if (assignedValue != null && assignmentLogger != null && evaluationResult.doLog()) {
-            String experimentKey = evaluationResult.getFlagKey();
-            String variationKey = evaluationResult.getVariation().getKey();
             String allocationKey = evaluationResult.getAllocationKey();
+            String experimentKey = flagKey + '-' + allocationKey; // Our experiment key is derived by hyphenating the flag key and allocation key
+            String variationKey = evaluationResult.getVariation().getKey();
             Map<String, String> extraLogging = evaluationResult.getExtraLogging();
             Map<String, String> metaData = new HashMap<>();
             metaData.put("obfuscated", Boolean.valueOf(isConfigObfuscated).toString());

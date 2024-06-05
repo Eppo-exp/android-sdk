@@ -30,15 +30,22 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +59,8 @@ import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
 import cloud.eppo.android.helpers.TestCaseValue;
+import cloud.eppo.android.logging.Assignment;
+import cloud.eppo.android.logging.AssignmentLogger;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);
@@ -63,11 +72,13 @@ public class EppoClientTest {
             .registerTypeAdapter(AssignmentTestCase.class, new AssignmentTestCaseDeserializer())
             .create();
 
+    private AssignmentLogger mockAssignmentLogger;
+
     private void initClient(String host, boolean throwOnCallbackError, boolean shouldDeleteCacheFiles, boolean isGracefulMode, String apiKey) {
         if (shouldDeleteCacheFiles) {
             clearCacheFile(apiKey);
         }
-
+        mockAssignmentLogger = mock(AssignmentLogger.class);
         CountDownLatch lock = new CountDownLatch(1);
 
         new EppoClient.Builder()
@@ -75,6 +86,7 @@ public class EppoClientTest {
                 .apiKey(apiKey)
                 .isGracefulMode(isGracefulMode)
                 .host(host)
+                .assignmentLogger(mockAssignmentLogger)
                 .callback(new InitializationCallback() {
                     @Override
                     public void onCompleted() {
@@ -439,6 +451,48 @@ public class EppoClientTest {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void testAssignmentEventCorrectlyCreated() {
+        Date testStart = new Date();
+        initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+        SubjectAttributes subjectAttributes = new SubjectAttributes();
+        subjectAttributes.put("age", EppoValue.valueOf(30));
+        subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
+        double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+
+        assertEquals(3.1415926, assignment, 0.0000001);
+
+        ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
+        verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
+        Assignment capturedAssignment = assignmentLogCaptor.getValue();
+        assertEquals("numeric_flag-rollout", capturedAssignment.getExperiment());
+        assertEquals("numeric_flag", capturedAssignment.getFeatureFlag());
+        assertEquals("rollout", capturedAssignment.getAllocation());
+        assertEquals("pi", capturedAssignment.getVariation()); // Note: unlike this test, typically variation keys will just be the value for everything not JSON
+        assertEquals("alice", capturedAssignment.getSubject());
+        assertEquals(subjectAttributes, capturedAssignment.getSubjectAttributes());
+        assertEquals(new HashMap<>(), capturedAssignment.getExtraLogging());
+
+        try {
+            Date assertionDate = new Date();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+            dateFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+            Date parsedTimestamp = dateFormat.parse(capturedAssignment.getTimestamp());
+            assertNotNull(parsedTimestamp);
+            assertTrue(parsedTimestamp.after(testStart));
+            assertTrue(parsedTimestamp.before(assertionDate));
+        } catch (ParseException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        Map<String, String> expectedMeta = new HashMap<>();
+        expectedMeta.put("obfuscated", "true");
+        expectedMeta.put("sdkLanguage", "Java (Android)");
+        expectedMeta.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
+
+        assertEquals(expectedMeta, capturedAssignment.getMetaData());
     }
 
     private void setHttpClientOverrideField(EppoHttpClient httpClient) {
