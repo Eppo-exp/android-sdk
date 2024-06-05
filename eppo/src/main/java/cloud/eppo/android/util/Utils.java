@@ -118,6 +118,10 @@ public class Utils {
         return key.substring(0,8).replaceAll("\\W", "");
     }
 
+    public static String generateExperimentKey(String featureFlagKey, String allocationKey) {
+        return featureFlagKey + '-' + allocationKey;
+    }
+
     public static SharedPreferences getSharedPrefs(Context context, String keySuffix) {
         return context.getSharedPreferences("eppo-"+keySuffix, Context.MODE_PRIVATE);
     }

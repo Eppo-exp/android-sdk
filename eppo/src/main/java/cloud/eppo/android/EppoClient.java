@@ -25,6 +25,7 @@ import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
+import cloud.eppo.android.util.Utils;
 
 public class EppoClient {
     private static final String TAG = logTag(EppoClient.class);
@@ -160,7 +161,7 @@ public class EppoClient {
         }
 
         if (assignedValue != null && assignmentLogger != null && evaluationResult.doLog()) {
-            String experimentKey = evaluationResult.getFlagKey();
+            String experimentKey = Utils.generateExperimentKey(evaluationResult.getFlagKey(), evaluationResult.getAllocationKey());
             String variationKey = evaluationResult.getVariation().getKey();
             String allocationKey = evaluationResult.getAllocationKey();
             Map<String, String> extraLogging = evaluationResult.getExtraLogging();
