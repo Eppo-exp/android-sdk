@@ -9,10 +9,10 @@ import java.util.List;
 import java.util.Map;
 
 import cloud.eppo.android.util.Utils;
+import cloud.eppo.model.ShardRange;
 import cloud.eppo.ufc.dto.Allocation;
 import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
-import cloud.eppo.ufc.dto.Range;
 import cloud.eppo.ufc.dto.Shard;
 import cloud.eppo.ufc.dto.Split;
 import cloud.eppo.ufc.dto.SubjectAttributes;
@@ -146,7 +146,7 @@ public class FlagEvaluator {
         }
         String hashKey = salt+"-"+subjectKey;
         int assignedShard = Utils.getShard(hashKey, totalShards);
-        for (Range range : shard.getRanges()) {
+        for (ShardRange range : shard.getRanges()) {
             if (assignedShard >= range.getStart() && assignedShard < range.getEnd()) {
                 return true;
             }

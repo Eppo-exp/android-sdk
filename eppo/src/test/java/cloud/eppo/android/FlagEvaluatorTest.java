@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import cloud.eppo.model.ShardRange;
 import cloud.eppo.ufc.dto.Allocation;
 import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.OperatorType;
-import cloud.eppo.ufc.dto.Range;
 import cloud.eppo.ufc.dto.Shard;
 import cloud.eppo.ufc.dto.Split;
 import cloud.eppo.ufc.dto.SubjectAttributes;
@@ -471,16 +471,10 @@ public class FlagEvaluatorTest {
         Shard shard = new Shard();
         shard.setSalt(salt);
         if (rangeStart != null) {
-            Range range = new Range();
-            range.setStart(rangeStart);
-            range.setEnd(rangeEnd);
-            Set<Range> ranges = new HashSet<>();
-            ranges.add(range);
-            shard.setRanges(ranges);
+            ShardRange range = new ShardRange(rangeStart, rangeEnd);
+            shard.setRanges(new HashSet<>(Collections.singletonList(range)));
         }
-        Set<Shard> shards = new HashSet<>();
-        shards.add(shard);
-        return shards;
+        return new HashSet<>(Collections.singletonList(shard));
     }
 
     private List<Split> createSplits(String variationKey) {
@@ -491,9 +485,7 @@ public class FlagEvaluatorTest {
         Split split = new Split();
         split.setVariationKey(variationKey);
         split.setShards(shards);
-        List<Split> splits = new ArrayList<>();
-        splits.add(split);
-        return splits;
+        return new ArrayList<>(Collections.singletonList(split));
     }
 
     private Set<TargetingRule> createRules(String attribute, OperatorType operator, EppoValue value) {
@@ -505,9 +497,7 @@ public class FlagEvaluatorTest {
         conditions.add(condition);
         TargetingRule rule = new TargetingRule();
         rule.setConditions(conditions);
-        Set<TargetingRule> rules = new HashSet<>();
-        rules.add(rule);
-        return rules;
+        return new HashSet<>(Collections.singletonList(rule));
     }
 
     private List<Allocation> createAllocations(String allocationKey, List<Split> splits) {

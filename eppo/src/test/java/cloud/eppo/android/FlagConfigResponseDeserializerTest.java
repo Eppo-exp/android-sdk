@@ -17,11 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import cloud.eppo.model.ShardRange;
 import cloud.eppo.ufc.dto.Allocation;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.OperatorType;
-import cloud.eppo.ufc.dto.Range;
 import cloud.eppo.ufc.dto.Shard;
 import cloud.eppo.ufc.dto.Split;
 import cloud.eppo.ufc.dto.TargetingCondition;
@@ -101,7 +101,7 @@ public class FlagConfigResponseDeserializerTest {
         Shard northAmericaShard = northAmericaSplit.getShards().iterator().next();
         assertEquals("some-salt", northAmericaShard.getSalt());
 
-        Range northAmericaRange = northAmericaShard.getRanges().iterator().next();
+        ShardRange northAmericaRange = northAmericaShard.getRanges().iterator().next();
         assertEquals(0, northAmericaRange.getStart());
         assertEquals(10000, northAmericaRange.getEnd());
 
@@ -126,7 +126,7 @@ public class FlagConfigResponseDeserializerTest {
         Shard fiftyPlusShard = fiftyPlusSplit.getShards().iterator().next();
         assertEquals("some-salt", fiftyPlusShard.getSalt());
 
-        Range fiftyPlusRange = fiftyPlusShard.getRanges().iterator().next();
+        ShardRange fiftyPlusRange = fiftyPlusShard.getRanges().iterator().next();
         assertEquals(0, fiftyPlusRange.getStart());
         assertEquals(10000, fiftyPlusRange.getEnd());
 
