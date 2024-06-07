@@ -16,8 +16,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import cloud.eppo.android.dto.Range;
-import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
+import cloud.eppo.ufc.dto.Range;
+import cloud.eppo.ufc.dto.adapters.FlagConfigResponseAdapter;
 
 public class Utils {
 

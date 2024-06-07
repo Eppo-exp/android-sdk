@@ -5,7 +5,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 import static org.junit.Assert.assertTrue;
-
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
 import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.safeCacheKey;
@@ -15,24 +23,13 @@ import android.util.Log;
 
 import androidx.test.core.app.ApplicationProvider;
 
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -50,17 +47,17 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.FlagConfig;
-import cloud.eppo.android.dto.FlagConfigResponse;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.VariationType;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
 import cloud.eppo.android.helpers.TestCaseValue;
 import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.FlagConfigResponse;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.VariationType;
 
 public class EppoClientTest {
     private static final String TAG = logTag(EppoClient.class);

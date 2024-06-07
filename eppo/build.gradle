@@ -6,7 +6,9 @@ plugins {
 group = "cloud.eppo"
 version = "3.0.1"
 
+
 android {
+    buildFeatures.buildConfig true
     compileSdk 33
 
     defaultConfig {
@@ -58,7 +60,7 @@ ext.versions = [
     "androidx_runner": "1.5.2",
     "androidx_core": "1.8.0",
     "gson": "2.9.1",
-    "okhttp": "4.10.0",
+    "okhttp": "4.11.0",
     "commonsio": "2.14.0",
     "semver": "0.10.2"
 ]
@@ -73,6 +75,7 @@ dependencies {
     androidTestImplementation "androidx.test:core:${versions.androidx_test_core}"
     androidTestImplementation "androidx.test:runner:${versions.androidx_runner}"
     androidTestImplementation "commons-io:commons-io:${versions.commonsio}"
+    implementation('cloud.eppo:sdk-common-jvm:0.0.1-SNAPSHOT')
     implementation("androidx.core:core:${versions.androidx_core}")
     implementation("com.google.code.gson:gson:${versions.gson}")
     implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
@@ -87,7 +90,7 @@ publishing {
             version = project.properties.get("version")
 
             afterEvaluate {
-                from components.release
+                from components.findByName('release')
             }
 
             pom {
@@ -117,8 +120,8 @@ publishing {
     repositories {
         maven {
             credentials {
-                username = "$MAVEN_USERNAME"
-                password = "$MAVEN_PASSWORD"
+                username = System.getenv("MAVEN_USERNAME") ? "$MAVEN_USERNAME" : ""
+                password = System.getenv("MAVEN_PASSWORD") ? "$MAVEN_PASSWORD" : ""
             }
 
             url = "https://s01.oss.sonatype.org/content/repositories/releases"

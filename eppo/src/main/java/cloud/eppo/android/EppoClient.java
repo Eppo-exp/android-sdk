@@ -16,16 +16,15 @@ import com.google.gson.JsonSyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.FlagConfig;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.VariationType;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.android.logging.Assignment;
 import cloud.eppo.android.logging.AssignmentLogger;
-import cloud.eppo.android.util.Utils;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.VariationType;
 
 public class EppoClient {
     private static final String TAG = logTag(EppoClient.class);

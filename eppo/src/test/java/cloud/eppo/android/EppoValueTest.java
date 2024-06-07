@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.ufc.dto.EppoValue;
 
 public class EppoValueTest {
     @Test

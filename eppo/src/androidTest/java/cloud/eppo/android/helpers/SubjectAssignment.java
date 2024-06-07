@@ -1,7 +1,6 @@
 package cloud.eppo.android.helpers;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.SubjectAttributes;
 
 public class SubjectAssignment {
     String subjectKey;

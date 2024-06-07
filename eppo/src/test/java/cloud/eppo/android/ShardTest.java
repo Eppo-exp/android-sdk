@@ -4,7 +4,7 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import cloud.eppo.android.dto.Range;
+import cloud.eppo.ufc.dto.Range;
 import cloud.eppo.android.util.Utils;
 
 public class ShardTest {

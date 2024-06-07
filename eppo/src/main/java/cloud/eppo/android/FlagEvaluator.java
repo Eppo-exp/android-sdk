@@ -2,23 +2,21 @@ package cloud.eppo.android;
 
 import static cloud.eppo.android.util.Utils.base64Decode;
 
-import com.google.gson.JsonParser;
-
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import cloud.eppo.android.dto.Allocation;
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.FlagConfig;
-import cloud.eppo.android.dto.Range;
-import cloud.eppo.android.dto.Shard;
-import cloud.eppo.android.dto.Split;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.Variation;
 import cloud.eppo.android.util.Utils;
+import cloud.eppo.ufc.dto.Allocation;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.Range;
+import cloud.eppo.ufc.dto.Shard;
+import cloud.eppo.ufc.dto.Split;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.Variation;
 
 public class FlagEvaluator {
 

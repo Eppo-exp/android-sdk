@@ -21,18 +21,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import cloud.eppo.android.dto.Allocation;
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.FlagConfig;
-import cloud.eppo.android.dto.OperatorType;
-import cloud.eppo.android.dto.Range;
-import cloud.eppo.android.dto.Shard;
-import cloud.eppo.android.dto.Split;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.TargetingCondition;
-import cloud.eppo.android.dto.TargetingRule;
-import cloud.eppo.android.dto.Variation;
-import cloud.eppo.android.dto.VariationType;
+import cloud.eppo.ufc.dto.Allocation;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.OperatorType;
+import cloud.eppo.ufc.dto.Range;
+import cloud.eppo.ufc.dto.Shard;
+import cloud.eppo.ufc.dto.Split;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.TargetingCondition;
+import cloud.eppo.ufc.dto.TargetingRule;
+import cloud.eppo.ufc.dto.Variation;
+import cloud.eppo.ufc.dto.VariationType;
 
 @RunWith(RobolectricTestRunner.class) // Needed for anything that relies on Base64
 public class FlagEvaluatorTest {

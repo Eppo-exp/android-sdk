@@ -10,11 +10,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.OperatorType;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.TargetingCondition;
-import cloud.eppo.android.dto.TargetingRule;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.OperatorType;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.TargetingCondition;
+import cloud.eppo.ufc.dto.TargetingRule;
 
 public class RuleEvaluator {
 
