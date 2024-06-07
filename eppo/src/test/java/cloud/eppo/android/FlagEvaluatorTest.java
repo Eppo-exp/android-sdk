@@ -2,9 +2,8 @@ package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertNull;
-
+import static org.junit.Assert.assertTrue;
 import static cloud.eppo.android.util.Utils.base64Encode;
 import static cloud.eppo.android.util.Utils.getMD5Hex;
 
@@ -13,6 +12,7 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -515,14 +515,8 @@ public class FlagEvaluatorTest {
     }
 
     private List<Allocation> createAllocations(String allocationKey, List<Split> splits, Set<TargetingRule> rules) {
-        Allocation allocation = new Allocation();
-        allocation.setKey(allocationKey);
-        allocation.setSplits(splits);
-        allocation.setRules(rules);
-        allocation.setDoLog(true);
-        List<Allocation> allocations = new ArrayList<>();
-        allocations.add(allocation);
-        return allocations;
+        Allocation allocation = new Allocation(allocationKey, rules, null, null, splits, true);
+        return new ArrayList<>(Collections.singletonList(allocation));
     }
 
     private FlagConfig createFlag(Map<String, Variation> variations, List<Allocation> allocations) {
