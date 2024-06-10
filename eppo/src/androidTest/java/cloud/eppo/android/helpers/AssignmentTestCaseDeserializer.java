@@ -11,10 +11,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.VariationType;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.VariationType;
+import cloud.eppo.ufc.dto.adapters.EppoValueAdapter;
 
 public class AssignmentTestCaseDeserializer implements JsonDeserializer<AssignmentTestCase> {
 

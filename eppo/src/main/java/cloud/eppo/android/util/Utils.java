@@ -16,8 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import cloud.eppo.android.dto.Range;
-import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
+import cloud.eppo.ufc.dto.adapters.FlagConfigResponseAdapter;
 
 public class Utils {
 
@@ -70,10 +69,6 @@ public class Utils {
             hashText = "0" + hashText;
         }
         return (int) (Long.parseLong(hashText.substring(0, 8), 16) % maxShardValue);
-    }
-
-    public static boolean isShardInRange(int shard, Range range) {
-        return shard >= range.getStart() && shard < range.getEnd();
     }
 
     public static void validateNotEmptyOrNull(String input, String errorMessage) {

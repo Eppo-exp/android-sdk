@@ -9,8 +9,8 @@ import com.google.gson.JsonParser;
 
 import org.junit.Test;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.adapters.EppoValueAdapter;
 
 public class EppoValueAdapterTest {
     private final EppoValueAdapter deserializer = new EppoValueAdapter();

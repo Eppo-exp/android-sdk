@@ -17,12 +17,12 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.FlagConfig;
-import cloud.eppo.android.dto.FlagConfigResponse;
-import cloud.eppo.android.dto.adapters.DateAdapter;
-import cloud.eppo.android.dto.adapters.EppoValueAdapter;
-import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.FlagConfigResponse;
+import cloud.eppo.ufc.dto.adapters.DateAdapter;
+import cloud.eppo.ufc.dto.adapters.EppoValueAdapter;
+import cloud.eppo.ufc.dto.adapters.FlagConfigResponseAdapter;
 
 public class ConfigurationStore {
 

@@ -10,7 +10,7 @@ import com.google.gson.JsonSyntaxException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import cloud.eppo.android.dto.FlagConfig;
+import cloud.eppo.ufc.dto.FlagConfig;
 
 public class ConfigurationRequestor {
     private static final String TAG = logTag(ConfigurationRequestor.class);

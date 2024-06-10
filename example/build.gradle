@@ -9,6 +9,7 @@ if (localPropertiesFile.exists()) {
 }
 
 android {
+    buildFeatures.buildConfig true
     compileSdk 33
 
     defaultConfig {

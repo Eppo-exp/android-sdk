@@ -2,11 +2,11 @@ package cloud.eppo.android.logging;
 
 import androidx.annotation.NonNull;
 
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.util.Utils;
-
 import java.util.Date;
 import java.util.Map;
+
+import cloud.eppo.android.util.Utils;
+import cloud.eppo.ufc.dto.SubjectAttributes;
 
 /** @noinspection unused*/
 public class Assignment {

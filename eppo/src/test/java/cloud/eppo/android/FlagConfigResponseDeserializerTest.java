@@ -17,17 +17,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import cloud.eppo.android.dto.Allocation;
-import cloud.eppo.android.dto.FlagConfig;
-import cloud.eppo.android.dto.FlagConfigResponse;
-import cloud.eppo.android.dto.OperatorType;
-import cloud.eppo.android.dto.Range;
-import cloud.eppo.android.dto.Shard;
-import cloud.eppo.android.dto.Split;
-import cloud.eppo.android.dto.TargetingCondition;
-import cloud.eppo.android.dto.Variation;
-import cloud.eppo.android.dto.VariationType;
-import cloud.eppo.android.dto.adapters.FlagConfigResponseAdapter;
+import cloud.eppo.model.ShardRange;
+import cloud.eppo.ufc.dto.Allocation;
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.FlagConfigResponse;
+import cloud.eppo.ufc.dto.OperatorType;
+import cloud.eppo.ufc.dto.Shard;
+import cloud.eppo.ufc.dto.Split;
+import cloud.eppo.ufc.dto.TargetingCondition;
+import cloud.eppo.ufc.dto.Variation;
+import cloud.eppo.ufc.dto.VariationType;
+import cloud.eppo.ufc.dto.adapters.FlagConfigResponseAdapter;
 
 public class FlagConfigResponseDeserializerTest {
 
@@ -101,7 +101,7 @@ public class FlagConfigResponseDeserializerTest {
         Shard northAmericaShard = northAmericaSplit.getShards().iterator().next();
         assertEquals("some-salt", northAmericaShard.getSalt());
 
-        Range northAmericaRange = northAmericaShard.getRanges().iterator().next();
+        ShardRange northAmericaRange = northAmericaShard.getRanges().iterator().next();
         assertEquals(0, northAmericaRange.getStart());
         assertEquals(10000, northAmericaRange.getEnd());
 
@@ -126,7 +126,7 @@ public class FlagConfigResponseDeserializerTest {
         Shard fiftyPlusShard = fiftyPlusSplit.getShards().iterator().next();
         assertEquals("some-salt", fiftyPlusShard.getSalt());
 
-        Range fiftyPlusRange = fiftyPlusShard.getRanges().iterator().next();
+        ShardRange fiftyPlusRange = fiftyPlusShard.getRanges().iterator().next();
         assertEquals(0, fiftyPlusRange.getStart());
         assertEquals(10000, fiftyPlusRange.getEnd());
 

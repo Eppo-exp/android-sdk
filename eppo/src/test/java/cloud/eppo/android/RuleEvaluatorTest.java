@@ -10,11 +10,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.OperatorType;
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.TargetingCondition;
-import cloud.eppo.android.dto.TargetingRule;
+import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.ufc.dto.OperatorType;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.TargetingCondition;
+import cloud.eppo.ufc.dto.TargetingRule;
 
 public class RuleEvaluatorTest {
 

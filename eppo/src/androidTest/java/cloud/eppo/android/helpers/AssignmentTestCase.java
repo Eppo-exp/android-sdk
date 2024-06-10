@@ -2,8 +2,7 @@ package cloud.eppo.android.helpers;
 
 import java.util.List;
 
-import cloud.eppo.android.dto.EppoValue;
-import cloud.eppo.android.dto.VariationType;
+import cloud.eppo.ufc.dto.VariationType;
 
 public class AssignmentTestCase {
     String flag;

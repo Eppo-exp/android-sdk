@@ -2,8 +2,8 @@ package cloud.eppo.android;
 
 import java.util.Map;
 
-import cloud.eppo.android.dto.SubjectAttributes;
-import cloud.eppo.android.dto.Variation;
+import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.ufc.dto.Variation;
 
 public class FlagEvaluationResult {
 

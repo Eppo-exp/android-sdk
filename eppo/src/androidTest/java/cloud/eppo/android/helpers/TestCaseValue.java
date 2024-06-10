@@ -4,7 +4,7 @@ import com.google.gson.JsonElement;
 
 import java.util.List;
 
-import cloud.eppo.android.dto.EppoValue;
+import cloud.eppo.ufc.dto.EppoValue;
 
 public class TestCaseValue extends EppoValue {
     private JsonElement jsonValue;
