@@ -4,8 +4,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "3.0.1"
-
+version = "3.0.2-SNAPSHOT"
 
 android {
     buildFeatures.buildConfig true
@@ -67,10 +66,7 @@ ext.versions = [
 
 
 dependencies {
-    // replace the dependency below with maven central once start uploading the artifact there
-    // implementation 'cloud.eppo:sdk-common-jvm:0.0.1-SNAPSHOT'
-    implementation 'com.github.Eppo-exp:sdk-common-jdk:felipecsl--initial-dto-SNAPSHOT'
-
+    implementation 'cloud.eppo:sdk-common-jvm:1.0.0'
     implementation("androidx.core:core:${versions.androidx_core}")
     implementation("com.google.code.gson:gson:${versions.gson}")
     implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
@@ -123,12 +119,13 @@ publishing {
     }
     repositories {
         maven {
+            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
+            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
             credentials {
-                username = System.getenv("MAVEN_USERNAME") ? "$MAVEN_USERNAME" : ""
-                password = System.getenv("MAVEN_PASSWORD") ? "$MAVEN_PASSWORD" : ""
+                username = ossrhUsername
+                password = ossrhPassword
             }
-
-            url = "https://s01.oss.sonatype.org/content/repositories/releases"
         }
     }
 }
