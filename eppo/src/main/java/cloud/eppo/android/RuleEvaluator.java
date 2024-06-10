@@ -54,7 +54,8 @@ public class RuleEvaluator {
 
         // First we do any NULL check
         boolean attributeValueIsNull = attributeValue == null || attributeValue.isNull();
-        if (condition.getOperator() == OperatorType.IS_NULL) {
+        OperatorType operator = condition.getOperator();
+        if (operator == OperatorType.IS_NULL) {
             boolean expectNull = isObfuscated
                     ? getMD5Hex("true").equals(conditionValue.stringValue())
                     : conditionValue.booleanValue();
@@ -64,7 +65,7 @@ public class RuleEvaluator {
             return false;
         }
 
-        if (condition.getOperator().isInequalityComparison()) {
+        if (operator.isInequalityComparison()) {
             Double conditionNumber = null;
             if (isObfuscated && conditionValue.isString()) {
                 // it may be an encoded number
@@ -101,7 +102,7 @@ public class RuleEvaluator {
             // null value can be safely accessed later.
             boolean semVerComparison = valueSemVer != null && conditionSemVer != null;
 
-            switch (condition.getOperator()) {
+            switch (operator) {
                 case GREATER_THAN_OR_EQUAL_TO:
                     if (numericComparison) {
                         return attributeValue.doubleValue() >= conditionNumber;
@@ -143,12 +144,12 @@ public class RuleEvaluator {
 
                     return false;
                 default:
-                    throw new IllegalStateException("Unexpected inequality operator: " + condition.getOperator());
+                    throw new IllegalStateException("Unexpected inequality operator: " + operator);
             }
         }
 
-        if (condition.getOperator().isListComparison()) {
-            boolean expectMatch = condition.getOperator() == OperatorType.ONE_OF;
+        if (operator.isListComparison()) {
+            boolean expectMatch = operator == OperatorType.ONE_OF;
             boolean matchFound = false;
             for (String arrayString : conditionValue.stringArrayValue()) {
                 String comparisonString = castAttributeForListComparison(attributeValue);
@@ -164,7 +165,7 @@ public class RuleEvaluator {
             return expectMatch && matchFound || !expectMatch && !matchFound;
         }
 
-        if (condition.getOperator() == OperatorType.MATCHES) {
+        if (operator == OperatorType.MATCHES || operator == OperatorType.NOT_MATCHES) {
             // Regexes require decoding
             String patternString = condition.getValue().stringValue();
             if (isObfuscated) {
@@ -172,10 +173,12 @@ public class RuleEvaluator {
             }
 
             // Use find() to support partial matching
-            return Pattern.compile(patternString).matcher(attributeValue.stringValue()).find();
+            Pattern pattern = Pattern.compile(patternString);
+            boolean patternFound = pattern.matcher(attributeValue.toString()).find();
+            return (operator == OperatorType.MATCHES) == patternFound;
         }
 
-        throw new IllegalStateException("Unexpected rule operator: " + condition.getOperator());
+        throw new IllegalStateException("Unexpected rule operator: " + operator);
     }
 
     /**
