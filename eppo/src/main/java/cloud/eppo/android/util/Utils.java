@@ -3,7 +3,6 @@ package cloud.eppo.android.util;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.Base64;
-
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;

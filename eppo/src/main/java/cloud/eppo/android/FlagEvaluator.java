@@ -3,12 +3,6 @@ package cloud.eppo.android;
 import static cloud.eppo.ShardUtils.getShard;
 import static cloud.eppo.android.util.Utils.base64Decode;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 import cloud.eppo.model.ShardRange;
 import cloud.eppo.ufc.dto.Allocation;
 import cloud.eppo.ufc.dto.EppoValue;
@@ -17,6 +11,11 @@ import cloud.eppo.ufc.dto.Shard;
 import cloud.eppo.ufc.dto.Split;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.Variation;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public class FlagEvaluator {
 

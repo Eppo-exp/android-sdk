@@ -5,20 +5,17 @@ import static cloud.eppo.android.util.Utils.logTag;
 import android.app.Application;
 import android.os.AsyncTask;
 import android.util.Log;
-
+import cloud.eppo.ufc.dto.FlagConfig;
+import cloud.eppo.ufc.dto.FlagConfigResponse;
+import cloud.eppo.ufc.dto.adapters.EppoModule;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import cloud.eppo.ufc.dto.FlagConfig;
-import cloud.eppo.ufc.dto.FlagConfigResponse;
-import cloud.eppo.ufc.dto.adapters.EppoModule;
 
 public class ConfigurationStore {
   private static final String TAG = logTag(ConfigurationStore.class);

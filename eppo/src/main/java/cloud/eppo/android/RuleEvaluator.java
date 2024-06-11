@@ -3,18 +3,16 @@ package cloud.eppo.android;
 import static cloud.eppo.Utils.getMD5Hex;
 import static cloud.eppo.android.util.Utils.base64Decode;
 
-import com.github.zafarkhaja.semver.Version;
-
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
 import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.OperatorType;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.TargetingCondition;
 import cloud.eppo.ufc.dto.TargetingRule;
+import com.github.zafarkhaja.semver.Version;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 public class RuleEvaluator {
 

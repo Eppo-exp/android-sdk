@@ -19,7 +19,6 @@ import cloud.eppo.ufc.dto.TargetingCondition;
 import cloud.eppo.ufc.dto.TargetingRule;
 import cloud.eppo.ufc.dto.Variation;
 import cloud.eppo.ufc.dto.VariationType;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -29,7 +28,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -273,7 +271,10 @@ public class FlagEvaluatorTest {
     for (Map.Entry<String, Variation> variationEntry : variations.entrySet()) {
       String encodedVariationKey = base64Encode(variationEntry.getKey());
       Variation variationToEncode = variationEntry.getValue();
-      Variation newVariation = new Variation(encodedVariationKey, EppoValue.valueOf(base64Encode(variationToEncode.getValue().stringValue())));
+      Variation newVariation =
+          new Variation(
+              encodedVariationKey,
+              EppoValue.valueOf(base64Encode(variationToEncode.getValue().stringValue())));
       encodedVariations.put(encodedVariationKey, newVariation);
     }
     flag.setVariations(encodedVariations);
@@ -347,8 +348,7 @@ public class FlagEvaluatorTest {
       ShardRange range = new ShardRange(rangeStart, rangeEnd);
       ranges = new HashSet<>(Collections.singletonList(range));
     }
-    Shard shard = new Shard(salt, ranges);
-    return new HashSet<>(Collections.singletonList(shard));
+    return new HashSet<>(Collections.singletonList(new Shard(salt, ranges)));
   }
 
   private List<Split> createSplits(String variationKey) {
@@ -376,7 +376,11 @@ public class FlagEvaluatorTest {
     return new ArrayList<>(Collections.singletonList(allocation));
   }
 
-  private FlagConfig createFlag(String key, boolean enabled, Map<String, Variation> variations, List<Allocation> allocations) {
+  private FlagConfig createFlag(
+      String key,
+      boolean enabled,
+      Map<String, Variation> variations,
+      List<Allocation> allocations) {
     return new FlagConfig(key, enabled, 10, VariationType.STRING, variations, allocations);
   }
 }
