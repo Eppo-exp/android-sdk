@@ -1,7 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.Utils.getMD5Hex;
 import static cloud.eppo.android.util.Utils.base64Encode;
-import static cloud.eppo.android.util.Utils.getMD5Hex;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -19,6 +19,7 @@ import cloud.eppo.ufc.dto.TargetingCondition;
 import cloud.eppo.ufc.dto.TargetingRule;
 import cloud.eppo.ufc.dto.Variation;
 import cloud.eppo.ufc.dto.VariationType;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -28,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -41,10 +43,7 @@ public class FlagEvaluatorTest {
     Set<Shard> shards = createShards("salt");
     List<Split> splits = createSplits("a", shards);
     List<Allocation> allocations = createAllocations("allocation", splits);
-
-    FlagConfig flag = createFlag(variations, allocations);
-    flag.setEnabled(false);
-
+    FlagConfig flag = createFlag("key", false, variations, allocations);
     FlagEvaluationResult result =
         FlagEvaluator.evaluateFlag(flag, "flag", "subjectKey", new SubjectAttributes(), false);
 
@@ -59,9 +58,7 @@ public class FlagEvaluatorTest {
   @Test
   public void testNoAllocations() {
     Map<String, Variation> variations = createVariations("a");
-
-    FlagConfig flag = createFlag(variations, null);
-
+    FlagConfig flag = createFlag("key", true, variations, null);
     FlagEvaluationResult result =
         FlagEvaluator.evaluateFlag(flag, "flag", "subjectKey", new SubjectAttributes(), false);
 
@@ -79,8 +76,7 @@ public class FlagEvaluatorTest {
     Set<Shard> shards = createShards("salt", 0, 10);
     List<Split> splits = createSplits("a", shards);
     List<Allocation> allocations = createAllocations("allocation", splits);
-    FlagConfig flag = createFlag(variations, allocations);
-
+    FlagConfig flag = createFlag("key", true, variations, allocations);
     FlagEvaluationResult result =
         FlagEvaluator.evaluateFlag(flag, "flag", "subjectKey", new SubjectAttributes(), false);
 
@@ -104,7 +100,7 @@ public class FlagEvaluatorTest {
     Set<TargetingRule> rules = createRules("id", OperatorType.ONE_OF, value);
 
     List<Allocation> allocations = createAllocations("allocation", splits, rules);
-    FlagConfig flag = createFlag(variations, allocations);
+    FlagConfig flag = createFlag("key", true, variations, allocations);
 
     // Check that subjectKey is evaluated as the "id" attribute
 
@@ -142,7 +138,7 @@ public class FlagEvaluatorTest {
     Map<String, Variation> variations = createVariations("a", "b");
     List<Split> splits = createSplits("a");
     List<Allocation> allocations = createAllocations("default", splits);
-    FlagConfig flag = createFlag(variations, allocations);
+    FlagConfig flag = createFlag("key", true, variations, allocations);
 
     FlagEvaluationResult result =
         FlagEvaluator.evaluateFlag(flag, "flag", "subjectKey", new SubjectAttributes(), false);
@@ -162,7 +158,7 @@ public class FlagEvaluatorTest {
 
     List<Split> defaultSplits = createSplits("a");
     allocations.addAll(createAllocations("default", defaultSplits));
-    FlagConfig flag = createFlag(variations, allocations);
+    FlagConfig flag = createFlag("key", true, variations, allocations);
 
     SubjectAttributes matchingEmailAttributes = new SubjectAttributes();
     matchingEmailAttributes.put("email", "eppo@example.com");
@@ -197,7 +193,7 @@ public class FlagEvaluatorTest {
     List<Split> defaultSplits = createSplits("c");
     allocations.addAll(createAllocations("default", defaultSplits));
 
-    FlagConfig flag = createFlag(variations, allocations);
+    FlagConfig flag = createFlag("key", true, variations, allocations);
 
     FlagEvaluationResult result =
         FlagEvaluator.evaluateFlag(flag, "flag", "subject4", new SubjectAttributes(), false);
@@ -218,7 +214,7 @@ public class FlagEvaluatorTest {
     Map<String, Variation> variations = createVariations("a");
     List<Split> splits = createSplits("a");
     List<Allocation> allocations = createAllocations("allocation", splits);
-    FlagConfig flag = createFlag(variations, allocations);
+    FlagConfig flag = createFlag("key", true, variations, allocations);
 
     // Start off with today being between startAt and endAt
     Date now = new Date();
@@ -269,22 +265,16 @@ public class FlagEvaluatorTest {
 
     List<Split> defaultSplits = createSplits("a");
     allocations.addAll(createAllocations("default", defaultSplits));
-    FlagConfig flag = createFlag(variations, allocations);
-
-    // Obfuscate the config
-
     // Hash the flag key (done in-place)
-    flag.setKey(getMD5Hex(flag.getKey()));
+    FlagConfig flag = createFlag(getMD5Hex("flag"), true, variations, allocations);
 
     // Encode the variations (done by creating new map as keys change)
     Map<String, Variation> encodedVariations = new HashMap<>();
     for (Map.Entry<String, Variation> variationEntry : variations.entrySet()) {
       String encodedVariationKey = base64Encode(variationEntry.getKey());
       Variation variationToEncode = variationEntry.getValue();
-      variationToEncode.setKey(encodedVariationKey);
-      variationToEncode.setValue(
-          EppoValue.valueOf(base64Encode(variationToEncode.getValue().stringValue())));
-      encodedVariations.put(encodedVariationKey, variationToEncode);
+      Variation newVariation = new Variation(encodedVariationKey, EppoValue.valueOf(base64Encode(variationToEncode.getValue().stringValue())));
+      encodedVariations.put(encodedVariationKey, newVariation);
     }
     flag.setVariations(encodedVariations);
 
@@ -339,10 +329,8 @@ public class FlagEvaluatorTest {
     Map<String, Variation> variations = new HashMap<>();
     for (String key : keys) {
       if (key != null) {
-        Variation variation = new Variation();
-        variation.setKey(key);
         // Use the uppercase key as the dummy value
-        variation.setValue(EppoValue.valueOf(key.toUpperCase()));
+        Variation variation = new Variation(key, EppoValue.valueOf(key.toUpperCase()));
         variations.put(variation.getKey(), variation);
       }
     }
@@ -354,12 +342,12 @@ public class FlagEvaluatorTest {
   }
 
   private Set<Shard> createShards(String salt, Integer rangeStart, Integer rangeEnd) {
-    Shard shard = new Shard();
-    shard.setSalt(salt);
+    Set<ShardRange> ranges = new HashSet<>();
     if (rangeStart != null) {
       ShardRange range = new ShardRange(rangeStart, rangeEnd);
-      shard.setRanges(new HashSet<>(Collections.singletonList(range)));
+      ranges = new HashSet<>(Collections.singletonList(range));
     }
+    Shard shard = new Shard(salt, ranges);
     return new HashSet<>(Collections.singletonList(shard));
   }
 
@@ -368,22 +356,14 @@ public class FlagEvaluatorTest {
   }
 
   private List<Split> createSplits(String variationKey, Set<Shard> shards) {
-    Split split = new Split();
-    split.setVariationKey(variationKey);
-    split.setShards(shards);
+    Split split = new Split(variationKey, shards, new HashMap<>());
     return new ArrayList<>(Collections.singletonList(split));
   }
 
   private Set<TargetingRule> createRules(String attribute, OperatorType operator, EppoValue value) {
-    TargetingCondition condition = new TargetingCondition();
-    condition.setAttribute(attribute);
-    condition.setOperator(operator);
-    condition.setValue(value);
     Set<TargetingCondition> conditions = new HashSet<>();
-    conditions.add(condition);
-    TargetingRule rule = new TargetingRule();
-    rule.setConditions(conditions);
-    return new HashSet<>(Collections.singletonList(rule));
+    conditions.add(new TargetingCondition(operator, attribute, value));
+    return new HashSet<>(Collections.singletonList(new TargetingRule(conditions)));
   }
 
   private List<Allocation> createAllocations(String allocationKey, List<Split> splits) {
@@ -396,14 +376,7 @@ public class FlagEvaluatorTest {
     return new ArrayList<>(Collections.singletonList(allocation));
   }
 
-  private FlagConfig createFlag(Map<String, Variation> variations, List<Allocation> allocations) {
-    FlagConfig flag = new FlagConfig();
-    flag.setKey("flag");
-    flag.setTotalShards(10);
-    flag.setEnabled(true);
-    flag.setVariationType(VariationType.STRING);
-    flag.setVariations(variations);
-    flag.setAllocations(allocations);
-    return flag;
+  private FlagConfig createFlag(String key, boolean enabled, Map<String, Variation> variations, List<Allocation> allocations) {
+    return new FlagConfig(key, enabled, 10, VariationType.STRING, variations, allocations);
   }
 }

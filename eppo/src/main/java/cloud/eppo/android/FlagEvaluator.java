@@ -1,5 +1,6 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.ShardUtils.getShard;
 import static cloud.eppo.android.util.Utils.base64Decode;
 
 import java.util.Date;
@@ -8,7 +9,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import cloud.eppo.android.util.Utils;
 import cloud.eppo.model.ShardRange;
 import cloud.eppo.ufc.dto.Allocation;
 import cloud.eppo.ufc.dto.EppoValue;
@@ -102,8 +102,7 @@ public class FlagEvaluator {
       evaluationResult.setFlagKey(flagKey);
       evaluationResult.setAllocationKey(base64Decode(allocationKey));
       if (variation != null) {
-        Variation decodedVariation = new Variation();
-        decodedVariation.setKey(base64Decode(variation.getKey()));
+        String key = base64Decode(variation.getKey());
         EppoValue decodedValue = EppoValue.nullValue();
         if (!variation.getValue().isNull()) {
           String stringValue = base64Decode(variation.getValue().stringValue());
@@ -125,8 +124,7 @@ public class FlagEvaluator {
                       + flag.getVariationType());
           }
         }
-        decodedVariation.setValue(decodedValue);
-        evaluationResult.setVariation(decodedVariation);
+        evaluationResult.setVariation(new Variation(key, decodedValue));
       }
     }
 
@@ -157,7 +155,7 @@ public class FlagEvaluator {
       salt = base64Decode(salt);
     }
     String hashKey = salt + "-" + subjectKey;
-    int assignedShard = Utils.getShard(hashKey, totalShards);
+    int assignedShard = getShard(hashKey, totalShards);
     for (ShardRange range : shard.getRanges()) {
       if (assignedShard >= range.getStart() && assignedShard < range.getEnd()) {
         return true;

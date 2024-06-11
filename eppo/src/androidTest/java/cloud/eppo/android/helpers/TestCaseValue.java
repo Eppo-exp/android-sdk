@@ -1,11 +1,11 @@
 package cloud.eppo.android.helpers;
 
 import cloud.eppo.ufc.dto.EppoValue;
-import com.google.gson.JsonElement;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
 public class TestCaseValue extends EppoValue {
-  private JsonElement jsonValue;
+  private JsonNode jsonValue;
 
   private TestCaseValue() {
     super();
@@ -27,7 +27,7 @@ public class TestCaseValue extends EppoValue {
     super(stringArrayValue);
   }
 
-  private TestCaseValue(JsonElement jsonValue) {
+  private TestCaseValue(JsonNode jsonValue) {
     super(jsonValue.toString());
     this.jsonValue = jsonValue;
   }
@@ -48,7 +48,7 @@ public class TestCaseValue extends EppoValue {
     }
   }
 
-  public static TestCaseValue valueOf(JsonElement jsonValue) {
+  public static TestCaseValue valueOf(JsonNode jsonValue) {
     return new TestCaseValue(jsonValue);
   }
 
@@ -56,7 +56,7 @@ public class TestCaseValue extends EppoValue {
     return this.jsonValue != null;
   }
 
-  public JsonElement jsonValue() {
+  public JsonNode jsonValue() {
     return this.jsonValue;
   }
 }
