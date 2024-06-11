@@ -5,6 +5,9 @@ on:
 
 env:
   ANDROID_API_LEVEL: 33
+  ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
+  ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
+  CI: true
 
 jobs:
   test:
@@ -29,8 +32,6 @@ jobs:
         run: |
           mkdir -p ~/.gradle/
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
-          echo "MAVEN_USERNAME=${MAVEN_USERNAME}" > ~/.gradle/gradle.properties
-          echo "MAVEN_PASSWORD=${MAVEN_PASSWORD}" >> ~/.gradle/gradle.properties
 
       - name: Publish
         run: make check-maven-credentials-and-publish
