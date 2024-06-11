@@ -4,40 +4,35 @@ import cloud.eppo.ufc.dto.VariationType;
 import java.util.List;
 
 public class AssignmentTestCase {
-  String flag;
-  VariationType variationType;
-  TestCaseValue defaultValue;
-  List<SubjectAssignment> subjects;
+  private final String flag;
+  private final VariationType variationType;
+  private final TestCaseValue defaultValue;
+  private final List<SubjectAssignment> subjects;
+
+  public AssignmentTestCase(
+      String flag,
+      VariationType variationType,
+      TestCaseValue defaultValue,
+      List<SubjectAssignment> subjects) {
+    this.flag = flag;
+    this.variationType = variationType;
+    this.defaultValue = defaultValue;
+    this.subjects = subjects;
+  }
 
   public String getFlag() {
     return flag;
-  }
-
-  public void setFlag(String flag) {
-    this.flag = flag;
   }
 
   public VariationType getVariationType() {
     return variationType;
   }
 
-  public void setVariationType(VariationType variationType) {
-    this.variationType = variationType;
-  }
-
   public TestCaseValue getDefaultValue() {
     return defaultValue;
   }
 
-  public void setDefaultValue(TestCaseValue defaultValue) {
-    this.defaultValue = defaultValue;
-  }
-
   public List<SubjectAssignment> getSubjects() {
     return subjects;
-  }
-
-  public void setSubjects(List<SubjectAssignment> subjects) {
-    this.subjects = subjects;
   }
 }

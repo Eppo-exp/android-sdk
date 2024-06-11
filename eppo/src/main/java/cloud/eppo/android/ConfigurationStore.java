@@ -5,33 +5,21 @@ import static cloud.eppo.android.util.Utils.logTag;
 import android.app.Application;
 import android.os.AsyncTask;
 import android.util.Log;
-import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
-import cloud.eppo.ufc.dto.adapters.DateAdapter;
-import cloud.eppo.ufc.dto.adapters.EppoValueAdapter;
-import cloud.eppo.ufc.dto.adapters.FlagConfigResponseAdapter;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonSyntaxException;
+import cloud.eppo.ufc.dto.adapters.EppoModule;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConfigurationStore {
-
   private static final String TAG = logTag(ConfigurationStore.class);
-
-  private final Gson gson =
-      new GsonBuilder()
-          .registerTypeAdapter(FlagConfigResponse.class, new FlagConfigResponseAdapter())
-          .registerTypeAdapter(EppoValue.class, new EppoValueAdapter())
-          .registerTypeAdapter(Date.class, new DateAdapter())
-          .serializeNulls()
-          .create();
+  private final ObjectMapper mapper = new ObjectMapper().registerModule(EppoModule.eppoModule());
   private final ConfigCacheFile cacheFile;
 
   private final AtomicBoolean loadedFromFetchResponse = new AtomicBoolean(false);
@@ -56,7 +44,7 @@ public class ConfigurationStore {
           try {
             FlagConfigResponse configResponse = readCacheFile();
             if (configResponse == null || configResponse.getFlags() == null) {
-              throw new JsonSyntaxException("Cached configuration file missing flags");
+              throw new JsonParseException("Cached configuration file missing flags");
             }
             if (configResponse.getFlags().isEmpty()) {
               throw new IllegalStateException("Cached configuration file has empty flags");
@@ -81,17 +69,15 @@ public class ConfigurationStore {
   }
 
   protected FlagConfigResponse readCacheFile() throws IOException {
-    FlagConfigResponse configResponse;
     synchronized (cacheFile) {
-      BufferedReader reader = cacheFile.getReader();
-      configResponse = gson.fromJson(reader, FlagConfigResponse.class);
-      reader.close();
+      try (BufferedReader reader = cacheFile.getReader()) {
+        return mapper.readValue(reader, FlagConfigResponse.class);
+      }
     }
-    return configResponse;
   }
 
-  public void setFlagsFromJsonString(String jsonString) {
-    FlagConfigResponse config = gson.fromJson(jsonString, FlagConfigResponse.class);
+  public void setFlagsFromJsonString(String jsonString) throws JsonProcessingException {
+    FlagConfigResponse config = mapper.readValue(jsonString, FlagConfigResponse.class);
     if (config == null || config.getFlags() == null) {
       Log.w(TAG, "Flags missing in configuration response");
       flags = new ConcurrentHashMap<>();

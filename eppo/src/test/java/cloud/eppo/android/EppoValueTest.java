@@ -2,9 +2,8 @@ package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
 
-import org.junit.Test;
-
 import cloud.eppo.ufc.dto.EppoValue;
+import org.junit.Test;
 
 public class EppoValueTest {
   @Test

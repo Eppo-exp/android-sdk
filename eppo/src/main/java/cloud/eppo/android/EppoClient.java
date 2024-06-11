@@ -1,6 +1,6 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.util.Utils.getMD5Hex;
+import static cloud.eppo.Utils.getMD5Hex;
 import static cloud.eppo.android.util.Utils.logTag;
 import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
@@ -8,14 +8,7 @@ import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.util.Log;
-
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonSyntaxException;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import androidx.annotation.Nullable;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -25,6 +18,10 @@ import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
+import java.util.HashMap;
+import java.util.Map;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class EppoClient {
   private static final String TAG = logTag(EppoClient.class);
@@ -353,16 +350,15 @@ public class EppoClient {
     }
   }
 
-  public JsonElement getJSONAssignment(
-      String flagKey, String subjectKey, JsonElement defaultValue) {
+  public JSONObject getJSONAssignment(String flagKey, String subjectKey, JSONObject defaultValue) {
     return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
-  public JsonElement getJSONAssignment(
+  public JSONObject getJSONAssignment(
       String flagKey,
       String subjectKey,
       SubjectAttributes subjectAttributes,
-      JsonElement defaultValue) {
+      JSONObject defaultValue) {
     try {
       EppoValue value =
           this.getTypedAssignment(
@@ -377,15 +373,12 @@ public class EppoClient {
     }
   }
 
-  private JsonElement parseJsonString(String jsonString) {
-
-    JsonElement result = null;
+  @Nullable private JSONObject parseJsonString(String jsonString) {
     try {
-      result = JsonParser.parseString(jsonString);
-    } catch (JsonSyntaxException e) {
-      // no-op
+      return new JSONObject(jsonString);
+    } catch (JSONException e) {
+      return null;
     }
-    return result;
   }
 
   private <T> T throwIfNotGraceful(Exception e, T defaultValue) {

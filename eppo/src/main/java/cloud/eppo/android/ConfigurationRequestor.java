@@ -4,8 +4,7 @@ import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
 import cloud.eppo.ufc.dto.FlagConfig;
-import com.google.gson.JsonIOException;
-import com.google.gson.JsonSyntaxException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -67,7 +66,7 @@ public class ConfigurationRequestor {
               configurationStore.setFlagsFromJsonString(responseBody);
               Log.d(TAG, "Configuration fetch successful");
               configurationStore.asyncWriteToCache(responseBody);
-            } catch (JsonSyntaxException | JsonIOException e) {
+            } catch (JsonProcessingException e) {
               fetchErrorMessage.set(e.getMessage());
               Log.e(TAG, "Error loading configuration response", e);
               // If fetching failed, and cache loading failed, fire off the failure callback if not

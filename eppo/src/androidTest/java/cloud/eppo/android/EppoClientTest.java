@@ -32,10 +32,8 @@ import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -50,6 +48,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -61,10 +61,7 @@ public class EppoClientTest {
   private static final String TEST_HOST =
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
-  private final Gson gson =
-      new GsonBuilder()
-          .registerTypeAdapter(AssignmentTestCase.class, new AssignmentTestCaseDeserializer())
-          .create();
+  private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
 
   private AssignmentLogger mockAssignmentLogger;
 
@@ -150,7 +147,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testErrorGracefulModeOn() {
+  public void testErrorGracefulModeOn() throws JSONException {
     initClient(TEST_HOST, false, true, true, DUMMY_API_KEY);
 
     EppoClient realClient = EppoClient.getInstance();
@@ -183,14 +180,18 @@ public class EppoClientTest {
         "", spyClient.getStringAssignment("experiment1", "subject1", new SubjectAttributes(), ""));
 
     assertEquals(
-        JsonParser.parseString("{\"a\": 1, \"b\": false}"),
-        spyClient.getJSONAssignment(
-            "subject1", "experiment1", JsonParser.parseString("{\"a\": 1, \"b\": false}")));
+        new JSONObject("{\"a\": 1, \"b\": false}").toString(),
+        spyClient
+            .getJSONAssignment(
+                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}"))
+            .toString());
 
     assertEquals(
-        JsonParser.parseString("{}"),
-        spyClient.getJSONAssignment(
-            "subject1", "experiment1", new SubjectAttributes(), JsonParser.parseString("{}")));
+        new JSONObject("{}").toString(),
+        spyClient
+            .getJSONAssignment(
+                "subject1", "experiment1", new SubjectAttributes(), new JSONObject("{}"))
+            .toString());
   }
 
   @Test
@@ -245,12 +246,12 @@ public class EppoClientTest {
         RuntimeException.class,
         () ->
             spyClient.getJSONAssignment(
-                "subject1", "experiment1", JsonParser.parseString("{\"a\": 1, \"b\": false}")));
+                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}")));
     assertThrows(
         RuntimeException.class,
         () ->
             spyClient.getJSONAssignment(
-                "subject1", "experiment1", new SubjectAttributes(), JsonParser.parseString("{}")));
+                "subject1", "experiment1", new SubjectAttributes(), new JSONObject("{}")));
   }
 
   private void runTestCases() {
@@ -285,9 +286,9 @@ public class EppoClientTest {
     runTestCases();
   }
 
-  private int runTestCaseFileStream(InputStream testCaseStream) throws IOException {
+  private int runTestCaseFileStream(InputStream testCaseStream) throws IOException, JSONException {
     String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
-    AssignmentTestCase testCase = gson.fromJson(json, AssignmentTestCase.class);
+    AssignmentTestCase testCase = mapper.readValue(json, AssignmentTestCase.class);
     String flagKey = testCase.getFlag();
     TestCaseValue defaultValue = testCase.getDefaultValue();
     EppoClient eppoClient = EppoClient.getInstance();
@@ -327,9 +328,12 @@ public class EppoClientTest {
           assertAssignment(flagKey, subjectAssignment, stringAssignment);
           break;
         case JSON:
-          JsonElement jsonAssignment =
+          JSONObject jsonAssignment =
               eppoClient.getJSONAssignment(
-                  flagKey, subjectKey, subjectAttributes, defaultValue.jsonValue());
+                  flagKey,
+                  subjectKey,
+                  subjectAttributes,
+                  new JSONObject(defaultValue.jsonValue().toString()));
           assertAssignment(flagKey, subjectAssignment, jsonAssignment);
           break;
         default:
@@ -380,9 +384,11 @@ public class EppoClientTest {
     } else if (assignment instanceof String) {
       assertEquals(
           failureMessage, expectedSubjectAssignment.getAssignment().stringValue(), assignment);
-    } else if (assignment instanceof JsonElement) {
+    } else if (assignment instanceof JSONObject) {
       assertEquals(
-          failureMessage, expectedSubjectAssignment.getAssignment().jsonValue(), assignment);
+          failureMessage,
+          expectedSubjectAssignment.getAssignment().jsonValue().toString(),
+          assignment.toString());
     } else {
       throw new IllegalArgumentException(
           "Unexpected assignment type " + assignment.getClass().getCanonicalName());
@@ -512,13 +518,12 @@ public class EppoClientTest {
             } catch (InterruptedException ex) {
               throw new RuntimeException(ex);
             }
-            FlagConfigResponse response = new FlagConfigResponse();
             Map<String, FlagConfig> mockFlags = new HashMap<>();
-            mockFlags.put("dummy", new FlagConfig()); // make the map non-empty so it's not ignored
-            response.setFlags(mockFlags);
+            // make the map non-empty so it's not ignored
+            mockFlags.put("dummy", new FlagConfig(null, false, 0, null, null, null));
 
             Log.d(TAG, "Simulating slow cache read end");
-            return response;
+            return new FlagConfigResponse(mockFlags);
           }
         };
 
@@ -635,5 +640,11 @@ public class EppoClientTest {
     } catch (NoSuchFieldException | IllegalAccessException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static SimpleModule module() {
+    SimpleModule module = new SimpleModule();
+    module.addDeserializer(AssignmentTestCase.class, new AssignmentTestCaseDeserializer());
+    return module;
   }
 }

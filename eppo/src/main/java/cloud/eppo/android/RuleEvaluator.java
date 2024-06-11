@@ -1,7 +1,7 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.Utils.getMD5Hex;
 import static cloud.eppo.android.util.Utils.base64Decode;
-import static cloud.eppo.android.util.Utils.getMD5Hex;
 
 import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.OperatorType;

@@ -67,11 +67,11 @@ ext.versions = [
 
 
 dependencies {
-    implementation 'cloud.eppo:sdk-common-jvm:1.1.0-SNAPSHOT'
-    implementation("androidx.core:core:${versions.androidx_core}")
-    implementation("com.google.code.gson:gson:${versions.gson}")
-    implementation("com.squareup.okhttp3:okhttp:${versions.okhttp}")
-    implementation("com.github.zafarkhaja:java-semver:${versions.semver}")
+    implementation 'cloud.eppo:sdk-common-jvm:2.0.0-SNAPSHOT'
+    implementation "androidx.core:core:${versions.androidx_core}"
+    implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
+    implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.17.1"
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "org.mockito:mockito-core:${versions.mockito}"

@@ -1,12 +1,10 @@
 package cloud.eppo.android.logging;
 
 import androidx.annotation.NonNull;
-
-import java.util.Date;
-import java.util.Map;
-
 import cloud.eppo.android.util.Utils;
 import cloud.eppo.ufc.dto.SubjectAttributes;
+import java.util.Date;
+import java.util.Map;
 
 /**
  * @noinspection unused

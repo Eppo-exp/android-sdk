@@ -8,7 +8,8 @@ import cloud.eppo.ufc.dto.OperatorType;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.TargetingCondition;
 import cloud.eppo.ufc.dto.TargetingRule;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -17,9 +18,7 @@ import org.junit.Test;
 public class RuleEvaluatorTest {
 
   public TargetingRule createRule(Set<TargetingCondition> conditions) {
-    final TargetingRule targetingRule = new TargetingRule();
-    targetingRule.setConditions(conditions);
-    return targetingRule;
+    return new TargetingRule(conditions);
   }
 
   public void addConditionToRule(TargetingRule TargetingRule, TargetingCondition condition) {
@@ -27,104 +26,66 @@ public class RuleEvaluatorTest {
   }
 
   public void addNumericConditionToRule(TargetingRule TargetingRule) {
-    TargetingCondition condition1 = new TargetingCondition();
-    condition1.setValue(EppoValue.valueOf(10));
-    condition1.setAttribute("price");
-    condition1.setOperator(OperatorType.GREATER_THAN_OR_EQUAL_TO);
-
-    TargetingCondition condition2 = new TargetingCondition();
-    condition2.setValue(EppoValue.valueOf(20));
-    condition2.setAttribute("price");
-    condition2.setOperator(OperatorType.LESS_THAN_OR_EQUAL_TO);
+    TargetingCondition condition1 =
+        new TargetingCondition(
+            OperatorType.GREATER_THAN_OR_EQUAL_TO, "price", EppoValue.valueOf(10));
+    TargetingCondition condition2 =
+        new TargetingCondition(OperatorType.LESS_THAN_OR_EQUAL_TO, "price", EppoValue.valueOf(20));
 
     addConditionToRule(TargetingRule, condition1);
     addConditionToRule(TargetingRule, condition2);
   }
 
   public void addSemVerConditionToRule(TargetingRule TargetingRule) {
-    TargetingCondition condition1 = new TargetingCondition();
-    condition1.setValue(EppoValue.valueOf("1.5.0"));
-    condition1.setAttribute("appVersion");
-    condition1.setOperator(OperatorType.GREATER_THAN_OR_EQUAL_TO);
-
-    TargetingCondition condition2 = new TargetingCondition();
-    condition2.setValue(EppoValue.valueOf("2.2.0"));
-    condition2.setAttribute("appVersion");
-    condition2.setOperator(OperatorType.LESS_THAN);
+    TargetingCondition condition1 =
+        new TargetingCondition(
+            OperatorType.GREATER_THAN_OR_EQUAL_TO, "appVersion", EppoValue.valueOf("1.5.0"));
+    TargetingCondition condition2 =
+        new TargetingCondition(OperatorType.LESS_THAN, "appVersion", EppoValue.valueOf("2.2.0"));
 
     addConditionToRule(TargetingRule, condition1);
     addConditionToRule(TargetingRule, condition2);
   }
 
   public void addRegexConditionToRule(TargetingRule TargetingRule) {
-    TargetingCondition condition = new TargetingCondition();
-    condition.setValue(EppoValue.valueOf("example\\.(com|org)"));
-    condition.setAttribute("match");
-    condition.setOperator(OperatorType.MATCHES);
-
+    TargetingCondition condition =
+        new TargetingCondition(
+            OperatorType.MATCHES, "match", EppoValue.valueOf("example\\.(com|org)"));
     addConditionToRule(TargetingRule, condition);
   }
 
   public void addOneOfConditionWithStrings(TargetingRule rule) {
-    TargetingCondition condition = new TargetingCondition();
-    List<String> values = new ArrayList<>();
-    values.add("value1");
-    values.add("value2");
-
-    condition.setValue(EppoValue.valueOf(values));
-    condition.setAttribute("oneOf");
-    condition.setOperator(OperatorType.ONE_OF);
-
+    List<String> values = Arrays.asList("value1", "value2");
+    TargetingCondition condition =
+        new TargetingCondition(OperatorType.ONE_OF, "oneOf", EppoValue.valueOf(values));
     addConditionToRule(rule, condition);
   }
 
   public void addOneOfConditionWithIntegers(TargetingRule rule) {
-    TargetingCondition condition = new TargetingCondition();
-    List<String> values = new ArrayList<>();
-    values.add("1");
-    values.add("2");
-
-    condition.setValue(EppoValue.valueOf(values));
-    condition.setAttribute("oneOf");
-    condition.setOperator(OperatorType.ONE_OF);
-
+    List<String> values = Arrays.asList("1", "2");
+    TargetingCondition condition =
+        new TargetingCondition(OperatorType.ONE_OF, "oneOf", EppoValue.valueOf(values));
     addConditionToRule(rule, condition);
   }
 
   public void addOneOfConditionWithDoubles(TargetingRule rule) {
-    TargetingCondition condition = new TargetingCondition();
-    List<String> values = new ArrayList<>();
-    values.add("1.5");
-    values.add("2.7");
-
-    condition.setValue(EppoValue.valueOf(values));
-    condition.setAttribute("oneOf");
-    condition.setOperator(OperatorType.ONE_OF);
-
+    List<String> values = Arrays.asList("1.5", "2.7");
+    TargetingCondition condition =
+        new TargetingCondition(OperatorType.ONE_OF, "oneOf", EppoValue.valueOf(values));
     addConditionToRule(rule, condition);
   }
 
   public void addOneOfConditionWithBoolean(TargetingRule rule) {
-    TargetingCondition condition = new TargetingCondition();
-    List<String> values = new ArrayList<>();
-    values.add("true");
-
-    condition.setValue(EppoValue.valueOf(values));
-    condition.setAttribute("oneOf");
-    condition.setOperator(OperatorType.ONE_OF);
-
+    List<String> values = Collections.singletonList("true");
+    TargetingCondition condition =
+        new TargetingCondition(OperatorType.ONE_OF, "oneOf", EppoValue.valueOf(values));
     addConditionToRule(rule, condition);
   }
 
   public void addNotOneOfTargetingCondition(TargetingRule TargetingRule) {
-    TargetingCondition condition = new TargetingCondition();
-    List<String> values = new ArrayList<>();
-    values.add("value1");
-    values.add("value2");
-    condition.setValue(EppoValue.valueOf(values));
-    condition.setAttribute("oneOf");
-    condition.setOperator(OperatorType.NOT_ONE_OF);
-
+    List<String> values = Arrays.asList("value1", "value2");
+    TargetingCondition condition =
+        new TargetingCondition(OperatorType.NOT_ONE_OF, "oneOf", EppoValue.valueOf(values));
     addConditionToRule(TargetingRule, condition);
   }
 
