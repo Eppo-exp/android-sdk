@@ -32,7 +32,6 @@ import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.File;
@@ -181,14 +180,18 @@ public class EppoClientTest {
         "", spyClient.getStringAssignment("experiment1", "subject1", new SubjectAttributes(), ""));
 
     assertEquals(
-        new JSONObject("{\"a\": 1, \"b\": false}"),
-        spyClient.getJSONAssignment(
-            "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}")));
+        new JSONObject("{\"a\": 1, \"b\": false}").toString(),
+        spyClient
+            .getJSONAssignment(
+                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}"))
+            .toString());
 
     assertEquals(
-        new JSONObject("{}"),
-        spyClient.getJSONAssignment(
-            "subject1", "experiment1", new SubjectAttributes(), new JSONObject("{}")));
+        new JSONObject("{}").toString(),
+        spyClient
+            .getJSONAssignment(
+                "subject1", "experiment1", new SubjectAttributes(), new JSONObject("{}"))
+            .toString());
   }
 
   @Test
@@ -381,9 +384,11 @@ public class EppoClientTest {
     } else if (assignment instanceof String) {
       assertEquals(
           failureMessage, expectedSubjectAssignment.getAssignment().stringValue(), assignment);
-    } else if (assignment instanceof JsonNode) {
+    } else if (assignment instanceof JSONObject) {
       assertEquals(
-          failureMessage, expectedSubjectAssignment.getAssignment().jsonValue(), assignment);
+          failureMessage,
+          expectedSubjectAssignment.getAssignment().jsonValue().toString(),
+          assignment.toString());
     } else {
       throw new IllegalArgumentException(
           "Unexpected assignment type " + assignment.getClass().getCanonicalName());
