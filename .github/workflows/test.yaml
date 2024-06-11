@@ -28,9 +28,6 @@ jobs:
           distribution: 'adopt'
 
       - name: Restore gradle.properties
-        env:
-          MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
-          MAVEN_PASSWORD: ${{ secrets.MAVEN_PASSWORD }}
         shell: bash
         run: |
           mkdir -p ~/.gradle/
@@ -100,7 +97,7 @@ jobs:
             touch app/emulator.log                            # create log file
             chmod 777 app/emulator.log                        # allow writing to log file
             adb logcat | grep EppoSDK >> app/emulator.log &   # pipe all logcat messages into log file as a background process
-            ./gradlew connectedCheck                          # run tests
+            ./gradlew connectedCheck --no-daemon              # run tests
 
       - name: Upload Emulator Logs
         if: always()

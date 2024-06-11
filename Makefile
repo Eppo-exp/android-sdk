@@ -52,7 +52,7 @@ test: test-data
 
 check-maven-credentials-and-publish:
 	# $(INFO)Checking required gradle configuration(END)
-		@for required_property in "MAVEN_USERNAME" "MAVEN_PASSWORD"; do \
+		@for required_property in "OSSRH_USERNAME" "OSSRH_PASSWORD"; do \
 				cat ~/.gradle/gradle.properties | grep -q $$required_property; \
 				if [ $$? != 0 ]; then \
 						echo "$(ERROR)ERROR: ~/.gradle/gradle.properties file is missing property: $$required_property$(END)"; \
