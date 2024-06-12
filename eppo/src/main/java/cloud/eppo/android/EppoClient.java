@@ -354,21 +354,6 @@ public class EppoClient {
     return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
-  public String getJSONStringAssignment(String flagKey, String subjectKey, String defaultValue) {
-    try {
-      EppoValue value =
-          this.getTypedAssignment(
-              flagKey,
-              subjectKey,
-              new SubjectAttributes(),
-              EppoValue.valueOf(defaultValue),
-              VariationType.JSON);
-      return value.stringValue();
-    } catch (Exception e) {
-      return throwIfNotGraceful(e, defaultValue);
-    }
-  }
-
   public JSONObject getJSONAssignment(
       String flagKey,
       String subjectKey,
@@ -386,6 +371,26 @@ public class EppoClient {
     } catch (Exception e) {
       return throwIfNotGraceful(e, defaultValue);
     }
+  }
+
+  public String getJSONStringAssignment(
+      String flagKey, String subjectKey, SubjectAttributes subjectAttributes, String defaultValue) {
+    try {
+      EppoValue value =
+          this.getTypedAssignment(
+              flagKey,
+              subjectKey,
+              new SubjectAttributes(),
+              EppoValue.valueOf(defaultValue),
+              VariationType.JSON);
+      return value.stringValue();
+    } catch (Exception e) {
+      return throwIfNotGraceful(e, defaultValue);
+    }
+  }
+
+  public String getJSONStringAssignment(String flagKey, String subjectKey, String defaultValue) {
+    return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
   @Nullable private JSONObject parseJsonString(String jsonString) {
