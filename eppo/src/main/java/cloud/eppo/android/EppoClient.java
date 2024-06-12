@@ -364,6 +364,16 @@ public class EppoClient {
     return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
+  /**
+   * Returns the assignment for the provided feature flag key and subject key as a JSON String. If
+   * the flag is not found, does not match the requested type or is disabled, defaultValue is
+   * returned.
+   *
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
   public JSONObject getJSONAssignment(
       String flagKey,
       String subjectKey,
