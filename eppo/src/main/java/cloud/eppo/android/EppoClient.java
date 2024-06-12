@@ -365,9 +365,9 @@ public class EppoClient {
   }
 
   /**
-   * Returns the assignment for the provided feature flag key and subject key as a JSON String. If
-   * the flag is not found, does not match the requested type or is disabled, defaultValue is
-   * returned.
+   * Returns the assignment for the provided feature flag key and subject key as a {@link
+   * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
+   * defaultValue is returned.
    *
    * @param flagKey the feature flag key
    * @param subjectKey the subject key
