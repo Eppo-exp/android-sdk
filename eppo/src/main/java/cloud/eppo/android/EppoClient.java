@@ -8,7 +8,15 @@ import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.util.Log;
+
 import androidx.annotation.Nullable;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -18,10 +26,6 @@ import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import java.util.HashMap;
-import java.util.Map;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class EppoClient {
   private static final String TAG = logTag(EppoClient.class);
@@ -350,6 +354,15 @@ public class EppoClient {
     }
   }
 
+  /**
+   * Returns the assignment for the provided feature flag key and subject key as a {@link JSONObject}.
+   * If the flag is not found, does not match the requested type or is disabled, defaultValue is
+   * returned.
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
   public JSONObject getJSONAssignment(String flagKey, String subjectKey, JSONObject defaultValue) {
     return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
@@ -373,6 +386,16 @@ public class EppoClient {
     }
   }
 
+  /**
+   * Returns the assignment for the provided feature flag key, subject key and subject attributes as
+   * a JSON string.
+   * If the flag is not found, does not match the requested type or is disabled, defaultValue is
+   * returned.
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
   public String getJSONStringAssignment(
       String flagKey, String subjectKey, SubjectAttributes subjectAttributes, String defaultValue) {
     try {
@@ -380,7 +403,7 @@ public class EppoClient {
           this.getTypedAssignment(
               flagKey,
               subjectKey,
-              new SubjectAttributes(),
+              subjectAttributes,
               EppoValue.valueOf(defaultValue),
               VariationType.JSON);
       return value.stringValue();
@@ -389,6 +412,15 @@ public class EppoClient {
     }
   }
 
+  /**
+   * Returns the assignment for the provided feature flag key and subject key as a JSON String.
+   * If the flag is not found, does not match the requested type or is disabled, defaultValue is
+   * returned.
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
   public String getJSONStringAssignment(String flagKey, String subjectKey, String defaultValue) {
     return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
