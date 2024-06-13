@@ -350,10 +350,30 @@ public class EppoClient {
     }
   }
 
+  /**
+   * Returns the assignment for the provided feature flag key and subject key as a {@link
+   * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
+   * defaultValue is returned.
+   *
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
   public JSONObject getJSONAssignment(String flagKey, String subjectKey, JSONObject defaultValue) {
     return getJSONAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
+  /**
+   * Returns the assignment for the provided feature flag key and subject key as a {@link
+   * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
+   * defaultValue is returned.
+   *
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
   public JSONObject getJSONAssignment(
       String flagKey,
       String subjectKey,
@@ -371,6 +391,46 @@ public class EppoClient {
     } catch (Exception e) {
       return throwIfNotGraceful(e, defaultValue);
     }
+  }
+
+  /**
+   * Returns the assignment for the provided feature flag key, subject key and subject attributes as
+   * a JSON string. If the flag is not found, does not match the requested type or is disabled,
+   * defaultValue is returned.
+   *
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
+  public String getJSONStringAssignment(
+      String flagKey, String subjectKey, SubjectAttributes subjectAttributes, String defaultValue) {
+    try {
+      EppoValue value =
+          this.getTypedAssignment(
+              flagKey,
+              subjectKey,
+              subjectAttributes,
+              EppoValue.valueOf(defaultValue),
+              VariationType.JSON);
+      return value.stringValue();
+    } catch (Exception e) {
+      return throwIfNotGraceful(e, defaultValue);
+    }
+  }
+
+  /**
+   * Returns the assignment for the provided feature flag key and subject key as a JSON String. If
+   * the flag is not found, does not match the requested type or is disabled, defaultValue is
+   * returned.
+   *
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
+   * @param defaultValue the default value to return if the flag is not found
+   * @return the JSON string value of the assignment
+   */
+  public String getJSONStringAssignment(String flagKey, String subjectKey, String defaultValue) {
+    return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
   @Nullable private JSONObject parseJsonString(String jsonString) {

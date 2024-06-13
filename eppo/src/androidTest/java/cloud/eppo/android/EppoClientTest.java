@@ -187,6 +187,10 @@ public class EppoClientTest {
             .toString());
 
     assertEquals(
+        "{\"a\": 1, \"b\": false}",
+        spyClient.getJSONStringAssignment("subject1", "experiment1", "{\"a\": 1, \"b\": false}"));
+
+    assertEquals(
         new JSONObject("{}").toString(),
         spyClient
             .getJSONAssignment(
