@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "3.1.0-SNAPSHOT"
+version = "3.1.0"
 
 android {
     buildFeatures.buildConfig true
@@ -58,9 +58,9 @@ ext.versions = [
     "androidx_junit": "1.1.5",
     "androidx_test_core": "1.5.0",
     "androidx_runner": "1.5.2",
-    "androidx_core": "1.8.0",
+    "androidx_core": "1.13.1",
     "gson": "2.9.1",
-    "okhttp": "4.11.0",
+    "okhttp": "4.12.0",
     "commonsio": "2.14.0",
     "semver": "0.10.2"
 ]
