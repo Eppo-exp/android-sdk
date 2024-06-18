@@ -1,4 +1,5 @@
 name: Publish Android SDK
+
 on:
   release:
     types: [published]
@@ -30,5 +31,8 @@ jobs:
           mkdir -p ~/.gradle/
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
 
-      - name: Publish
-        run: make check-maven-credentials-and-publish
+      - name: Publish Release artifact
+        run: ./gradlew publish -Prelease --no-daemon
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

@@ -26,7 +26,7 @@ jobs:
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Publish Snapshot artifact
-        run: ./gradlew publish --no-daemon
+        run: ./gradlew publish -Psnapshot --no-daemon
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

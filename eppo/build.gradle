@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "3.1.0-SNAPSHOT"
+version = "3.1.0"
 
 android {
     buildFeatures.buildConfig true
@@ -58,9 +58,9 @@ ext.versions = [
     "androidx_junit": "1.1.5",
     "androidx_test_core": "1.5.0",
     "androidx_runner": "1.5.2",
-    "androidx_core": "1.8.0",
+    "androidx_core": "1.9.0",
     "gson": "2.9.1",
-    "okhttp": "4.11.0",
+    "okhttp": "4.12.0",
     "commonsio": "2.14.0",
     "semver": "0.10.2"
 ]
@@ -155,4 +155,33 @@ task runEppoTests(type: GradleBuild) {
         ':eppo:testDebugUnitTest',
         ':eppo:connectedDebugAndroidTest'
     ]
+}
+
+// Custom task to ensure we can conditionally publish either a release or snapshot artifact
+// based on a command line switch. See github workflow files for more details on usage.
+task checkVersion {
+    doLast {
+        if (!project.hasProperty('release') && !project.hasProperty('snapshot')) {
+            throw new GradleException("You must specify either -Prelease or -Psnapshot")
+        }
+        if (project.hasProperty('release') && project.version.endsWith('SNAPSHOT')) {
+            throw new GradleException("You cannot specify -Prelease with a SNAPSHOT version")
+        }
+        if (project.hasProperty('snapshot') && !project.version.endsWith('SNAPSHOT')) {
+            throw new GradleException("You cannot specify -Psnapshot with a non-SNAPSHOT version")
+        }
+        project.ext.shouldPublish = true
+    }
+}
+
+// Ensure checkVersion runs before publishing
+tasks.named('publish').configure {
+    dependsOn checkVersion
+}
+
+// Conditionally enable or disable publishing tasks
+tasks.withType(PublishToMavenRepository) {
+    onlyIf {
+        project.ext.has('shouldPublish') && project.ext.shouldPublish
+    }
 }
