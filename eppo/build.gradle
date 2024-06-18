@@ -1,11 +1,12 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
+    id 'signing'
     id "com.diffplug.spotless" version "7.0.0.BETA1"
 }
 
 group = "cloud.eppo"
-version = "3.1.0"
+version = "3.2.0-SNAPSHOT"
 
 android {
     buildFeatures.buildConfig true
@@ -183,5 +184,12 @@ tasks.named('publish').configure {
 tasks.withType(PublishToMavenRepository) {
     onlyIf {
         project.ext.has('shouldPublish') && project.ext.shouldPublish
+    }
+}
+
+signing {
+    sign publishing.publications.release
+    if (System.env['CI']) {
+        useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
     }
 }
