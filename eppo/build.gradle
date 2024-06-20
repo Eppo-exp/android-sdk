@@ -49,6 +49,13 @@ android {
             excludes += "META-INF/**"
         }
     }
+
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 ext {}
@@ -111,7 +118,7 @@ publishing {
             version = project.properties.get("version")
 
             afterEvaluate {
-                from components.findByName('release')
+                from components.release
             }
 
             pom {
