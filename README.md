@@ -1,7 +1,7 @@
 # Eppo Android SDK
 
 [Eppo](https://geteppo.com) is a feature management and experimentation platform. This SDK enables
-feature flagging and experimentation Eppo customers. An API key is required to use it.
+feature flagging and experimentation for Eppo customers. An API key is required to use it.
 
 ## Usage
 
