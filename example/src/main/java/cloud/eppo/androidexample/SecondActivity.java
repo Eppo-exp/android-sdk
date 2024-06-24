@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.geteppo.androidexample.R;
 
 import cloud.eppo.android.EppoClient;
+import cloud.eppo.ufc.dto.SubjectAttributes;
 
 public class SecondActivity extends AppCompatActivity {
     private EditText experiment;
@@ -51,7 +52,8 @@ public class SecondActivity extends AppCompatActivity {
             return;
         }
 
-        String assignedVariation = EppoClient.getInstance().getStringAssignment(experimentKey, subjectId, "");
+        String assignedVariation = EppoClient.getInstance().getStringAssignment(
+            experimentKey, subjectId, new SubjectAttributes(), "");
         appendToAssignmentLogView("Assigned variation: " + assignedVariation);
     }
 
