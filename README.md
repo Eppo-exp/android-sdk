@@ -11,6 +11,14 @@ feature flagging and experimentation for Eppo customers. An API key is required 
 dependencies {
   implementation 'cloud.eppo:android-sdk:3.2.0'
 }
+
+dependencyResolutionManagement {
+  repositories {
+    maven {
+      url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+    }
+  }
+}
 ```
 Snapshots of the development version are available in [Sonatype's snapshots repository](https://s01.oss.sonatype.org/content/repositories/snapshots/).
 
