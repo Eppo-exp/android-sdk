@@ -20,7 +20,6 @@ import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -435,8 +434,7 @@ public class EppoClient {
     return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
-  @Nullable
-  private JSONObject parseJsonString(String jsonString) {
+  @Nullable private JSONObject parseJsonString(String jsonString) {
     try {
       if (jsonString.trim().startsWith("{")) {
         return new JSONObject(jsonString);
