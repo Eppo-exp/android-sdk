@@ -20,6 +20,8 @@ import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -433,9 +435,19 @@ public class EppoClient {
     return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
-  @Nullable private JSONObject parseJsonString(String jsonString) {
+  @Nullable
+  private JSONObject parseJsonString(String jsonString) {
     try {
-      return new JSONObject(jsonString);
+      if (jsonString.trim().startsWith("{")) {
+        return new JSONObject(jsonString);
+      } else if (jsonString.trim().startsWith("[")) {
+        JSONArray jsonArray = new JSONArray(jsonString);
+        JSONObject wrapper = new JSONObject();
+        wrapper.put("array", jsonArray);
+        return wrapper;
+      } else {
+        return null;
+      }
     } catch (JSONException e) {
       return null;
     }
