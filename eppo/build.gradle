@@ -75,7 +75,7 @@ ext.versions = [
 
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:2.0.0'
+    api 'cloud.eppo:sdk-common-jvm:3.0.2'
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
