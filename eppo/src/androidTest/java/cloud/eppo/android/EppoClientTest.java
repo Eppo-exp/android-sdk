@@ -1,5 +1,8 @@
 package cloud.eppo.android;
 
+import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
+import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -14,39 +17,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
-import static cloud.eppo.android.util.Utils.logTag;
-import static cloud.eppo.android.util.Utils.safeCacheKey;
 
 import android.content.res.AssetManager;
 import android.util.Log;
-
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
@@ -58,6 +33,26 @@ import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 public class EppoClientTest {
   private static final String TAG = logTag(EppoClient.class);

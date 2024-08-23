@@ -155,10 +155,9 @@ public class EppoClient {
       String variationKey = evaluationResult.getVariation().getKey();
       Map<String, String> extraLogging = evaluationResult.getExtraLogging();
       Map<String, String> metaData = new HashMap<>();
-      metaData.put("obfuscated", Boolean.valueOf(DEFAULT_OBFUSCATE_CONFIG).toString());
+      metaData.put("obfuscated", Boolean.valueOf(this.obfuscateConfig).toString());
       metaData.put("sdkLanguage", "Java (Android)");
       metaData.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
-
       Assignment assignment =
           Assignment.createWithCurrentDate(
               experimentKey,
