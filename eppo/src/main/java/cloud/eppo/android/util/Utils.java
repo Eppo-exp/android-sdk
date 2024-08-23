@@ -1,7 +1,5 @@
 package cloud.eppo.android.util;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.util.Base64;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -49,10 +47,6 @@ public class Utils {
     // Take the first eight characters to avoid the key being sensitive information
     // Remove non-alphanumeric characters so it plays nice with filesystem
     return key.substring(0, 8).replaceAll("\\W", "");
-  }
-
-  public static SharedPreferences getSharedPrefs(Context context, String keySuffix) {
-    return context.getSharedPreferences("eppo-" + keySuffix, Context.MODE_PRIVATE);
   }
 
   public static String logTag(Class loggingClass) {

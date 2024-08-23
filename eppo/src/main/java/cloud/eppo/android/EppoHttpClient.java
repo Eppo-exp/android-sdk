@@ -3,6 +3,7 @@ package cloud.eppo.android;
 import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
+import androidx.annotation.NonNull;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Arrays;
@@ -14,28 +15,24 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-public class EppoHttpClient {
+class EppoHttpClient {
   private static final String TAG = logTag(EppoHttpClient.class);
 
   private final OkHttpClient client;
-
   private final String baseUrl;
   private final String apiKey;
+  private final String sdkName;
 
-  public EppoHttpClient(String baseUrl, String apiKey) {
+  EppoHttpClient(String baseUrl, String apiKey, String sdkName) {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
-    this.client = buildOkHttpClient();
-  }
-
-  private static OkHttpClient buildOkHttpClient() {
-    OkHttpClient.Builder builder =
+    this.sdkName = sdkName;
+    this.client =
         new OkHttpClient()
             .newBuilder()
             .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(10, TimeUnit.SECONDS);
-
-    return builder.build();
+            .readTimeout(10, TimeUnit.SECONDS)
+            .build();
   }
 
   public void get(String path, RequestCallback callback) {
@@ -53,7 +50,7 @@ public class EppoHttpClient {
         .enqueue(
             new Callback() {
               @Override
-              public void onResponse(Call call, Response response) {
+              public void onResponse(@NonNull Call call, @NonNull Response response) {
                 if (response.isSuccessful()) {
                   Log.d(TAG, "Fetch successful");
                   try {
@@ -95,7 +92,7 @@ public class EppoHttpClient {
    * unobfuscated configurations
    */
   protected String getSdkName() {
-    return "android";
+    return this.sdkName;
   }
 }
 

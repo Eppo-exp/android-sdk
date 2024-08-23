@@ -48,7 +48,7 @@ test: test-data
 	# $(INFO)Uninstalling old version of test app(END)
 	adb uninstall cloud.eppo.android.test
 	# $(INFO)Running tests(END)
-	./gradlew runEppoTests
+	./gradlew connectedCheck
 
 check-maven-credentials-and-publish:
 	# $(INFO)Checking required gradle configuration(END)
