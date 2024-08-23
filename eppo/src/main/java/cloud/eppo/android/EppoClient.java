@@ -8,7 +8,15 @@ import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.util.Log;
+
 import androidx.annotation.Nullable;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -18,38 +26,17 @@ import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import java.util.HashMap;
-import java.util.Map;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class EppoClient {
   private static final String TAG = logTag(EppoClient.class);
   private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
+  private static final boolean IS_CONFIG_OBFUSCATED = true;
 
   private final ConfigurationRequestor requestor;
   private final AssignmentLogger assignmentLogger;
   private final boolean isGracefulMode;
   private static EppoClient instance;
-
-  // Field useful for toggling off obfuscation for development and testing (accessed via reflection)
-  /**
-   * @noinspection FieldMayBeFinal
-   */
-  private static boolean isConfigObfuscated = true;
-
-  // Fields useful for testing in situations where we want to mock the http client or configuration
-  // store (accessed via reflection)
-  /**
-   * @noinspection FieldMayBeFinal
-   */
-  private static EppoHttpClient httpClientOverride = null;
-
-  /**
-   * @noinspection FieldMayBeFinal
-   */
-  private static ConfigurationStore configurationStoreOverride = null;
 
   private EppoClient(
       Application application,
@@ -60,10 +47,7 @@ public class EppoClient {
     EppoHttpClient httpClient = buildHttpClient(apiKey, host);
     String cacheFileNameSuffix =
         safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
-    ConfigurationStore configStore =
-        configurationStoreOverride == null
-            ? new ConfigurationStore(application, cacheFileNameSuffix)
-            : configurationStoreOverride;
+    ConfigurationStore configStore = new ConfigurationStore(application, cacheFileNameSuffix);
     requestor = new ConfigurationRequestor(configStore, httpClient);
     this.isGracefulMode = isGracefulMode;
     this.assignmentLogger = assignmentLogger;
@@ -71,10 +55,7 @@ public class EppoClient {
 
   private EppoHttpClient buildHttpClient(String apiKey, String host) {
     EppoHttpClient httpClient;
-    if (httpClientOverride != null) {
-      // Test/Debug - Client is mocked entirely
-      httpClient = httpClientOverride;
-    } else if (!isConfigObfuscated) {
+    if (!IS_CONFIG_OBFUSCATED) {
       // Test/Debug - Client should request unobfuscated configurations; done by changing SDK name
       httpClient =
           new EppoHttpClient(host, apiKey) {
@@ -155,7 +136,7 @@ public class EppoClient {
     validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
 
     String flagKeyForLookup = flagKey;
-    if (isConfigObfuscated) {
+    if (IS_CONFIG_OBFUSCATED) {
       flagKeyForLookup = getMD5Hex(flagKey);
     }
 
@@ -186,7 +167,7 @@ public class EppoClient {
 
     FlagEvaluationResult evaluationResult =
         FlagEvaluator.evaluateFlag(
-            flag, flagKey, subjectKey, subjectAttributes, isConfigObfuscated);
+            flag, flagKey, subjectKey, subjectAttributes, IS_CONFIG_OBFUSCATED);
     EppoValue assignedValue =
         evaluationResult.getVariation() != null ? evaluationResult.getVariation().getValue() : null;
 
@@ -212,7 +193,7 @@ public class EppoClient {
       String variationKey = evaluationResult.getVariation().getKey();
       Map<String, String> extraLogging = evaluationResult.getExtraLogging();
       Map<String, String> metaData = new HashMap<>();
-      metaData.put("obfuscated", Boolean.valueOf(isConfigObfuscated).toString());
+      metaData.put("obfuscated", Boolean.valueOf(IS_CONFIG_OBFUSCATED).toString());
       metaData.put("sdkLanguage", "Java (Android)");
       metaData.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
 
