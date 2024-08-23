@@ -3,8 +3,8 @@ package cloud.eppo.android;
 import static cloud.eppo.android.util.Utils.logTag;
 
 import android.app.Application;
-import android.os.AsyncTask;
 import android.util.Log;
+import androidx.annotation.Nullable;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.adapters.EppoModule;
@@ -14,16 +14,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ConfigurationStore {
   private static final String TAG = logTag(ConfigurationStore.class);
   private final ObjectMapper mapper = new ObjectMapper().registerModule(EppoModule.eppoModule());
   private final ConfigCacheFile cacheFile;
-
+  private final Object cacheLock = new Object();
   private final AtomicBoolean loadedFromFetchResponse = new AtomicBoolean(false);
-  private ConcurrentHashMap<String, FlagConfig> flags;
+  @Nullable private Map<String, FlagConfig> flags;
 
   public ConfigurationStore(Application application, String cacheFileNameSuffix) {
     cacheFile = new ConfigCacheFile(application, cacheFileNameSuffix);
@@ -38,7 +41,8 @@ public class ConfigurationStore {
       return;
     }
 
-    AsyncTask.execute(
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    executor.execute(
         () -> {
           Log.d(TAG, "Loading from cache");
           try {
@@ -66,10 +70,11 @@ public class ConfigurationStore {
             callback.onCacheLoadFail();
           }
         });
+    executor.shutdown();
   }
 
-  protected FlagConfigResponse readCacheFile() throws IOException {
-    synchronized (cacheFile) {
+  @Nullable protected FlagConfigResponse readCacheFile() throws IOException {
+    synchronized (cacheLock) {
       try (BufferedReader reader = cacheFile.getReader()) {
         return mapper.readValue(reader, FlagConfigResponse.class);
       }
@@ -91,20 +96,22 @@ public class ConfigurationStore {
   }
 
   public void asyncWriteToCache(String jsonString) {
-    AsyncTask.execute(
+    ExecutorService executor = Executors.newSingleThreadExecutor();
+    executor.execute(
         () -> {
           Log.d(TAG, "Saving configuration to cache file");
           try {
-            synchronized (cacheFile) {
-              BufferedWriter writer = cacheFile.getWriter();
-              writer.write(jsonString);
-              writer.close();
+            synchronized (cacheLock) {
+              try (BufferedWriter writer = cacheFile.getWriter()) {
+                writer.write(jsonString);
+              }
             }
             Log.d(TAG, "Updated cache file");
-          } catch (Exception e) {
-            Log.e(TAG, "Unable to cache config to file", e);
+          } catch (IOException e) {
+            Log.e(TAG, "Unable write to cache config to file", e);
           }
         });
+    executor.shutdown();
   }
 
   public FlagConfig getFlag(String flagKey) {
