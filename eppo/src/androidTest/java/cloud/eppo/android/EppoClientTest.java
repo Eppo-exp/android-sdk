@@ -83,7 +83,7 @@ public class EppoClientTest {
         new InitializationCallback() {
           @Override
           public void onCompleted() {
-            Log.w(TAG, "Test client onCompleted callback");
+            Log.i(TAG, "Test client onCompleted callback");
             lock.countDown();
           }
 
