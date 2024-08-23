@@ -284,7 +284,7 @@ public class EppoClientTest {
   public void testCachedAssignments() {
     // First initialize successfully
     initClient(
-        TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY); // ensure cache is populated
+        TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY); // ensure cache is populated
 
     // wait for a bit since cache file is written asynchronously
     waitForPopulatedCache();
