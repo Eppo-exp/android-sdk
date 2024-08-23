@@ -84,22 +84,23 @@ public class EppoClientTest {
     mockAssignmentLogger = mock(AssignmentLogger.class);
     CountDownLatch lock = new CountDownLatch(1);
 
-    InitializationCallback callback = new InitializationCallback() {
-      @Override
-      public void onCompleted() {
-        Log.w(TAG, "Test client onCompleted callback");
-        lock.countDown();
-      }
+    InitializationCallback callback =
+        new InitializationCallback() {
+          @Override
+          public void onCompleted() {
+            Log.w(TAG, "Test client onCompleted callback");
+            lock.countDown();
+          }
 
-      @Override
-      public void onError(String errorMessage) {
-        Log.w(TAG, "Test client onError callback");
-        if (throwOnCallbackError) {
-          throw new RuntimeException("Unable to initialize: " + errorMessage);
-        }
-        lock.countDown();
-      }
-    };
+          @Override
+          public void onError(String errorMessage) {
+            Log.w(TAG, "Test client onError callback");
+            if (throwOnCallbackError) {
+              throw new RuntimeException("Unable to initialize: " + errorMessage);
+            }
+            lock.countDown();
+          }
+        };
     new EppoClient.Builder()
         .application(ApplicationProvider.getApplicationContext())
         .apiKey(apiKey)
@@ -282,7 +283,8 @@ public class EppoClientTest {
   @Test
   public void testCachedAssignments() {
     // First initialize successfully
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY); // ensure cache is populated
+    initClient(
+        TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY); // ensure cache is populated
 
     // wait for a bit since cache file is written asynchronously
     waitForPopulatedCache();
@@ -290,7 +292,14 @@ public class EppoClientTest {
     // Then reinitialize with a bad host so we know it's using the cached UFC built from the first
     // initialization
     initClient(
-        INVALID_HOST, false, false, false, false, null, null, DUMMY_API_KEY); // invalid host to force to use cache
+        INVALID_HOST,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        DUMMY_API_KEY); // invalid host to force to use cache
 
     runTestCases();
   }

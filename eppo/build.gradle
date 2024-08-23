@@ -158,13 +158,6 @@ publishing {
     }
 }
 
-task runEppoTests(type: GradleBuild) {
-    tasks = [
-        ':eppo:testDebugUnitTest',
-        ':eppo:connectedDebugAndroidTest'
-    ]
-}
-
 // Custom task to ensure we can conditionally publish either a release or snapshot artifact
 // based on a command line switch. See github workflow files for more details on usage.
 task checkVersion {

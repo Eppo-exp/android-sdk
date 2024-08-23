@@ -3,15 +3,11 @@ package cloud.eppo.android;
 import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
-
 import androidx.annotation.Nullable;
-
+import cloud.eppo.ufc.dto.FlagConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
-
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import cloud.eppo.ufc.dto.FlagConfig;
 
 public class ConfigurationRequestor {
   private static final String TAG = logTag(ConfigurationRequestor.class);

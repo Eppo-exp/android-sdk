@@ -8,16 +8,8 @@ import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
-
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -27,6 +19,10 @@ import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
+import java.util.HashMap;
+import java.util.Map;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class EppoClient {
   private static final String TAG = logTag(EppoClient.class);
@@ -55,13 +51,12 @@ public class EppoClient {
    * @noinspection unused
    */
   public static EppoClient init(Application application, String apiKey) {
-    return new Builder()
-        .application(application)
-        .apiKey(apiKey)
-        .buildAndInit();
+    return new Builder().application(application).apiKey(apiKey).buildAndInit();
   }
 
-  /** @noinspection unused*/
+  /**
+   * @noinspection unused
+   */
   public static EppoClient init(
       @NonNull Application application,
       @NonNull String apiKey,
@@ -86,8 +81,8 @@ public class EppoClient {
    * first, those assignments will be used until the fetch completes.
    *
    * @param callback methods to call when loading succeeds/fails. Note that the success callback
-   *                 will be called as soon as either a configuration is loaded from the cache or
-   *                 fetched--whichever finishes first. Error callback will called if both attempts fail.
+   *     will be called as soon as either a configuration is loaded from the cache or
+   *     fetched--whichever finishes first. Error callback will called if both attempts fail.
    */
   public void refreshConfiguration(@Nullable InitializationCallback callback) {
     requestor.load(callback);
@@ -303,8 +298,8 @@ public class EppoClient {
    * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
    * defaultValue is returned.
    *
-   * @param flagKey      the feature flag key
-   * @param subjectKey   the subject key
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -317,8 +312,8 @@ public class EppoClient {
    * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
    * defaultValue is returned.
    *
-   * @param flagKey      the feature flag key
-   * @param subjectKey   the subject key
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -346,8 +341,8 @@ public class EppoClient {
    * a JSON string. If the flag is not found, does not match the requested type or is disabled,
    * defaultValue is returned.
    *
-   * @param flagKey      the feature flag key
-   * @param subjectKey   the subject key
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -372,8 +367,8 @@ public class EppoClient {
    * the flag is not found, does not match the requested type or is disabled, defaultValue is
    * returned.
    *
-   * @param flagKey      the feature flag key
-   * @param subjectKey   the subject key
+   * @param flagKey the feature flag key
+   * @param subjectKey the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -381,8 +376,7 @@ public class EppoClient {
     return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
-  @Nullable
-  private JSONObject parseJsonString(String jsonString) {
+  @Nullable private JSONObject parseJsonString(String jsonString) {
     try {
       return new JSONObject(jsonString);
     } catch (JSONException e) {
@@ -489,9 +483,11 @@ public class EppoClient {
         String cacheFileNameSuffix = safeCacheKey(apiKey);
         configStore = new ConfigurationStore(application, cacheFileNameSuffix);
       }
-      ConfigurationRequestor configurationRequestor = new ConfigurationRequestor(configStore, httpClient);
-      instance = new EppoClient(
-          configurationRequestor, assignmentLogger, isGracefulMode, DEFAULT_OBFUSCATE_CONFIG);
+      ConfigurationRequestor configurationRequestor =
+          new ConfigurationRequestor(configStore, httpClient);
+      instance =
+          new EppoClient(
+              configurationRequestor, assignmentLogger, isGracefulMode, DEFAULT_OBFUSCATE_CONFIG);
       instance.refreshConfiguration(callback);
       return instance;
     }

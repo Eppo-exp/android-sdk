@@ -3,9 +3,7 @@ package cloud.eppo.android;
 import static cloud.eppo.android.util.Utils.logTag;
 
 import android.util.Log;
-
 import androidx.annotation.NonNull;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Arrays;
@@ -29,11 +27,12 @@ class EppoHttpClient {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
     this.sdkName = sdkName;
-    this.client = new OkHttpClient()
-        .newBuilder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(10, TimeUnit.SECONDS)
-        .build();
+    this.client =
+        new OkHttpClient()
+            .newBuilder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .build();
   }
 
   public void get(String path, RequestCallback callback) {
