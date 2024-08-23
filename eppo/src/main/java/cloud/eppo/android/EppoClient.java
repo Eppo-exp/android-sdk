@@ -8,7 +8,16 @@ import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.util.Log;
+
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -18,92 +27,57 @@ import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import java.util.HashMap;
-import java.util.Map;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class EppoClient {
   private static final String TAG = logTag(EppoClient.class);
   private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
-  private static final boolean IS_CONFIG_OBFUSCATED = true;
+  private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
 
-  private final ConfigurationRequestor requestor;
-  private final AssignmentLogger assignmentLogger;
+  @NonNull private final ConfigurationRequestor requestor;
+  @Nullable private final AssignmentLogger assignmentLogger;
+  @Nullable private static EppoClient instance;
   private final boolean isGracefulMode;
-  private static EppoClient instance;
+  private final boolean obfuscateConfig;
 
   private EppoClient(
-      Application application,
-      String apiKey,
-      String host,
-      AssignmentLogger assignmentLogger,
-      boolean isGracefulMode) {
-    EppoHttpClient httpClient = buildHttpClient(apiKey, host);
-    String cacheFileNameSuffix =
-        safeCacheKey(apiKey); // Cache at a per-API key level (useful for development)
-    ConfigurationStore configStore = new ConfigurationStore(application, cacheFileNameSuffix);
-    requestor = new ConfigurationRequestor(configStore, httpClient);
+      @NonNull ConfigurationRequestor configurationRequestor,
+      @Nullable AssignmentLogger assignmentLogger,
+      boolean isGracefulMode,
+      boolean obfuscateConfig) {
+    this.requestor = configurationRequestor;
     this.isGracefulMode = isGracefulMode;
     this.assignmentLogger = assignmentLogger;
-  }
-
-  private EppoHttpClient buildHttpClient(String apiKey, String host) {
-    EppoHttpClient httpClient;
-    if (!IS_CONFIG_OBFUSCATED) {
-      // Test/Debug - Client should request unobfuscated configurations; done by changing SDK name
-      httpClient =
-          new EppoHttpClient(host, apiKey) {
-            @Override
-            protected String getSdkName() {
-              return "android-debug";
-            }
-          };
-    } else {
-      // Normal operation
-      httpClient = new EppoHttpClient(host, apiKey);
-    }
-    return httpClient;
+    this.obfuscateConfig = obfuscateConfig;
   }
 
   /**
    * @noinspection unused
    */
   public static EppoClient init(Application application, String apiKey) {
-    return init(application, apiKey, DEFAULT_HOST, null, null, DEFAULT_IS_GRACEFUL_MODE);
+    return new Builder()
+        .application(application)
+        .apiKey(apiKey)
+        .buildAndInit();
   }
 
+  /** @noinspection unused*/
   public static EppoClient init(
-      Application application,
-      String apiKey,
-      String host,
-      InitializationCallback callback,
-      AssignmentLogger assignmentLogger,
+      @NonNull Application application,
+      @NonNull String apiKey,
+      @NonNull String host,
+      @Nullable InitializationCallback callback,
+      @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
-    if (application == null) {
-      throw new MissingApplicationException();
-    }
-
-    if (apiKey == null) {
-      throw new MissingApiKeyException();
-    }
-
-    boolean shouldCreateInstance = instance == null;
-    if (!shouldCreateInstance && ActivityManager.isRunningInTestHarness()) {
-      // Always recreate for tests
-      Log.d(TAG, "Recreating instance on init() for test");
-      shouldCreateInstance = true;
-    } else {
-      Log.w(TAG, "Eppo Client instance already initialized");
-    }
-
-    if (shouldCreateInstance) {
-      instance = new EppoClient(application, apiKey, host, assignmentLogger, isGracefulMode);
-      instance.refreshConfiguration(callback);
-    }
-
-    return instance;
+    return new Builder()
+        .application(application)
+        .apiKey(apiKey)
+        .host(host)
+        .callback(callback)
+        .assignmentLogger(assignmentLogger)
+        .isGracefulMode(isGracefulMode)
+        .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
+        .buildAndInit();
   }
 
   /**
@@ -111,14 +85,11 @@ public class EppoClient {
    * well as fire off a HTTPS request for an updated configuration. If the cache load finishes
    * first, those assignments will be used until the fetch completes.
    *
-   * <p>Deprecated, as we plan to make a more targeted and configurable way to do so in the future.
-   *
    * @param callback methods to call when loading succeeds/fails. Note that the success callback
-   *     will be called as soon as either a configuration is loaded from the cache or
-   *     fetched--whichever finishes first. Error callback will called if both attempts fail.
+   *                 will be called as soon as either a configuration is loaded from the cache or
+   *                 fetched--whichever finishes first. Error callback will called if both attempts fail.
    */
-  @Deprecated
-  public void refreshConfiguration(InitializationCallback callback) {
+  public void refreshConfiguration(@Nullable InitializationCallback callback) {
     requestor.load(callback);
   }
 
@@ -132,7 +103,7 @@ public class EppoClient {
     validateNotEmptyOrNull(subjectKey, "subjectKey must not be empty");
 
     String flagKeyForLookup = flagKey;
-    if (IS_CONFIG_OBFUSCATED) {
+    if (this.obfuscateConfig) {
       flagKeyForLookup = getMD5Hex(flagKey);
     }
 
@@ -163,7 +134,7 @@ public class EppoClient {
 
     FlagEvaluationResult evaluationResult =
         FlagEvaluator.evaluateFlag(
-            flag, flagKey, subjectKey, subjectAttributes, IS_CONFIG_OBFUSCATED);
+            flag, flagKey, subjectKey, subjectAttributes, this.obfuscateConfig);
     EppoValue assignedValue =
         evaluationResult.getVariation() != null ? evaluationResult.getVariation().getValue() : null;
 
@@ -189,7 +160,7 @@ public class EppoClient {
       String variationKey = evaluationResult.getVariation().getKey();
       Map<String, String> extraLogging = evaluationResult.getExtraLogging();
       Map<String, String> metaData = new HashMap<>();
-      metaData.put("obfuscated", Boolean.valueOf(IS_CONFIG_OBFUSCATED).toString());
+      metaData.put("obfuscated", Boolean.valueOf(DEFAULT_OBFUSCATE_CONFIG).toString());
       metaData.put("sdkLanguage", "Java (Android)");
       metaData.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
 
@@ -332,8 +303,8 @@ public class EppoClient {
    * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
    * defaultValue is returned.
    *
-   * @param flagKey the feature flag key
-   * @param subjectKey the subject key
+   * @param flagKey      the feature flag key
+   * @param subjectKey   the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -346,8 +317,8 @@ public class EppoClient {
    * JSONObject}. If the flag is not found, does not match the requested type or is disabled,
    * defaultValue is returned.
    *
-   * @param flagKey the feature flag key
-   * @param subjectKey the subject key
+   * @param flagKey      the feature flag key
+   * @param subjectKey   the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -375,8 +346,8 @@ public class EppoClient {
    * a JSON string. If the flag is not found, does not match the requested type or is disabled,
    * defaultValue is returned.
    *
-   * @param flagKey the feature flag key
-   * @param subjectKey the subject key
+   * @param flagKey      the feature flag key
+   * @param subjectKey   the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -401,8 +372,8 @@ public class EppoClient {
    * the flag is not found, does not match the requested type or is disabled, defaultValue is
    * returned.
    *
-   * @param flagKey the feature flag key
-   * @param subjectKey the subject key
+   * @param flagKey      the feature flag key
+   * @param subjectKey   the subject key
    * @param defaultValue the default value to return if the flag is not found
    * @return the JSON string value of the assignment
    */
@@ -410,7 +381,8 @@ public class EppoClient {
     return this.getJSONStringAssignment(flagKey, subjectKey, new SubjectAttributes(), defaultValue);
   }
 
-  @Nullable private JSONObject parseJsonString(String jsonString) {
+  @Nullable
+  private JSONObject parseJsonString(String jsonString) {
     try {
       return new JSONObject(jsonString);
     } catch (JSONException e) {
@@ -435,12 +407,15 @@ public class EppoClient {
   }
 
   public static class Builder {
-    private Application application;
-    private String apiKey;
-    private String host = DEFAULT_HOST;
-    private InitializationCallback callback;
-    private AssignmentLogger assignmentLogger;
+    @NonNull private String host = DEFAULT_HOST;
+    @Nullable private Application application;
+    @Nullable private String apiKey;
+    @Nullable private InitializationCallback callback;
+    @Nullable private AssignmentLogger assignmentLogger;
+    @Nullable private EppoHttpClient httpClient;
+    @Nullable private ConfigurationStore configStore;
     private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
+    private boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
 
     public Builder apiKey(String apiKey) {
       this.apiKey = apiKey;
@@ -472,8 +447,53 @@ public class EppoClient {
       return this;
     }
 
+    public Builder obfuscateConfig(boolean obfuscateConfig) {
+      this.obfuscateConfig = obfuscateConfig;
+      return this;
+    }
+
+    Builder httpClient(@Nullable EppoHttpClient httpClient) {
+      this.httpClient = httpClient;
+      return this;
+    }
+
+    Builder configStore(ConfigurationStore configStore) {
+      this.configStore = configStore;
+      return this;
+    }
+
     public EppoClient buildAndInit() {
-      return EppoClient.init(application, apiKey, host, callback, assignmentLogger, isGracefulMode);
+      if (application == null) {
+        throw new MissingApplicationException();
+      }
+      if (apiKey == null) {
+        throw new MissingApiKeyException();
+      }
+      boolean shouldInstantiate = instance == null;
+      if (!shouldInstantiate && ActivityManager.isRunningInTestHarness()) {
+        // Always recreate for tests
+        Log.d(TAG, "Recreating instance on init() for test");
+        shouldInstantiate = true;
+      } else {
+        Log.w(TAG, "Eppo Client instance already initialized");
+      }
+      if (!shouldInstantiate) {
+        return instance;
+      }
+      if (httpClient == null) {
+        String sdkName = obfuscateConfig ? "android" : "android-debug";
+        httpClient = new EppoHttpClient(host, apiKey, sdkName);
+      }
+      if (configStore == null) {
+        // Cache at a per-API key level (useful for development)
+        String cacheFileNameSuffix = safeCacheKey(apiKey);
+        configStore = new ConfigurationStore(application, cacheFileNameSuffix);
+      }
+      ConfigurationRequestor configurationRequestor = new ConfigurationRequestor(configStore, httpClient);
+      instance = new EppoClient(
+          configurationRequestor, assignmentLogger, isGracefulMode, DEFAULT_OBFUSCATE_CONFIG);
+      instance.refreshConfiguration(callback);
+      return instance;
     }
   }
 }

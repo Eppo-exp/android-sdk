@@ -1,8 +1,5 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
-import static cloud.eppo.android.util.Utils.logTag;
-import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -17,10 +14,39 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
+import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 
 import android.content.res.AssetManager;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
@@ -32,27 +58,6 @@ import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 public class EppoClientTest {
   private static final String TAG = logTag(EppoClient.class);
@@ -62,7 +67,6 @@ public class EppoClientTest {
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
-
   private AssignmentLogger mockAssignmentLogger;
 
   private void initClient(
@@ -70,6 +74,9 @@ public class EppoClientTest {
       boolean throwOnCallbackError,
       boolean shouldDeleteCacheFiles,
       boolean isGracefulMode,
+      boolean obfuscateConfig,
+      @Nullable EppoHttpClient httpClientOverride,
+      @Nullable ConfigurationStore configurationStoreOverride,
       String apiKey) {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
@@ -77,29 +84,32 @@ public class EppoClientTest {
     mockAssignmentLogger = mock(AssignmentLogger.class);
     CountDownLatch lock = new CountDownLatch(1);
 
+    InitializationCallback callback = new InitializationCallback() {
+      @Override
+      public void onCompleted() {
+        Log.w(TAG, "Test client onCompleted callback");
+        lock.countDown();
+      }
+
+      @Override
+      public void onError(String errorMessage) {
+        Log.w(TAG, "Test client onError callback");
+        if (throwOnCallbackError) {
+          throw new RuntimeException("Unable to initialize: " + errorMessage);
+        }
+        lock.countDown();
+      }
+    };
     new EppoClient.Builder()
         .application(ApplicationProvider.getApplicationContext())
         .apiKey(apiKey)
         .isGracefulMode(isGracefulMode)
         .host(host)
         .assignmentLogger(mockAssignmentLogger)
-        .callback(
-            new InitializationCallback() {
-              @Override
-              public void onCompleted() {
-                Log.w(TAG, "Test client onCompleted callback");
-                lock.countDown();
-              }
-
-              @Override
-              public void onError(String errorMessage) {
-                Log.w(TAG, "Test client onError callback");
-                if (throwOnCallbackError) {
-                  throw new RuntimeException("Unable to initialize: " + errorMessage);
-                }
-                lock.countDown();
-              }
-            })
+        .obfuscateConfig(obfuscateConfig)
+        .httpClient(httpClientOverride)
+        .configStore(configurationStoreOverride)
+        .callback(callback)
         .buildAndInit();
 
     // Wait for initialization to succeed or fail, up to 10 seconds, before continuing
@@ -120,10 +130,6 @@ public class EppoClientTest {
     for (String apiKey : apiKeys) {
       clearCacheFile(apiKey);
     }
-    // Reset any development overrides
-    setIsConfigObfuscatedField(true);
-    setHttpClientOverrideField(null);
-    setConfigurationStoreOverrideField(null);
   }
 
   private void clearCacheFile(String apiKey) {
@@ -135,20 +141,19 @@ public class EppoClientTest {
 
   @Test
   public void testUnobfuscatedAssignments() {
-    setIsConfigObfuscatedField(false);
-    initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY);
     runTestCases();
   }
 
   @Test
   public void testAssignments() {
-    initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY);
     runTestCases();
   }
 
   @Test
   public void testErrorGracefulModeOn() throws JSONException {
-    initClient(TEST_HOST, false, true, true, DUMMY_API_KEY);
+    initClient(TEST_HOST, false, true, true, true, null, null, DUMMY_API_KEY);
 
     EppoClient realClient = EppoClient.getInstance();
     EppoClient spyClient = spy(realClient);
@@ -200,7 +205,7 @@ public class EppoClientTest {
 
   @Test
   public void testErrorGracefulModeOff() {
-    initClient(TEST_HOST, false, true, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, false, true, false, true, null, null, DUMMY_API_KEY);
 
     EppoClient realClient = EppoClient.getInstance();
     EppoClient spyClient = spy(realClient);
@@ -277,7 +282,7 @@ public class EppoClientTest {
   @Test
   public void testCachedAssignments() {
     // First initialize successfully
-    initClient(TEST_HOST, true, true, false, DUMMY_API_KEY); // ensure cache is populated
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY); // ensure cache is populated
 
     // wait for a bit since cache file is written asynchronously
     waitForPopulatedCache();
@@ -285,7 +290,7 @@ public class EppoClientTest {
     // Then reinitialize with a bad host so we know it's using the cached UFC built from the first
     // initialization
     initClient(
-        INVALID_HOST, false, false, false, DUMMY_API_KEY); // invalid host to force to use cache
+        INVALID_HOST, false, false, false, false, null, null, DUMMY_API_KEY); // invalid host to force to use cache
 
     runTestCases();
   }
@@ -414,8 +419,7 @@ public class EppoClientTest {
         .when(mockHttpClient)
         .get(anyString(), any(RequestCallback.class));
 
-    setHttpClientOverrideField(mockHttpClient);
-    initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY);
 
     String result =
         EppoClient.getInstance()
@@ -431,7 +435,7 @@ public class EppoClientTest {
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     cacheFile.setContents("{ invalid }");
 
-    initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
 
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
@@ -445,14 +449,14 @@ public class EppoClientTest {
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     cacheFile.setContents("{\"flags\": {}}");
 
-    initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
   }
 
   @Test
   public void testDifferentCacheFilesPerKey() {
-    initClient(TEST_HOST, true, true, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY);
     // API Key 1 will fetch and then populate its cache with the usual test data
     double apiKey1Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
@@ -495,7 +499,7 @@ public class EppoClientTest {
             + "  }\n"
             + "}");
 
-    initClient(TEST_HOST, true, false, false, DUMMY_OTHER_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY);
 
     // Ensure API key 2 uses its cache
     double apiKey2Assignment =
@@ -503,7 +507,7 @@ public class EppoClientTest {
     assertEquals(1.2345, apiKey2Assignment, 0.0000001);
 
     // Reinitialize API key 1 to be sure it used its cache
-    initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
     // API Key 1 will fetch and then populate its cache with the usual test data
     apiKey1Assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, apiKey1Assignment, 0.0000001);
@@ -531,8 +535,7 @@ public class EppoClientTest {
           }
         };
 
-    setConfigurationStoreOverrideField(slowStore);
-    initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY);
 
     // Give time for async slow cache read to finish
     try {
@@ -574,7 +577,7 @@ public class EppoClientTest {
   @Test
   public void testAssignmentEventCorrectlyCreated() {
     Date testStart = new Date();
-    initClient(TEST_HOST, true, false, false, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
     SubjectAttributes subjectAttributes = new SubjectAttributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
@@ -617,33 +620,6 @@ public class EppoClientTest {
     expectedMeta.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
 
     assertEquals(expectedMeta, capturedAssignment.getMetaData());
-  }
-
-  private void setHttpClientOverrideField(EppoHttpClient httpClient) {
-    setOverrideField("httpClientOverride", httpClient);
-  }
-
-  private void setConfigurationStoreOverrideField(ConfigurationStore configurationStore) {
-    setOverrideField("configurationStoreOverride", configurationStore);
-  }
-
-  /**
-   * @noinspection SameParameterValue
-   */
-  private void setIsConfigObfuscatedField(boolean isConfigObfuscated) {
-    setOverrideField("isConfigObfuscated", isConfigObfuscated);
-  }
-
-  private <T> void setOverrideField(String fieldName, T override) {
-    try {
-      // Use reflection to set the httpClientOverride field
-      Field httpClientOverrideField = EppoClient.class.getDeclaredField(fieldName);
-      httpClientOverrideField.setAccessible(true);
-      httpClientOverrideField.set(null, override);
-      httpClientOverrideField.setAccessible(false);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private static SimpleModule module() {
