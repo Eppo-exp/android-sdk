@@ -8,8 +8,16 @@ import static cloud.eppo.android.util.Utils.validateNotEmptyOrNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.util.Log;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -19,10 +27,6 @@ import cloud.eppo.ufc.dto.EppoValue;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
-import java.util.HashMap;
-import java.util.Map;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 public class EppoClient {
   private static final String TAG = logTag(EppoClient.class);
@@ -487,7 +491,7 @@ public class EppoClient {
           new ConfigurationRequestor(configStore, httpClient);
       instance =
           new EppoClient(
-              configurationRequestor, assignmentLogger, isGracefulMode, DEFAULT_OBFUSCATE_CONFIG);
+              configurationRequestor, assignmentLogger, isGracefulMode, obfuscateConfig);
       instance.refreshConfiguration(callback);
       return instance;
     }
