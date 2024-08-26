@@ -2,7 +2,7 @@ plugins {
     id 'com.android.library'
     id 'maven-publish'
     id 'signing'
-    id "com.diffplug.spotless" version "7.0.0.BETA1"
+    id "com.diffplug.spotless" version "7.0.0.BETA2"
 }
 
 group = "cloud.eppo"
