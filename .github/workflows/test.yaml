@@ -7,9 +7,23 @@ on:
   pull_request:
     paths:
       - '**/*'
+  workflow_dispatch:
   workflow_call:
+    inputs:
+      test_data_branch:
+        type: string
+        description: The branch in sdk-test-data to target for testcase files
+        required: false
+        default: main
+      sdk_branch:
+        type: string
+        description: The branch of the SDK to test
+        required: false
 
 env:
+  SDK_BRANCH_NAME: ${{ inputs.sdk_branch  || github.head_ref || github.ref_name }}
+  TEST_DATA_BRANCH_NAME: ${{ inputs.test_data_branch || 'main' }}
+
   ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
   ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
   CI: true
@@ -18,8 +32,17 @@ jobs:
   test-android-sdk:
     runs-on: ubuntu-latest
     steps:
+      - name: Display Testing Details
+        run: |
+          echo "Running SDK Test using"
+          echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
+          echo "SDK Branch: android-sdk@${SDK_BRANCH_NAME}"
+
       - name: Check out Java SDK
         uses: actions/checkout@v4
+        with:
+          repository: Eppo-exp/android-sdk
+          ref: ${{ env.SDK_BRANCH_NAME}}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -34,7 +57,7 @@ jobs:
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
 
       - name: Set up test data
-        run: make test-data
+        run: make test-data branchName=${{env.TEST_DATA_BRANCH_NAME}}
 
       - name: Wait for mock UFC DNS to resolve
         run: |
