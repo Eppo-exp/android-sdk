@@ -127,14 +127,14 @@ jobs:
 
       - name: Upload Emulator Logs
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: emulator logs
           path: app/emulator.log
 
       - name: Upload Test Report
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: report
           path: /Users/runner/work/android-sdk/android-sdk/eppo/build/reports/androidTests/connected/index.html
