@@ -11,45 +11,51 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import android.content.res.AssetManager;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
+import cloud.eppo.BaseEppoClient;
+import cloud.eppo.EppoHttpClient;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
 import cloud.eppo.android.helpers.TestCaseValue;
-import cloud.eppo.android.logging.Assignment;
-import cloud.eppo.android.logging.AssignmentLogger;
-import cloud.eppo.ufc.dto.EppoValue;
+import cloud.eppo.api.Attributes;
+import cloud.eppo.api.Configuration;
+import cloud.eppo.api.EppoValue;
+import cloud.eppo.logging.Assignment;
+import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
-import cloud.eppo.ufc.dto.SubjectAttributes;
 import cloud.eppo.ufc.dto.VariationType;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.ParseException;
+import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
-import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -72,50 +78,52 @@ public class EppoClientTest {
       boolean obfuscateConfig,
       @Nullable EppoHttpClient httpClientOverride,
       @Nullable ConfigurationStore configurationStoreOverride,
-      String apiKey) {
+      String apiKey,
+      boolean offlineMode) {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
     }
     mockAssignmentLogger = mock(AssignmentLogger.class);
-    CountDownLatch lock = new CountDownLatch(1);
 
-    InitializationCallback callback =
-        new InitializationCallback() {
-          @Override
-          public void onCompleted() {
-            Log.i(TAG, "Test client onCompleted callback");
-            lock.countDown();
-          }
+    setBaseClientHttpClientOverrideField(httpClientOverride);
 
-          @Override
-          public void onError(String errorMessage) {
-            Log.w(TAG, "Test client onError callback");
-            if (throwOnCallbackError) {
-              throw new RuntimeException("Unable to initialize: " + errorMessage);
-            }
-            lock.countDown();
-          }
-        };
-    new EppoClient.Builder()
-        .application(ApplicationProvider.getApplicationContext())
-        .apiKey(apiKey)
-        .isGracefulMode(isGracefulMode)
-        .host(host)
-        .assignmentLogger(mockAssignmentLogger)
-        .obfuscateConfig(obfuscateConfig)
-        .httpClient(httpClientOverride)
-        .configStore(configurationStoreOverride)
-        .callback(callback)
-        .buildAndInit();
+    CompletableFuture<Void> futureClient =
+        new EppoClient.Builder()
+            .application(ApplicationProvider.getApplicationContext())
+            .apiKey(apiKey)
+            .isGracefulMode(isGracefulMode)
+            .host(host)
+            .assignmentLogger(mockAssignmentLogger)
+            .obfuscateConfig(obfuscateConfig)
+            .forceReinitialize(true)
+            .offlineMode(offlineMode)
+            .configStore(configurationStoreOverride)
+            .buildAndInitAsync()
+            .thenAccept(
+                client -> {
+                  Log.i(TAG, "Test client onCompleted callback");
+                })
+            .exceptionally(
+                error -> {
+                  Log.e(TAG, "Test client onError callback " + error.getMessage(), error);
+                  if (throwOnCallbackError) {
+                    throw new RuntimeException(
+                        "Unable to initialize: " + error.getMessage(), error);
+                  }
+                  return null;
+                });
 
     // Wait for initialization to succeed or fail, up to 10 seconds, before continuing
     try {
-      if (!lock.await(10000, TimeUnit.MILLISECONDS)) {
-        throw new InterruptedException("Client initialization not complete within timeout");
-      }
+
+      Log.d(TAG, "Sleeping 2 seconds");
+      Thread.sleep(2000);
+      futureClient.get(10, TimeUnit.SECONDS);
+      Log.d(TAG, "Waiting 10 seconds");
       Log.d(TAG, "Test client initialized");
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
+    } catch (ExecutionException | TimeoutException | InterruptedException e) {
+
+      throw new RuntimeException("Client initialization not complete within timeout", e);
     }
   }
 
@@ -126,6 +134,7 @@ public class EppoClientTest {
     for (String apiKey : apiKeys) {
       clearCacheFile(apiKey);
     }
+    setBaseClientHttpClientOverrideField(null);
   }
 
   private void clearCacheFile(String apiKey) {
@@ -137,19 +146,19 @@ public class EppoClientTest {
 
   @Test
   public void testUnobfuscatedAssignments() {
-    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY, false);
     runTestCases();
   }
 
   @Test
   public void testAssignments() {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
     runTestCases();
   }
 
   @Test
-  public void testErrorGracefulModeOn() throws JSONException {
-    initClient(TEST_HOST, false, true, true, true, null, null, DUMMY_API_KEY);
+  public void testErrorGracefulModeOn() throws JSONException, JsonProcessingException {
+    initClient(TEST_HOST, false, true, true, true, null, null, DUMMY_API_KEY, false);
 
     EppoClient realClient = EppoClient.getInstance();
     EppoClient spyClient = spy(realClient);
@@ -158,33 +167,31 @@ public class EppoClientTest {
         .getTypedAssignment(
             anyString(),
             anyString(),
-            any(SubjectAttributes.class),
+            any(Attributes.class),
             any(EppoValue.class),
             any(VariationType.class));
 
     assertTrue(spyClient.getBooleanAssignment("experiment1", "subject1", true));
-    assertFalse(
-        spyClient.getBooleanAssignment("experiment1", "subject1", new SubjectAttributes(), false));
+    assertFalse(spyClient.getBooleanAssignment("experiment1", "subject1", new Attributes(), false));
 
     assertEquals(10, spyClient.getIntegerAssignment("experiment1", "subject1", 10));
-    assertEquals(
-        0, spyClient.getIntegerAssignment("experiment1", "subject1", new SubjectAttributes(), 0));
+    assertEquals(0, spyClient.getIntegerAssignment("experiment1", "subject1", new Attributes(), 0));
 
     assertEquals(1.2345, spyClient.getDoubleAssignment("experiment1", "subject1", 1.2345), 0.0001);
     assertEquals(
         0.0,
-        spyClient.getDoubleAssignment("experiment1", "subject1", new SubjectAttributes(), 0.0),
+        spyClient.getDoubleAssignment("experiment1", "subject1", new Attributes(), 0.0),
         0.0001);
 
     assertEquals("default", spyClient.getStringAssignment("experiment1", "subject1", "default"));
     assertEquals(
-        "", spyClient.getStringAssignment("experiment1", "subject1", new SubjectAttributes(), ""));
+        "", spyClient.getStringAssignment("experiment1", "subject1", new Attributes(), ""));
 
     assertEquals(
-        new JSONObject("{\"a\": 1, \"b\": false}").toString(),
+        mapper.readTree("{\"a\": 1, \"b\": false}").toString(),
         spyClient
             .getJSONAssignment(
-                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}"))
+                "subject1", "experiment1", mapper.readTree("{\"a\": 1, \"b\": false}"))
             .toString());
 
     assertEquals(
@@ -192,16 +199,15 @@ public class EppoClientTest {
         spyClient.getJSONStringAssignment("subject1", "experiment1", "{\"a\": 1, \"b\": false}"));
 
     assertEquals(
-        new JSONObject("{}").toString(),
+        mapper.readTree("{}").toString(),
         spyClient
-            .getJSONAssignment(
-                "subject1", "experiment1", new SubjectAttributes(), new JSONObject("{}"))
+            .getJSONAssignment("subject1", "experiment1", new Attributes(), mapper.readTree("{}"))
             .toString());
   }
 
   @Test
   public void testErrorGracefulModeOff() {
-    initClient(TEST_HOST, false, true, false, true, null, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, false, true, false, true, null, null, DUMMY_API_KEY, false);
 
     EppoClient realClient = EppoClient.getInstance();
     EppoClient spyClient = spy(realClient);
@@ -210,7 +216,7 @@ public class EppoClientTest {
         .getTypedAssignment(
             anyString(),
             anyString(),
-            any(SubjectAttributes.class),
+            any(Attributes.class),
             any(EppoValue.class),
             any(VariationType.class));
 
@@ -219,44 +225,39 @@ public class EppoClientTest {
         () -> spyClient.getBooleanAssignment("experiment1", "subject1", true));
     assertThrows(
         RuntimeException.class,
-        () ->
-            spyClient.getBooleanAssignment(
-                "experiment1", "subject1", new SubjectAttributes(), false));
+        () -> spyClient.getBooleanAssignment("experiment1", "subject1", new Attributes(), false));
 
     assertThrows(
         RuntimeException.class,
         () -> spyClient.getIntegerAssignment("experiment1", "subject1", 10));
     assertThrows(
         RuntimeException.class,
-        () ->
-            spyClient.getIntegerAssignment("experiment1", "subject1", new SubjectAttributes(), 0));
+        () -> spyClient.getIntegerAssignment("experiment1", "subject1", new Attributes(), 0));
 
     assertThrows(
         RuntimeException.class,
         () -> spyClient.getDoubleAssignment("experiment1", "subject1", 1.2345));
     assertThrows(
         RuntimeException.class,
-        () ->
-            spyClient.getDoubleAssignment("experiment1", "subject1", new SubjectAttributes(), 0.0));
+        () -> spyClient.getDoubleAssignment("experiment1", "subject1", new Attributes(), 0.0));
 
     assertThrows(
         RuntimeException.class,
         () -> spyClient.getStringAssignment("experiment1", "subject1", "default"));
     assertThrows(
         RuntimeException.class,
-        () ->
-            spyClient.getStringAssignment("experiment1", "subject1", new SubjectAttributes(), ""));
+        () -> spyClient.getStringAssignment("experiment1", "subject1", new Attributes(), ""));
 
     assertThrows(
         RuntimeException.class,
         () ->
             spyClient.getJSONAssignment(
-                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}")));
+                "subject1", "experiment1", mapper.readTree("{\"a\": 1, \"b\": false}")));
     assertThrows(
         RuntimeException.class,
         () ->
             spyClient.getJSONAssignment(
-                "subject1", "experiment1", new SubjectAttributes(), new JSONObject("{}")));
+                "subject1", "experiment1", new Attributes(), mapper.readTree("{}")));
   }
 
   private void runTestCases() {
@@ -276,7 +277,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testCachedAssignments() {
+  public void testCachedConfigurations() {
     // First initialize successfully
     initClient(
         TEST_HOST,
@@ -286,7 +287,8 @@ public class EppoClientTest {
         false,
         null,
         null,
-        DUMMY_API_KEY); // ensure cache is populated
+        DUMMY_API_KEY,
+        false); // ensure cache is populated
 
     // wait for a bit since cache file is written asynchronously
     waitForPopulatedCache();
@@ -301,7 +303,8 @@ public class EppoClientTest {
         false,
         null,
         null,
-        DUMMY_API_KEY); // invalid host to force to use cache
+        DUMMY_API_KEY,
+        false); // invalid host to force to use cache
 
     runTestCases();
   }
@@ -315,7 +318,7 @@ public class EppoClientTest {
 
     for (SubjectAssignment subjectAssignment : testCase.getSubjects()) {
       String subjectKey = subjectAssignment.getSubjectKey();
-      SubjectAttributes subjectAttributes = subjectAssignment.getSubjectAttributes();
+      Attributes subjectAttributes = subjectAssignment.getAttributes();
 
       // Depending on the variation type, we will need to change which assignment method we call and
       // how we get the default value
@@ -348,12 +351,12 @@ public class EppoClientTest {
           assertAssignment(flagKey, subjectAssignment, stringAssignment);
           break;
         case JSON:
-          JSONObject jsonAssignment =
+          JsonNode jsonAssignment =
               eppoClient.getJSONAssignment(
                   flagKey,
                   subjectKey,
                   subjectAttributes,
-                  new JSONObject(defaultValue.jsonValue().toString()));
+                  mapper.readTree(defaultValue.jsonValue().toString()));
           assertAssignment(flagKey, subjectAssignment, jsonAssignment);
           break;
         default:
@@ -404,7 +407,7 @@ public class EppoClientTest {
     } else if (assignment instanceof String) {
       assertEquals(
           failureMessage, expectedSubjectAssignment.getAssignment().stringValue(), assignment);
-    } else if (assignment instanceof JSONObject) {
+    } else if (assignment instanceof JsonNode) {
       assertEquals(
           failureMessage,
           expectedSubjectAssignment.getAssignment().jsonValue().toString(),
@@ -421,16 +424,27 @@ public class EppoClientTest {
     // Create a mock instance of EppoHttpClient
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
 
-    doAnswer(
-            invocation -> {
-              RequestCallback callback = invocation.getArgument(1);
-              callback.onSuccess("{}");
-              return null; // doAnswer doesn't require a return value
-            })
-        .when(mockHttpClient)
-        .get(anyString(), any(RequestCallback.class));
+    when(mockHttpClient.getAsync(anyString()))
+        .thenReturn(CompletableFuture.completedFuture("{}".getBytes()));
 
-    initClient(TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false);
+
+    String result =
+        EppoClient.getInstance()
+            .getStringAssignment("dummy subject", "dummy flag", "not-populated");
+    assertEquals("not-populated", result);
+  }
+
+  @Test
+  public void testInvalidConfigJSONAsync() {
+
+    // Create a mock instance of EppoHttpClient
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+    CompletableFuture<byte[]> httpResponse = CompletableFuture.completedFuture("{}".getBytes());
+
+    when(mockHttpClient.getAsync(anyString())).thenReturn(httpResponse);
+
+    initClient(TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false);
 
     String result =
         EppoClient.getInstance()
@@ -444,30 +458,31 @@ public class EppoClientTest {
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
-    cacheFile.setContents("{ invalid }");
+    cacheFile.setContents("ANYTHING IS INVALID HERE AS THE CONTENTS ARE SERIALIZED JAVA OBJECTS");
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
 
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
   }
 
   @Test
-  public void testEmptyFlagsResponseRequiresFetch() {
+  public void testEmptyFlagsResponseRequiresFetch() throws IOException {
     // Populate the cache with a bad response
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
-    cacheFile.setContents("{\"flags\": {}}");
+    Configuration config = Configuration.emptyConfig();
+    config.writeToStream(cacheFile.getOutputStream());
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
   }
 
   @Test
-  public void testDifferentCacheFilesPerKey() {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY);
+  public void testDifferentCacheFilesPerKey() throws IOException {
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
     // API Key 1 will fetch and then populate its cache with the usual test data
     double apiKey1Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
@@ -478,47 +493,51 @@ public class EppoClientTest {
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_OTHER_API_KEY));
     // Set the experiment_with_boolean_variations flag to always return true
-    cacheFile2.setContents(
-        "{\n"
-            + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
-            + "  \"flags\": {\n"
-            + "    \"2c27190d8645fe3bc3c1d63b31f0e4ee\": {\n"
-            + "      \"key\": \"2c27190d8645fe3bc3c1d63b31f0e4ee\",\n"
-            + "      \"enabled\": true,\n"
-            + "      \"variationType\": \"NUMERIC\",\n"
-            + "      \"totalShards\": 10000,\n"
-            + "      \"variations\": {\n"
-            + "        \"cGk=\": {\n"
-            + "          \"key\": \"cGk=\",\n"
-            + "          \"value\": \"MS4yMzQ1\"\n"
-            + // Changed to be 1.2345 encoded
-            "        }\n"
-            + "      },\n"
-            + "      \"allocations\": [\n"
-            + "        {\n"
-            + "          \"key\": \"cm9sbG91dA==\",\n"
-            + "          \"doLog\": true,\n"
-            + "          \"splits\": [\n"
-            + "            {\n"
-            + "              \"variationKey\": \"cGk=\",\n"
-            + "              \"shards\": []\n"
-            + "            }\n"
-            + "          ]\n"
-            + "        }\n"
-            + "      ]\n"
-            + "    }\n"
-            + "  }\n"
-            + "}");
+    byte[] jsonBytes =
+        ("{\n"
+                + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
+                + "  \"flags\": {\n"
+                + "    \"2c27190d8645fe3bc3c1d63b31f0e4ee\": {\n"
+                + "      \"key\": \"2c27190d8645fe3bc3c1d63b31f0e4ee\",\n"
+                + "      \"enabled\": true,\n"
+                + "      \"variationType\": \"NUMERIC\",\n"
+                + "      \"totalShards\": 10000,\n"
+                + "      \"variations\": {\n"
+                + "        \"cGk=\": {\n"
+                + "          \"key\": \"cGk=\",\n"
+                + "          \"value\": \"MS4yMzQ1\"\n"
+                + // Changed to be 1.2345 encoded
+                "        }\n"
+                + "      },\n"
+                + "      \"allocations\": [\n"
+                + "        {\n"
+                + "          \"key\": \"cm9sbG91dA==\",\n"
+                + "          \"doLog\": true,\n"
+                + "          \"splits\": [\n"
+                + "            {\n"
+                + "              \"variationKey\": \"cGk=\",\n"
+                + "              \"shards\": []\n"
+                + "            }\n"
+                + "          ]\n"
+                + "        }\n"
+                + "      ]\n"
+                + "    }\n"
+                + "  }\n"
+                + "}")
+            .getBytes();
+    Configuration.builder(jsonBytes, true).build().writeToStream(cacheFile2.getOutputStream());
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY);
+    // Initialize with offline mode to prevent instance2 from pulling config via fetch.
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true);
 
     // Ensure API key 2 uses its cache
+    EppoClient newInstance = EppoClient.getInstance();
     double apiKey2Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(1.2345, apiKey2Assignment, 0.0000001);
 
     // Reinitialize API key 1 to be sure it used its cache
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
     // API Key 1 will fetch and then populate its cache with the usual test data
     apiKey1Assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, apiKey1Assignment, 0.0000001);
@@ -530,7 +549,7 @@ public class EppoClientTest {
         new ConfigurationStore(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY)) {
           @Override
-          protected FlagConfigResponse readCacheFile() {
+          protected Configuration readCacheFile() {
             Log.d(TAG, "Simulating slow cache read start");
             try {
               Thread.sleep(2000);
@@ -542,12 +561,20 @@ public class EppoClientTest {
             mockFlags.put("dummy", new FlagConfig(null, false, 0, null, null, null));
 
             Log.d(TAG, "Simulating slow cache read end");
-            return new FlagConfigResponse(mockFlags);
+            byte[] flagConfig = null;
+            try {
+              flagConfig =
+                  mapper.writeValueAsBytes(new FlagConfigResponse(mockFlags, new HashMap<>()));
+            } catch (JsonProcessingException e) {
+              throw new RuntimeException(e);
+            }
+            return Configuration.builder(flagConfig, false).build();
           }
         };
 
-    initClient(TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY);
+    initClient(TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false);
 
+    EppoClient client = EppoClient.getInstance();
     // Give time for async slow cache read to finish
     try {
       Thread.sleep(2500);
@@ -588,8 +615,8 @@ public class EppoClientTest {
   @Test
   public void testAssignmentEventCorrectlyCreated() {
     Date testStart = new Date();
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY);
-    SubjectAttributes subjectAttributes = new SubjectAttributes();
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
+    Attributes subjectAttributes = new Attributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
     double assignment =
@@ -613,21 +640,17 @@ public class EppoClientTest {
     assertEquals(subjectAttributes, capturedAssignment.getSubjectAttributes());
     assertEquals(new HashMap<>(), capturedAssignment.getExtraLogging());
 
-    try {
-      Date assertionDate = new Date();
-      SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-      dateFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
-      Date parsedTimestamp = dateFormat.parse(capturedAssignment.getTimestamp());
-      assertNotNull(parsedTimestamp);
-      assertTrue(parsedTimestamp.after(testStart));
-      assertTrue(parsedTimestamp.before(assertionDate));
-    } catch (ParseException ex) {
-      throw new RuntimeException(ex);
-    }
+    Date assertionDate = new Date();
+    SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
+    dateFormat.setTimeZone(java.util.TimeZone.getTimeZone("UTC"));
+    Date parsedTimestamp = capturedAssignment.getTimestamp();
+    assertNotNull(parsedTimestamp);
+    assertTrue(parsedTimestamp.after(testStart));
+    assertTrue(parsedTimestamp.before(assertionDate));
 
     Map<String, String> expectedMeta = new HashMap<>();
     expectedMeta.put("obfuscated", "true");
-    expectedMeta.put("sdkLanguage", "Java (Android)");
+    expectedMeta.put("sdkLanguage", "android");
     expectedMeta.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
 
     assertEquals(expectedMeta, capturedAssignment.getMetaData());
@@ -637,5 +660,22 @@ public class EppoClientTest {
     SimpleModule module = new SimpleModule();
     module.addDeserializer(AssignmentTestCase.class, new AssignmentTestCaseDeserializer());
     return module;
+  }
+
+  private static void setBaseClientHttpClientOverrideField(EppoHttpClient httpClient) {
+    setBaseClientOverrideField("httpClientOverride", httpClient);
+  }
+
+  /** Uses reflection to set a static override field used for tests (e.g., httpClientOverride) */
+  @SuppressWarnings("SameParameterValue")
+  public static <T> void setBaseClientOverrideField(String fieldName, T override) {
+    try {
+      Field httpClientOverrideField = BaseEppoClient.class.getDeclaredField(fieldName);
+      httpClientOverrideField.setAccessible(true);
+      httpClientOverrideField.set(null, override);
+      httpClientOverrideField.setAccessible(false);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

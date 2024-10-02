@@ -1,10 +1,12 @@
 package cloud.eppo.androidexample;
 
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static cloud.eppo.androidexample.Constants.INITIAL_FLAG_KEY;
 import static cloud.eppo.androidexample.Constants.INITIAL_SUBJECT_ID;
 
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ScrollView;
@@ -12,12 +14,15 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 
 import cloud.eppo.android.EppoClient;
-import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.api.Attributes;
 
 public class SecondActivity extends AppCompatActivity {
+    private static final String TAG = SecondActivity.class.getSimpleName();
+    private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
     private EditText experiment;
     private EditText subject;
     private TextView assignmentLog;
@@ -26,6 +31,28 @@ public class SecondActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Bundle extras = getIntent().getExtras();
+        boolean offlineMode = extras != null && extras.getBoolean(this.getPackageName() + ".offlineMode", false);
+
+        new EppoClient.Builder()
+                .application(getApplication())
+                .apiKey(API_KEY)
+                .isGracefulMode(true)
+                .offlineMode(offlineMode)
+                .forceReinitialize(true)
+                .assignmentLogger(assignment -> {
+                    Log.d(TAG, assignment.getExperiment() + "-> subject: " + assignment.getSubject() + " assigned to " + assignment.getExperiment());
+                })
+                               .buildAndInitAsync().thenAccept(
+                                       client -> {
+                                           Log.d(TAG, "Eppo SDK initialized");
+
+                                       }).exceptionally(error ->
+                {
+                    throw new RuntimeException("Unable to initialize. Ensure you API key is set correctly in EppoApplication.java", error);
+                });
+
         setContentView(R.layout.activity_assigner);
 
         experiment = findViewById(R.id.experiment);
@@ -53,7 +80,7 @@ public class SecondActivity extends AppCompatActivity {
         }
 
         String assignedVariation = EppoClient.getInstance().getStringAssignment(
-            experimentKey, subjectId, new SubjectAttributes(), "");
+            experimentKey, subjectId, new Attributes(), "");
         appendToAssignmentLogView("Assigned variation: " + assignedVariation);
     }
 
