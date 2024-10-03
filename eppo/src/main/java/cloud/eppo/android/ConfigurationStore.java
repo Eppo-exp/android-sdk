@@ -14,13 +14,14 @@ import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ConfigurationStore implements IConfigurationStore {
 
   private static final String TAG = logTag(ConfigurationStore.class);
-  private static final Logger log = LoggerFactory.getLogger(ConfigurationStore.class);
+  private static final Logger LOG = LoggerFactory.getLogger(ConfigurationStore.class);
   private final ConfigCacheFile cacheFile;
   private final Object cacheLock = new Object();
   private Configuration configuration;
@@ -55,11 +56,11 @@ public class ConfigurationStore implements IConfigurationStore {
   @Nullable protected Configuration readCacheFile() {
     try (InputStream inputStream = cacheFile.getInputStream()) {
       Log.d(TAG, "Attempting to inflate config");
-      Configuration config = Configuration.readFromStream(inputStream);
+      Configuration config = new Configuration.Builder(IOUtils.toByteArray(inputStream)).build();
       Log.d(TAG, "Cache load complete");
       return config;
     } catch (IOException e) {
-      log.error("Error loading from the cache: {}", e.getMessage());
+      LOG.error("Error loading from the cache: {}", e.getMessage());
       return Configuration.emptyConfig();
     }
   }
@@ -72,8 +73,10 @@ public class ConfigurationStore implements IConfigurationStore {
         () -> {
           synchronized (cacheLock) {
             Log.d(TAG, "Saving configuration to cache file");
+            // We do not save bandits yet as they are not supported on mobile.
             try (OutputStream outputStream = cacheFile.getOutputStream()) {
-              configuration.writeToStream(outputStream);
+              outputStream.write(configuration.serializeFlagConfigToBytes());
+              //              configuration.writeToStream(outputStream);
               Log.d(TAG, "Updated cache file");
               this.configuration = configuration;
               saveFuture.complete(null);

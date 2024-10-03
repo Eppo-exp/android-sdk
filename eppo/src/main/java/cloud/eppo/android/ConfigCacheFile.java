@@ -22,7 +22,7 @@ public class ConfigCacheFile {
   }
 
   public static String cacheFileName(String suffix) {
-    return "eppo-sdk-config-v4-" + suffix + ".ser";
+    return "eppo-sdk-config-v4-flags-" + suffix + ".json";
   }
 
   public boolean exists() {
@@ -36,26 +36,6 @@ public class ConfigCacheFile {
     if (cacheFile.exists()) {
       cacheFile.delete();
     }
-  }
-
-  public String getFileContents() {
-    StringBuilder text = new StringBuilder();
-    // on below line creating and initializing buffer reader.
-    BufferedReader br = null;
-    try {
-      br = getReader();
-      // on below line creating a string variable/
-      String line;
-      // on below line setting the data to text
-      while ((line = br.readLine()) != null) {
-        text.append(line);
-      }
-      br.close();
-
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return text.toString();
   }
 
   /** Useful for passing in as a writer for gson serialization */

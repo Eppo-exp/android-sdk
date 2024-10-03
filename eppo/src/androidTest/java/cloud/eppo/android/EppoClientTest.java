@@ -115,11 +115,7 @@ public class EppoClientTest {
 
     // Wait for initialization to succeed or fail, up to 10 seconds, before continuing
     try {
-
-      Log.d(TAG, "Sleeping 2 seconds");
-      Thread.sleep(2000);
       futureClient.get(10, TimeUnit.SECONDS);
-      Log.d(TAG, "Waiting 10 seconds");
       Log.d(TAG, "Test client initialized");
     } catch (ExecutionException | TimeoutException | InterruptedException e) {
 
@@ -473,7 +469,7 @@ public class EppoClientTest {
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     Configuration config = Configuration.emptyConfig();
-    config.writeToStream(cacheFile.getOutputStream());
+    cacheFile.getOutputStream().write(config.serializeFlagConfigToBytes());
 
     initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
@@ -525,7 +521,9 @@ public class EppoClientTest {
                 + "  }\n"
                 + "}")
             .getBytes();
-    Configuration.builder(jsonBytes, true).build().writeToStream(cacheFile2.getOutputStream());
+    cacheFile2
+        .getOutputStream()
+        .write(Configuration.builder(jsonBytes, true).build().serializeFlagConfigToBytes());
 
     // Initialize with offline mode to prevent instance2 from pulling config via fetch.
     initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true);
