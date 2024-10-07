@@ -232,7 +232,8 @@ public class EppoClient extends BaseEppoClient {
                 (success, ex) -> {
                   if (ex == null) {
                     ret.complete(instance);
-                  } else if (failCount.incrementAndGet() == 2 || instance.getInitialConfigFuture() == null) {
+                  } else if (failCount.incrementAndGet() == 2
+                      || instance.getInitialConfigFuture() == null) {
                     ret.completeExceptionally(
                         new RuntimeException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
@@ -242,20 +243,22 @@ public class EppoClient extends BaseEppoClient {
       }
 
       if (instance.getInitialConfigFuture() != null) {
-        instance.getInitialConfigFuture().handle(
-            (success, ex) -> {
-              if (ex == null && success) {
-                ret.complete(instance);
-              } else if (offlineMode || failCount.incrementAndGet() == 2) {
-                ret.completeExceptionally(
-                    new RuntimeException(
-                        "Unable to initialize client; Configuration could not be loaded", ex));
-              } else {
-                Log.d(TAG, "Initial config was not used.");
-                failCount.incrementAndGet();
-              }
-              return null;
-            });
+        instance
+            .getInitialConfigFuture()
+            .handle(
+                (success, ex) -> {
+                  if (ex == null && success) {
+                    ret.complete(instance);
+                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
+                    ret.completeExceptionally(
+                        new RuntimeException(
+                            "Unable to initialize client; Configuration could not be loaded", ex));
+                  } else {
+                    Log.d(TAG, "Initial config was not used.");
+                    failCount.incrementAndGet();
+                  }
+                  return null;
+                });
       }
       return ret;
     }
