@@ -529,7 +529,6 @@ public class EppoClientTest {
     initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true);
 
     // Ensure API key 2 uses its cache
-    EppoClient newInstance = EppoClient.getInstance();
     double apiKey2Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(1.2345, apiKey2Assignment, 0.0000001);
