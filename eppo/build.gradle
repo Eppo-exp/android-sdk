@@ -1,16 +1,17 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
+    id "com.vanniktech.maven.publish" version "0.29.0"
     id 'signing'
     id "com.diffplug.spotless" version "7.0.0.BETA2"
 }
 
 group = "cloud.eppo"
-version = "4.0.0"
+version = "4.0.1-SNAPSHOT"
 
 android {
     buildFeatures.buildConfig true
-    compileSdk 33
+    compileSdk 34
 
     defaultConfig {
         namespace "cloud.eppo.android"
@@ -47,13 +48,6 @@ android {
     packagingOptions {
         resources {
             excludes += "META-INF/**"
-        }
-    }
-
-    publishing {
-        singleVariant('release') {
-            withSourcesJar()
-            withJavadocJar()
         }
     }
 }
@@ -114,50 +108,31 @@ spotless {
     }
 }
 
-publishing {
-    publications {
-        release(MavenPublication) {
-            groupId = 'cloud.eppo'
-            artifactId = 'android-sdk'
-            version = project.properties.get("version")
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.S01)
+    signAllPublications()
+    coordinates("cloud.eppo", "android-sdk", project.version)
 
-            afterEvaluate {
-                from components.release
-            }
-
-            pom {
-                name = 'Eppo Android'
-                description = 'Eppo Android SDK'
-                url = 'https://github.com/Eppo-exp/android-sdk'
-                licenses {
-                    license {
-                        name = 'MIT License'
-                        url = 'http://www.opensource.org/licenses/mit-license.php'
-                    }
-                }
-                developers {
-                    developer {
-                        name = 'Eppo'
-                        email = 'https://www.geteppo.com'
-                    }
-                }
-                scm {
-                    connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
-                    developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
-                    url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
-                }
+    pom {
+        name = 'Eppo Android'
+        description = 'Eppo Android SDK'
+        url = 'https://github.com/Eppo-exp/android-sdk'
+        licenses {
+            license {
+                name = 'MIT License'
+                url = 'http://www.opensource.org/licenses/mit-license.php'
             }
         }
-    }
-    repositories {
-        maven {
-            def releasesRepoUrl = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-            def snapshotsRepoUrl = "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-            url = version.endsWith('SNAPSHOT') ? snapshotsRepoUrl : releasesRepoUrl
-            credentials {
-                username = project.properties.containsKey("ossrhUsername") ? project.properties["ossrhUsername"] : ""
-                password = project.properties.containsKey("ossrhPassword") ? project.properties["ossrhPassword"] : ""
+        developers {
+            developer {
+                name = 'Eppo'
+                email = 'https://www.geteppo.com'
             }
+        }
+        scm {
+            connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
+            developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
+            url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
         }
     }
 }
@@ -188,12 +163,5 @@ tasks.named('publish').configure {
 tasks.withType(PublishToMavenRepository) {
     onlyIf {
         project.ext.has('shouldPublish') && project.ext.shouldPublish
-    }
-}
-
-signing {
-    sign publishing.publications.release
-    if (System.env['CI']) {
-        useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
     }
 }
