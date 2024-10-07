@@ -1,16 +1,15 @@
 package cloud.eppo.android.helpers;
 
-import cloud.eppo.ufc.dto.SubjectAttributes;
+import cloud.eppo.api.Attributes;
 
 public class SubjectAssignment {
   private final String subjectKey;
-  private final SubjectAttributes subjectAttributes;
+  private final Attributes attributes;
   private final TestCaseValue assignment;
 
-  public SubjectAssignment(
-      String subjectKey, SubjectAttributes subjectAttributes, TestCaseValue assignment) {
+  public SubjectAssignment(String subjectKey, Attributes attributes, TestCaseValue assignment) {
     this.subjectKey = subjectKey;
-    this.subjectAttributes = subjectAttributes;
+    this.attributes = attributes;
     this.assignment = assignment;
   }
 
@@ -18,8 +17,8 @@ public class SubjectAssignment {
     return subjectKey;
   }
 
-  public SubjectAttributes getSubjectAttributes() {
-    return subjectAttributes;
+  public Attributes getAttributes() {
+    return attributes;
   }
 
   public TestCaseValue getAssignment() {

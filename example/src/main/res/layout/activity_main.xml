@@ -6,11 +6,37 @@
     android:layout_margin="32dp"
     tools:context="cloud.eppo.androidexample.MainActivity">
 
-    <Button
-        android:id="@+id/button_start_assigner"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
+
         android:layout_centerInParent="true"
-        android:text="@string/start_assignment_activity" />
+        android:orientation="vertical">
+
+        <Button
+            android:id="@+id/button_start_assigner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+            android:text="@string/start_assignment_activity" />
+
+        <Button
+            android:id="@+id/button_start_offline_assigner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+
+            android:text="@string/start_offline_assignment_activity" />
+
+        <Button
+            android:id="@+id/button_clear_cache"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+
+
+            android:backgroundTint="@color/material_dynamic_primary50"
+            android:text="@string/clear_cache" />
+
+    </LinearLayout>
 
 </RelativeLayout>

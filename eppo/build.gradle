@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "3.4.0-SNAPSHOT"
+version = "4.0.0"
 
 android {
     buildFeatures.buildConfig true
@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         namespace "cloud.eppo.android"
-        minSdk 21
+        minSdk 24
         targetSdk 33
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -73,10 +73,14 @@ ext.versions = [
     "semver": "0.10.2"
 ]
 
-
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:2.0.0'
+    api 'cloud.eppo:sdk-common-jvm:3.3.2'
+
+    implementation 'org.slf4j:slf4j-api:2.0.16'
+    implementation 'uk.uuid.slf4j:slf4j-android:2.0.7-0'
+
     implementation "androidx.core:core:${versions.androidx_core}"
+    implementation 'commons-io:commons-io:2.17.0'
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.18.0"
