@@ -74,7 +74,7 @@ ext.versions = [
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.3.0-SNAPSHOT'
+    api 'cloud.eppo:sdk-common-jvm:3.3.1-SNAPSHOT'
 
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'uk.uuid.slf4j:slf4j-android:2.0.7-0'
