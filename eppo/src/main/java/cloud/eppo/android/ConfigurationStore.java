@@ -12,16 +12,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import org.apache.commons.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ConfigurationStore implements IConfigurationStore {
 
   private static final String TAG = logTag(ConfigurationStore.class);
-  private static final Logger LOG = LoggerFactory.getLogger(ConfigurationStore.class);
   private final ConfigCacheFile cacheFile;
   private final Object cacheLock = new Object();
   private Configuration configuration;
@@ -54,39 +49,36 @@ public class ConfigurationStore implements IConfigurationStore {
   }
 
   @Nullable protected Configuration readCacheFile() {
-    try (InputStream inputStream = cacheFile.getInputStream()) {
-      Log.d(TAG, "Attempting to inflate config");
-      Configuration config = new Configuration.Builder(IOUtils.toByteArray(inputStream)).build();
-      Log.d(TAG, "Cache load complete");
-      return config;
-    } catch (IOException e) {
-      LOG.error("Error loading from the cache: {}", e.getMessage());
-      return Configuration.emptyConfig();
+    synchronized (cacheLock) {
+      try (InputStream inputStream = cacheFile.getInputStream()) {
+        Log.d(TAG, "Attempting to inflate config");
+        Configuration config = new Configuration.Builder(IOUtils.toByteArray(inputStream)).build();
+        Log.d(TAG, "Cache load complete");
+        return config;
+      } catch (IOException e) {
+        Log.e("Error loading from the cache: {}", e.getMessage());
+        return Configuration.emptyConfig();
+      }
     }
   }
 
   @Override
   public CompletableFuture<Void> saveConfiguration(@NonNull Configuration configuration) {
-    CompletableFuture<Void> saveFuture = new CompletableFuture<>();
-    ExecutorService executor = Executors.newCachedThreadPool();
-    executor.execute(
+    return CompletableFuture.supplyAsync(
         () -> {
           synchronized (cacheLock) {
             Log.d(TAG, "Saving configuration to cache file");
             // We do not save bandits yet as they are not supported on mobile.
             try (OutputStream outputStream = cacheFile.getOutputStream()) {
               outputStream.write(configuration.serializeFlagConfigToBytes());
-              //              configuration.writeToStream(outputStream);
               Log.d(TAG, "Updated cache file");
               this.configuration = configuration;
-              saveFuture.complete(null);
             } catch (IOException e) {
               Log.e(TAG, "Unable write to cache config to file", e);
-              saveFuture.completeExceptionally(e);
+              throw new RuntimeException(e);
             }
+            return null;
           }
         });
-    executor.shutdown();
-    return saveFuture;
   }
 }

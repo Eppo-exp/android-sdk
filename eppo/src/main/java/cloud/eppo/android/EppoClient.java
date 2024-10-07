@@ -161,10 +161,12 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    public Builder withInitialFlagConfigResponse(String initialFlagConfigResponse) {
+    public Builder withInitialFlagConfigResponse(
+        String initialFlagConfigResponse, boolean isConfigObfuscated) {
       this.initialConfiguration =
           CompletableFuture.completedFuture(
-              Configuration.builder(initialFlagConfigResponse.getBytes(), true).build());
+              Configuration.builder(initialFlagConfigResponse.getBytes(), isConfigObfuscated)
+                  .build());
       return this;
     }
 
@@ -241,13 +243,14 @@ public class EppoClient extends BaseEppoClient {
 
       initialConfiguration.handle(
           (success, ex) -> {
-            Log.d("Initial Config Returned", success.toString(), ex);
             if (ex == null && !success.isEmpty()) {
               ret.complete(instance);
             } else if (offlineMode || failCount.incrementAndGet() == 2) {
               ret.completeExceptionally(
                   new RuntimeException(
                       "Unable to initialize client; Configuration could not be loaded", ex));
+            } else {
+              Log.d(TAG, "Initial config was empty.");
             }
             return null;
           });

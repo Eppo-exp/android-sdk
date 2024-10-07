@@ -101,11 +101,11 @@ public class EppoClientTest {
             .buildAndInitAsync()
             .thenAccept(
                 client -> {
-                  Log.i(TAG, "Test client onCompleted callback");
+                  Log.i(TAG, "Test client async buildAndInit completed.");
                 })
             .exceptionally(
                 error -> {
-                  Log.e(TAG, "Test client onError callback " + error.getMessage(), error);
+                  Log.e(TAG, "Test client async buildAndInit error" + error.getMessage(), error);
                   if (throwOnCallbackError) {
                     throw new RuntimeException(
                         "Unable to initialize: " + error.getMessage(), error);
@@ -454,7 +454,7 @@ public class EppoClientTest {
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
-    cacheFile.setContents("ANYTHING IS INVALID HERE AS THE CONTENTS ARE SERIALIZED JAVA OBJECTS");
+    cacheFile.setContents("NEEDS TO BE A VALID JSON TREE");
 
     initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
 
