@@ -72,7 +72,6 @@ public class EppoClientTest {
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
   private AssignmentLogger mockAssignmentLogger;
 
-
   private void initClient(
       String host,
       boolean throwOnCallbackError,
@@ -83,7 +82,17 @@ public class EppoClientTest {
       @Nullable ConfigurationStore configurationStoreOverride,
       String apiKey,
       boolean offlineMode) {
-    initClient(host, throwOnCallbackError, shouldDeleteCacheFiles, isGracefulMode, obfuscateConfig, httpClientOverride, configurationStoreOverride, apiKey, offlineMode, null);
+    initClient(
+        host,
+        throwOnCallbackError,
+        shouldDeleteCacheFiles,
+        isGracefulMode,
+        obfuscateConfig,
+        httpClientOverride,
+        configurationStoreOverride,
+        apiKey,
+        offlineMode,
+        null);
   }
 
   private void initClient(
@@ -114,7 +123,8 @@ public class EppoClientTest {
             .obfuscateConfig(obfuscateConfig)
             .forceReinitialize(true)
             .offlineMode(offlineMode)
-            .configStore(configurationStoreOverride).assignmentCache(assignmentCache)
+            .configStore(configurationStoreOverride)
+            .assignmentCache(assignmentCache)
             .buildAndInitAsync()
             .thenAccept(
                 client -> {
@@ -670,7 +680,6 @@ public class EppoClientTest {
     assertEquals(expectedMeta, capturedAssignment.getMetaData());
   }
 
-
   @Test
   public void testAssignmentEventDuplicatedWithoutCache() {
     initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
@@ -678,10 +687,8 @@ public class EppoClientTest {
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
 
-    EppoClient.getInstance()
-        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
-    EppoClient.getInstance()
-        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
 
     ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
     verify(mockAssignmentLogger, times(2)).logAssignment(assignmentLogCaptor.capture());
@@ -689,22 +696,28 @@ public class EppoClientTest {
 
   @Test
   public void testAssignmentEventDeDupedWithCache() {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false,
+    initClient(
+        TEST_HOST,
+        true,
+        true,
+        false,
+        true,
+        null,
+        null,
+        DUMMY_API_KEY,
+        false,
         new LRUAssignmentCache(1024));
 
     Attributes subjectAttributes = new Attributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
 
-    EppoClient.getInstance()
-        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
-    EppoClient.getInstance()
-        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
 
     ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
     verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
   }
-
 
   private static SimpleModule module() {
     SimpleModule module = new SimpleModule();
