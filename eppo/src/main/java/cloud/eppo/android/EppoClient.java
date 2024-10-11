@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.IConfigurationStore;
+import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
@@ -123,7 +124,9 @@ public class EppoClient extends BaseEppoClient {
     private boolean forceReinitialize = false;
     private boolean offlineMode = false;
     private CompletableFuture<Configuration> initialConfiguration;
-    private IAssignmentCache assignmentCache;
+
+    // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
+    private IAssignmentCache assignmentCache = new LRUAssignmentCache(10_000);
 
     public Builder apiKey(String apiKey) {
       this.apiKey = apiKey;
