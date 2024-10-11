@@ -24,6 +24,7 @@ import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.EppoHttpClient;
+import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
@@ -31,6 +32,7 @@ import cloud.eppo.android.helpers.TestCaseValue;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
+import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.Assignment;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.FlagConfig;
@@ -70,6 +72,7 @@ public class EppoClientTest {
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
   private AssignmentLogger mockAssignmentLogger;
 
+
   private void initClient(
       String host,
       boolean throwOnCallbackError,
@@ -80,6 +83,20 @@ public class EppoClientTest {
       @Nullable ConfigurationStore configurationStoreOverride,
       String apiKey,
       boolean offlineMode) {
+    initClient(host, throwOnCallbackError, shouldDeleteCacheFiles, isGracefulMode, obfuscateConfig, httpClientOverride, configurationStoreOverride, apiKey, offlineMode, null);
+  }
+
+  private void initClient(
+      String host,
+      boolean throwOnCallbackError,
+      boolean shouldDeleteCacheFiles,
+      boolean isGracefulMode,
+      boolean obfuscateConfig,
+      @Nullable EppoHttpClient httpClientOverride,
+      @Nullable ConfigurationStore configurationStoreOverride,
+      String apiKey,
+      boolean offlineMode,
+      IAssignmentCache assignmentCache) {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
     }
@@ -97,7 +114,7 @@ public class EppoClientTest {
             .obfuscateConfig(obfuscateConfig)
             .forceReinitialize(true)
             .offlineMode(offlineMode)
-            .configStore(configurationStoreOverride)
+            .configStore(configurationStoreOverride).assignmentCache(assignmentCache)
             .buildAndInitAsync()
             .thenAccept(
                 client -> {
@@ -652,6 +669,42 @@ public class EppoClientTest {
 
     assertEquals(expectedMeta, capturedAssignment.getMetaData());
   }
+
+
+  @Test
+  public void testAssignmentEventDuplicatedWithoutCache() {
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
+    Attributes subjectAttributes = new Attributes();
+    subjectAttributes.put("age", EppoValue.valueOf(30));
+    subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
+
+    EppoClient.getInstance()
+        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance()
+        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+
+    ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
+    verify(mockAssignmentLogger, times(2)).logAssignment(assignmentLogCaptor.capture());
+  }
+
+  @Test
+  public void testAssignmentEventDeDupedWithCache() {
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false,
+        new LRUAssignmentCache(1024));
+
+    Attributes subjectAttributes = new Attributes();
+    subjectAttributes.put("age", EppoValue.valueOf(30));
+    subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
+
+    EppoClient.getInstance()
+        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance()
+        .getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+
+    ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
+    verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
+  }
+
 
   private static SimpleModule module() {
     SimpleModule module = new SimpleModule();
