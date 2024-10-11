@@ -88,9 +88,7 @@ public class EppoClientTest {
     setBaseClientHttpClientOverrideField(httpClientOverride);
 
     CompletableFuture<Void> futureClient =
-        new EppoClient.Builder()
-            .application(ApplicationProvider.getApplicationContext())
-            .apiKey(apiKey)
+        new EppoClient.Builder(apiKey, ApplicationProvider.getApplicationContext())
             .isGracefulMode(isGracefulMode)
             .host(host)
             .assignmentLogger(mockAssignmentLogger)
