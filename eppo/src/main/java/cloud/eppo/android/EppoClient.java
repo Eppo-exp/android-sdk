@@ -9,12 +9,14 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.IConfigurationStore;
+import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
+import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.CompletableFuture;
@@ -38,7 +40,8 @@ public class EppoClient extends BaseEppoClient {
       IConfigurationStore configurationStore,
       boolean isGracefulMode,
       boolean obfuscateConfig,
-      @Nullable CompletableFuture<Configuration> initialConfiguration) {
+      @Nullable CompletableFuture<Configuration> initialConfiguration,
+      @Nullable IAssignmentCache assignmentCache) {
     super(
         apiKey,
         sdkName,
@@ -50,7 +53,8 @@ public class EppoClient extends BaseEppoClient {
         isGracefulMode,
         obfuscateConfig,
         false,
-        initialConfiguration);
+        initialConfiguration,
+        assignmentCache);
   }
 
   /**
@@ -121,6 +125,9 @@ public class EppoClient extends BaseEppoClient {
     private boolean offlineMode = false;
     private CompletableFuture<Configuration> initialConfiguration;
 
+    // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
+    private IAssignmentCache assignmentCache = new LRUAssignmentCache(10_000);
+
     public Builder apiKey(String apiKey) {
       this.apiKey = apiKey;
       return this;
@@ -158,6 +165,11 @@ public class EppoClient extends BaseEppoClient {
 
     public Builder offlineMode(boolean offlineMode) {
       this.offlineMode = offlineMode;
+      return this;
+    }
+
+    public Builder assignmentCache(IAssignmentCache assignmentCache) {
+      this.assignmentCache = assignmentCache;
       return this;
     }
 
@@ -217,7 +229,8 @@ public class EppoClient extends BaseEppoClient {
               configStore,
               isGracefulMode,
               obfuscateConfig,
-              initialConfiguration);
+              initialConfiguration,
+              assignmentCache);
 
       final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
 
