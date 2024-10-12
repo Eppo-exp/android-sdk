@@ -19,14 +19,16 @@ public class ConfigurationStore implements IConfigurationStore {
   private static final String TAG = logTag(ConfigurationStore.class);
   private final ConfigCacheFile cacheFile;
   private final Object cacheLock = new Object();
-  private Configuration configuration;
+
+  // default to an empty config
+  private volatile Configuration configuration = Configuration.emptyConfig();
   private CompletableFuture<Configuration> cacheLoadFuture = null;
 
   public ConfigurationStore(Application application, String cacheFileNameSuffix) {
     cacheFile = new ConfigCacheFile(application, cacheFileNameSuffix);
   }
 
-  @Override
+  @NonNull @Override
   public Configuration getConfiguration() {
     return configuration;
   }
