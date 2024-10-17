@@ -32,9 +32,7 @@ public class SecondActivity extends AppCompatActivity {
     boolean offlineMode =
         extras != null && extras.getBoolean(this.getPackageName() + ".offlineMode", false);
 
-    new EppoClient.Builder()
-        .application(getApplication())
-        .apiKey(API_KEY)
+    new EppoClient.Builder(API_KEY, getApplication())
         .isGracefulMode(true)
         .offlineMode(offlineMode)
         .forceReinitialize(true)
