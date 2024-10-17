@@ -54,7 +54,8 @@ public class EppoClient extends BaseEppoClient {
         obfuscateConfig,
         false,
         initialConfiguration,
-        assignmentCache);
+        assignmentCache,
+        null);
   }
 
   /**
@@ -126,7 +127,7 @@ public class EppoClient extends BaseEppoClient {
     private CompletableFuture<Configuration> initialConfiguration;
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
-    private IAssignmentCache assignmentCache = new LRUAssignmentCache(10_000);
+    private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
 
     public Builder apiKey(String apiKey) {
       this.apiKey = apiKey;
