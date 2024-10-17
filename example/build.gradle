@@ -41,19 +41,15 @@ android {
 
 spotless {
     format 'misc', {
-        // define the files to apply `misc` to
         target '*.gradle', '.gitattributes', '.gitignore'
 
-        // define the steps to apply to those files
         trimTrailingWhitespace()
-        indentWithSpaces(2) // or spaces. Takes an integer argument if you don't like 4
+        indentWithSpaces(2)
         endWithNewline()
     }
     java {
         target '**/*.java'
-        // apply a specific flavor of google-java-format
         googleJavaFormat()
-        // fix formatting of type annotations
         formatAnnotations()
     }
 }
