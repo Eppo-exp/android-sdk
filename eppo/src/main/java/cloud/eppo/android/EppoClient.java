@@ -67,9 +67,7 @@ public class EppoClient extends BaseEppoClient {
       @NonNull String host,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
-    return new Builder()
-        .application(application)
-        .apiKey(apiKey)
+    return new Builder(apiKey, application)
         .host(host)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
@@ -86,9 +84,7 @@ public class EppoClient extends BaseEppoClient {
       @NonNull String host,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
-    return new Builder()
-        .application(application)
-        .apiKey(apiKey)
+    return new Builder(apiKey, application)
         .host(host)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
@@ -116,8 +112,8 @@ public class EppoClient extends BaseEppoClient {
 
   public static class Builder {
     @NonNull private String host = DEFAULT_HOST;
-    @Nullable private Application application;
-    @Nullable private String apiKey;
+    private final Application application;
+    private final String apiKey;
     @Nullable private AssignmentLogger assignmentLogger;
     @Nullable private ConfigurationStore configStore;
     private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
@@ -129,14 +125,9 @@ public class EppoClient extends BaseEppoClient {
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
 
-    public Builder apiKey(String apiKey) {
-      this.apiKey = apiKey;
-      return this;
-    }
-
-    public Builder application(Application application) {
+    public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
-      return this;
+      this.apiKey = apiKey;
     }
 
     public Builder host(String host) {
@@ -174,12 +165,16 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    public Builder withInitialFlagConfigResponse(
-        String initialFlagConfigResponse, boolean isConfigObfuscated) {
+    public Builder initialConfiguration(byte[] initialFlagConfigResponse) {
       this.initialConfiguration =
           CompletableFuture.completedFuture(
-              Configuration.builder(initialFlagConfigResponse.getBytes(), isConfigObfuscated)
-                  .build());
+              Configuration.builder(initialFlagConfigResponse, true).build());
+      return this;
+    }
+
+    public Builder initialConfiguration(CompletableFuture<byte[]> initialFlagConfigResponse) {
+      this.initialConfiguration =
+          initialFlagConfigResponse.thenApply(ic -> Configuration.builder(ic, true).build());
       return this;
     }
 
