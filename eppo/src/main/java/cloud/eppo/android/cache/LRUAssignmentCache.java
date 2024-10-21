@@ -1,25 +1,25 @@
 package cloud.eppo.android.cache;
 
 import android.util.LruCache;
-import cloud.eppo.api.IAssignmentCache;
-import cloud.eppo.cache.AssignmentCacheEntry;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import cloud.eppo.api.AbstractAssignmentCache;
 
-public class LRUAssignmentCache implements IAssignmentCache {
-
+public class LRUAssignmentCache extends AbstractAssignmentCache {
   public LRUAssignmentCache(int maxCacheSize) {
-    cache = new LruCache<>(maxCacheSize);
-  }
+    super(
+        new CacheDelegate() {
+          private final LruCache<String, String> cache = new LruCache<>(maxCacheSize);
 
-  private final LruCache<String, AssignmentCacheEntry> cache;
+          @Override
+          public void put(String cacheKey, @NonNull String serializedEntry) {
+            cache.put(cacheKey, serializedEntry);
+          }
 
-  @Override
-  public void put(AssignmentCacheEntry entry) {
-    cache.put(entry.getKeyString(), entry);
-  }
-
-  @Override
-  public boolean hasEntry(AssignmentCacheEntry entry) {
-    AssignmentCacheEntry cached = cache.get(entry.getKeyString());
-    return (cached != null && cached.getValueKeyString().equals(entry.getValueKeyString()));
+          @Nullable @Override
+          public String get(String cacheKey) {
+            return cache.get(cacheKey);
+          }
+        });
   }
 }
