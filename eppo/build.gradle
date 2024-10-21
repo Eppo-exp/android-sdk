@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "4.0.2-SNAPSHOT"
+version = "4.1.1-SNAPSHOT"
 
 android {
     buildFeatures.buildConfig true
