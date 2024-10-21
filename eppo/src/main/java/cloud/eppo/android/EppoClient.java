@@ -50,7 +50,9 @@ public class EppoClient extends BaseEppoClient {
         isGracefulMode,
         obfuscateConfig,
         false,
-        initialConfiguration);
+        initialConfiguration,
+        null,
+        null);
   }
 
   /**
