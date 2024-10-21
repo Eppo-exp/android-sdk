@@ -1,6 +1,5 @@
 package cloud.eppo.androidexample;
 
-import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static cloud.eppo.androidexample.Constants.INITIAL_FLAG_KEY;
 import static cloud.eppo.androidexample.Constants.INITIAL_SUBJECT_ID;
 
@@ -11,81 +10,88 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
-
 import androidx.appcompat.app.AppCompatActivity;
-
+import cloud.eppo.android.EppoClient;
+import cloud.eppo.api.Attributes;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 
-import cloud.eppo.android.EppoClient;
-import cloud.eppo.api.Attributes;
-
 public class SecondActivity extends AppCompatActivity {
-    private static final String TAG = SecondActivity.class.getSimpleName();
-    private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
-    private EditText experiment;
-    private EditText subject;
-    private TextView assignmentLog;
-    private ScrollView assignmentLogScrollView;
+  private static final String TAG = SecondActivity.class.getSimpleName();
+  private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
+  private EditText experiment;
+  private EditText subject;
+  private TextView assignmentLog;
+  private ScrollView assignmentLogScrollView;
 
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+  @Override
+  protected void onCreate(Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
-        Bundle extras = getIntent().getExtras();
-        boolean offlineMode = extras != null && extras.getBoolean(this.getPackageName() + ".offlineMode", false);
+    Bundle extras = getIntent().getExtras();
+    boolean offlineMode =
+        extras != null && extras.getBoolean(this.getPackageName() + ".offlineMode", false);
 
-        new EppoClient.Builder()
-                .application(getApplication())
-                .apiKey(API_KEY)
-                .isGracefulMode(true)
-                .offlineMode(offlineMode)
-                .forceReinitialize(true)
-                .assignmentLogger(assignment -> {
-                    Log.d(TAG, assignment.getExperiment() + "-> subject: " + assignment.getSubject() + " assigned to " + assignment.getExperiment());
-                })
-                               .buildAndInitAsync().thenAccept(
-                                       client -> {
-                                           Log.d(TAG, "Eppo SDK initialized");
+    new EppoClient.Builder(API_KEY, getApplication())
+        .isGracefulMode(true)
+        .offlineMode(offlineMode)
+        .forceReinitialize(true)
+        .assignmentLogger(
+            assignment -> {
+              Log.d(
+                  TAG,
+                  assignment.getExperiment()
+                      + "-> subject: "
+                      + assignment.getSubject()
+                      + " assigned to "
+                      + assignment.getExperiment());
+            })
+        .buildAndInitAsync()
+        .thenAccept(
+            client -> {
+              Log.d(TAG, "Eppo SDK initialized");
+            })
+        .exceptionally(
+            error -> {
+              throw new RuntimeException(
+                  "Unable to initialize. Ensure you API key is set correctly in EppoApplication.java",
+                  error);
+            });
 
-                                       }).exceptionally(error ->
-                {
-                    throw new RuntimeException("Unable to initialize. Ensure you API key is set correctly in EppoApplication.java", error);
-                });
+    setContentView(R.layout.activity_assigner);
 
-        setContentView(R.layout.activity_assigner);
+    experiment = findViewById(R.id.experiment);
+    subject = findViewById(R.id.subject);
+    assignmentLog = findViewById(R.id.assignment_log);
+    assignmentLogScrollView = findViewById(R.id.assignment_log_scrollview);
 
-        experiment = findViewById(R.id.experiment);
-        subject = findViewById(R.id.subject);
-        assignmentLog = findViewById(R.id.assignment_log);
-        assignmentLogScrollView = findViewById(R.id.assignment_log_scrollview);
+    experiment.setText(INITIAL_FLAG_KEY);
+    subject.setText(INITIAL_SUBJECT_ID);
 
-        experiment.setText(INITIAL_FLAG_KEY);
-        subject.setText(INITIAL_SUBJECT_ID);
+    findViewById(R.id.btn_assign).setOnClickListener(view -> handleAssignment());
+  }
 
-        findViewById(R.id.btn_assign).setOnClickListener(view -> handleAssignment());
+  private void handleAssignment() {
+    String subjectId = subject.getText().toString();
+    if (TextUtils.isEmpty(subjectId)) {
+      appendToAssignmentLogView("Subject must not be empty");
+      return;
     }
 
-    private void handleAssignment() {
-        String subjectId = subject.getText().toString();
-        if (TextUtils.isEmpty(subjectId)) {
-            appendToAssignmentLogView("Subject must not be empty");
-            return;
-        }
-
-        String experimentKey = experiment.getText().toString();
-        if (TextUtils.isEmpty(experimentKey)) {
-            appendToAssignmentLogView("Experiment key must not be empty");
-            return;
-        }
-
-        String assignedVariation = EppoClient.getInstance().getStringAssignment(
-            experimentKey, subjectId, new Attributes(), "");
-        appendToAssignmentLogView("Assigned variation: " + assignedVariation);
+    String experimentKey = experiment.getText().toString();
+    if (TextUtils.isEmpty(experimentKey)) {
+      appendToAssignmentLogView("Experiment key must not be empty");
+      return;
     }
 
-    private void appendToAssignmentLogView(String message) {
-        assignmentLog.append(message + "\n\n");
-        assignmentLogScrollView.post(() -> assignmentLogScrollView.fullScroll(View.FOCUS_DOWN));
-    }
+    String assignedVariation =
+        EppoClient.getInstance()
+            .getStringAssignment(experimentKey, subjectId, new Attributes(), "");
+    appendToAssignmentLogView("Assigned variation: " + assignedVariation);
+  }
+
+  private void appendToAssignmentLogView(String message) {
+    assignmentLog.append(message + "\n\n");
+    assignmentLogScrollView.post(() -> assignmentLogScrollView.fullScroll(View.FOCUS_DOWN));
+  }
 }
