@@ -45,7 +45,7 @@ jobs:
           echo "Running SDK Test using"
           echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
           echo "SDK Branch: android-sdk@${SDK_BRANCH_NAME}"
-          echo "API Level: ${{ matrix.api-level }}
+          echo "API Level: ${{ matrix.api-level }}"
 
       - name: Check out Java SDK
         uses: actions/checkout@v4
