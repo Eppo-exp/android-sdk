@@ -33,7 +33,8 @@ public class SecondActivity extends AppCompatActivity {
         extras != null && extras.getBoolean(this.getPackageName() + ".offlineMode", false);
 
     new EppoClient.Builder(API_KEY, getApplication())
-        .isGracefulMode(true)
+        .isGracefulMode(
+            false) // Note: This is for debugging--stick to default of "true" in production
         .offlineMode(offlineMode)
         .forceReinitialize(true)
         .assignmentLogger(
