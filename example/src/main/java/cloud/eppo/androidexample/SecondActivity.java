@@ -10,11 +10,14 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
-import cloud.eppo.android.EppoClient;
-import cloud.eppo.api.Attributes;
+
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
+
+import cloud.eppo.android.EppoClient;
+import cloud.eppo.api.Attributes;
 
 public class SecondActivity extends AppCompatActivity {
   private static final String TAG = SecondActivity.class.getSimpleName();
@@ -33,9 +36,8 @@ public class SecondActivity extends AppCompatActivity {
         extras != null && extras.getBoolean(this.getPackageName() + ".offlineMode", false);
 
     new EppoClient.Builder(API_KEY, getApplication())
-        .isGracefulMode(true)
+        .isGracefulMode(false)
         .offlineMode(offlineMode)
-        .forceReinitialize(true)
         .assignmentLogger(
             assignment -> {
               Log.d(

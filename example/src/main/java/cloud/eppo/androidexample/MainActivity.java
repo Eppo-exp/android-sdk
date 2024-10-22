@@ -9,11 +9,14 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.Toast;
+
 import androidx.appcompat.app.AppCompatActivity;
-import cloud.eppo.android.ConfigCacheFile;
-import cloud.eppo.android.EppoClient;
+
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
+
+import cloud.eppo.android.ConfigCacheFile;
+import cloud.eppo.android.EppoClient;
 
 public class MainActivity extends AppCompatActivity {
   private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
@@ -23,7 +26,6 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     Button button = findViewById(R.id.button_start_assigner);
-
     Intent launchAssigner = new Intent(MainActivity.this, SecondActivity.class);
 
     button.setOnClickListener(view -> startActivity(launchAssigner));
@@ -31,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
     Button offlineButton = findViewById(R.id.button_start_offline_assigner);
     offlineButton.setOnClickListener(
         view ->
-            startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", true)));
+            startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
     clearCacheButton.setOnClickListener(view -> clearCacheFile());

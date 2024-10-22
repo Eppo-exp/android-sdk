@@ -15,8 +15,8 @@ android {
 
     defaultConfig {
         namespace "cloud.eppo.android"
-        minSdk 24
-        targetSdk 33
+        minSdk 26
+        targetSdk 34
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -68,7 +68,7 @@ ext.versions = [
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.4.0'
+    api 'cloud.eppo:sdk-common-jvm:3.4.1-SNAPSHOT'
 
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'uk.uuid.slf4j:slf4j-android:2.0.16-0'
