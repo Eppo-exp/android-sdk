@@ -31,12 +31,21 @@ env:
 jobs:
   test-android-sdk:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        api-level: [26, 31, 34]
+      # Allow other tests to continue if one fails
+      fail-fast: false
+
+    name: Test API Level ${{ matrix.api-level }}
+
     steps:
       - name: Display Testing Details
         run: |
           echo "Running SDK Test using"
           echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
           echo "SDK Branch: android-sdk@${SDK_BRANCH_NAME}"
+          echo "API Level: ${{ matrix.api-level }}"
 
       - name: Check out Java SDK
         uses: actions/checkout@v4
@@ -92,13 +101,13 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api-33-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: avd-api-${{ matrix.api-level }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
 
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           force-avd-creation: false
@@ -110,7 +119,7 @@ jobs:
         id: testing
         uses: ReactiveCircus/android-emulator-runner@v2
         with:
-          api-level: 33
+          api-level: ${{ matrix.api-level }}
           target: google_apis
           arch: x86_64
           force-avd-creation: false
@@ -118,7 +127,6 @@ jobs:
           disable-animations: true
           script: |
             echo "Emulator started" 
-            adb logcat -c                                     # clear logs
             mkdir -p app/                                     # create directory
             touch app/emulator.log                            # create log file
             chmod 777 app/emulator.log                        # allow writing to log file
@@ -129,12 +137,12 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: emulator logs
+          name: emulator-logs-api-level-${{ matrix.api-level }}
           path: app/emulator.log
 
       - name: Upload Test Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: report
+          name: report-api-level-${{ matrix.api-level }}
           path: /Users/runner/work/android-sdk/android-sdk/eppo/build/reports/androidTests/connected/index.html

@@ -34,7 +34,7 @@
             android:layout_height="wrap_content"
 
 
-            android:backgroundTint="@color/material_dynamic_primary50"
+            android:backgroundTint="#000000"
             android:text="@string/clear_cache" />
 
     </LinearLayout>

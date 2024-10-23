@@ -3,11 +3,11 @@ plugins {
     id 'maven-publish'
     id "com.vanniktech.maven.publish" version "0.30.0"
     id 'signing'
-    id "com.diffplug.spotless" version "7.0.0.BETA2"
+    id "com.diffplug.spotless" version "7.0.0.BETA3"
 }
 
 group = "cloud.eppo"
-version = "4.1.0"
+version = "4.1.0-SNAPSHOT"
 
 android {
     buildFeatures.buildConfig true
@@ -15,8 +15,8 @@ android {
 
     defaultConfig {
         namespace "cloud.eppo.android"
-        minSdk 24
-        targetSdk 33
+        minSdk 26
+        targetSdk 34
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
@@ -55,23 +55,23 @@ android {
 ext {}
 ext.versions = [
     "junit": "4.13.2",
-    "mockito": "3.+",
+    "mockito": "5.14.2",
     "roboelectric": "4.12+",
-    "androidx_junit": "1.1.5",
-    "androidx_test_core": "1.5.0",
-    "androidx_runner": "1.5.2",
-    "androidx_core": "1.9.0",
+    "androidx_junit": "1.2.1",
+    "androidx_test_core": "1.6.1",
+    "androidx_runner": "1.6.2",
+    "androidx_core": "1.13.1",
     "gson": "2.9.1",
     "okhttp": "4.12.0",
-    "commonsio": "2.14.0",
+    "commonsio": "2.17.0",
     "semver": "0.10.2"
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.5.0-SNAPSHOT'
+    api 'cloud.eppo:sdk-common-jvm:3.3.2'
 
     implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'uk.uuid.slf4j:slf4j-android:2.0.7-0'
+    implementation 'uk.uuid.slf4j:slf4j-android:2.0.16-0'
 
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation 'commons-io:commons-io:2.17.0'
@@ -80,7 +80,8 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:2.18.0"
 
     testImplementation "junit:junit:${versions.junit}"
-    testImplementation "org.mockito:mockito-core:${versions.mockito}"
+    testImplementation "commons-io:commons-io:${versions.commonsio}"
+    testImplementation "org.mockito:mockito-android:${versions.mockito}"
     testImplementation "org.robolectric:robolectric:${versions.roboelectric}"
     androidTestImplementation "org.mockito:mockito-android:${versions.mockito}"
     androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"

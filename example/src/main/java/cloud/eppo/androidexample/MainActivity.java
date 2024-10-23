@@ -23,7 +23,6 @@ public class MainActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
     Button button = findViewById(R.id.button_start_assigner);
-
     Intent launchAssigner = new Intent(MainActivity.this, SecondActivity.class);
 
     button.setOnClickListener(view -> startActivity(launchAssigner));
@@ -31,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
     Button offlineButton = findViewById(R.id.button_start_offline_assigner);
     offlineButton.setOnClickListener(
         view ->
-            startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", true)));
+            startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
     clearCacheButton.setOnClickListener(view -> clearCacheFile());
