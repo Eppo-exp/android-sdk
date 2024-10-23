@@ -36,7 +36,6 @@ public class SecondActivity extends AppCompatActivity {
         .isGracefulMode(
             false) // Note: This is for debugging--stick to default of "true" in production
         .offlineMode(offlineMode)
-        .forceReinitialize(true)
         .assignmentLogger(
             assignment -> {
               Log.d(

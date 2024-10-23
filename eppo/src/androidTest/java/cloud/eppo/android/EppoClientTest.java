@@ -12,7 +12,6 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -59,6 +58,8 @@ import org.json.JSONException;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class EppoClientTest {
   private static final String TAG = logTag(EppoClient.class);
@@ -68,7 +69,8 @@ public class EppoClientTest {
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
-  private AssignmentLogger mockAssignmentLogger;
+  @Mock AssignmentLogger mockAssignmentLogger;
+  @Mock EppoHttpClient mockHttpClient;
 
   private void initClient(
       String host,
@@ -83,7 +85,6 @@ public class EppoClientTest {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
     }
-    mockAssignmentLogger = mock(AssignmentLogger.class);
 
     setBaseClientHttpClientOverrideField(httpClientOverride);
 
@@ -97,10 +98,7 @@ public class EppoClientTest {
             .offlineMode(offlineMode)
             .configStore(configurationStoreOverride)
             .buildAndInitAsync()
-            .thenAccept(
-                client -> {
-                  Log.i(TAG, "Test client async buildAndInit completed.");
-                })
+            .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."))
             .exceptionally(
                 error -> {
                   Log.e(TAG, "Test client async buildAndInit error" + error.getMessage(), error);
@@ -123,6 +121,7 @@ public class EppoClientTest {
 
   @Before
   public void cleanUp() {
+    MockitoAnnotations.openMocks(this);
     // Clear any caches
     String[] apiKeys = {DUMMY_API_KEY, DUMMY_OTHER_API_KEY};
     for (String apiKey : apiKeys) {
@@ -414,10 +413,6 @@ public class EppoClientTest {
 
   @Test
   public void testInvalidConfigJSON() {
-
-    // Create a mock instance of EppoHttpClient
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
-
     when(mockHttpClient.getAsync(anyString()))
         .thenReturn(CompletableFuture.completedFuture("{}".getBytes()));
 
@@ -433,7 +428,6 @@ public class EppoClientTest {
   public void testInvalidConfigJSONAsync() {
 
     // Create a mock instance of EppoHttpClient
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
     CompletableFuture<byte[]> httpResponse = CompletableFuture.completedFuture("{}".getBytes());
 
     when(mockHttpClient.getAsync(anyString())).thenReturn(httpResponse);

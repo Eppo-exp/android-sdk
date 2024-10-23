@@ -7,12 +7,12 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import cloud.eppo.IConfigurationStore;
+import cloud.eppo.android.util.Utils;
 import cloud.eppo.api.Configuration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
-import org.apache.commons.io.IOUtils;
 
 public class ConfigurationStore implements IConfigurationStore {
 
@@ -54,7 +54,7 @@ public class ConfigurationStore implements IConfigurationStore {
     synchronized (cacheLock) {
       try (InputStream inputStream = cacheFile.getInputStream()) {
         Log.d(TAG, "Attempting to inflate config");
-        Configuration config = new Configuration.Builder(IOUtils.toByteArray(inputStream)).build();
+        Configuration config = new Configuration.Builder(Utils.toByteArray(inputStream)).build();
         Log.d(TAG, "Cache load complete");
         return config;
       } catch (IOException e) {

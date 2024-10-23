@@ -1,12 +1,16 @@
 package cloud.eppo.android.util;
 
 import android.util.Base64;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public class Utils {
+public final class Utils {
+  private static final int BUFFER_SIZE = 8192;
   private static final SimpleDateFormat isoUtcDateFormat = buildUtcIsoDateFormat();
 
   public static String base64Encode(String input) {
@@ -59,6 +63,16 @@ public class Utils {
     }
 
     return logTag;
+  }
+
+  public static byte[] toByteArray(InputStream input) throws IOException {
+    ByteArrayOutputStream output = new ByteArrayOutputStream();
+    byte[] buffer = new byte[BUFFER_SIZE];
+    int n;
+    while ((n = input.read(buffer)) != -1) {
+      output.write(buffer, 0, n);
+    }
+    return output.toByteArray();
   }
 
   private static SimpleDateFormat buildUtcIsoDateFormat() {
