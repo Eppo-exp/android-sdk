@@ -4,18 +4,15 @@ import static cloud.eppo.android.util.Utils.logTag;
 
 import android.app.Application;
 import android.util.Log;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-
+import cloud.eppo.IConfigurationStore;
+import cloud.eppo.android.util.Utils;
+import cloud.eppo.api.Configuration;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
-
-import cloud.eppo.IConfigurationStore;
-import cloud.eppo.android.util.Utils;
-import cloud.eppo.api.Configuration;
 
 public class ConfigurationStore implements IConfigurationStore {
 
