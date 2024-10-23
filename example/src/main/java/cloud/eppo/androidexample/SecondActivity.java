@@ -10,14 +10,11 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ScrollView;
 import android.widget.TextView;
-
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.geteppo.androidexample.BuildConfig;
-import com.geteppo.androidexample.R;
-
 import cloud.eppo.android.EppoClient;
 import cloud.eppo.api.Attributes;
+import com.geteppo.androidexample.BuildConfig;
+import com.geteppo.androidexample.R;
 
 public class SecondActivity extends AppCompatActivity {
   private static final String TAG = SecondActivity.class.getSimpleName();

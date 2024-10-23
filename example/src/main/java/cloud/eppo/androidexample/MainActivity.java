@@ -9,14 +9,11 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.Toast;
-
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.geteppo.androidexample.BuildConfig;
-import com.geteppo.androidexample.R;
-
 import cloud.eppo.android.ConfigCacheFile;
 import cloud.eppo.android.EppoClient;
+import com.geteppo.androidexample.BuildConfig;
+import com.geteppo.androidexample.R;
 
 public class MainActivity extends AppCompatActivity {
   private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties

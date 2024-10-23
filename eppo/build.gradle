@@ -57,29 +57,29 @@ ext.versions = [
     "junit": "4.13.2",
     "mockito": "3.+",
     "roboelectric": "4.12+",
-    "androidx_junit": "1.1.5",
-    "androidx_test_core": "1.5.0",
-    "androidx_runner": "1.5.2",
-    "androidx_core": "1.9.0",
+    "androidx_junit": "1.2.1",
+    "androidx_test_core": "1.6.1",
+    "androidx_runner": "1.6.2",
+    "androidx_core": "1.13.1",
     "gson": "2.9.1",
     "okhttp": "4.12.0",
-    "commonsio": "2.14.0",
+    "commonsio": "2.17.0",
     "semver": "0.10.2"
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.4.1-SNAPSHOT'
+    api 'cloud.eppo:sdk-common-jvm:3.4.1'
 
     implementation 'org.slf4j:slf4j-api:2.0.16'
     implementation 'uk.uuid.slf4j:slf4j-android:2.0.16-0'
 
     implementation "androidx.core:core:${versions.androidx_core}"
-    implementation 'commons-io:commons-io:2.17.0'
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.18.0"
 
     testImplementation "junit:junit:${versions.junit}"
+    testImplementation "commons-io:commons-io:${versions.commonsio}"
     testImplementation "org.mockito:mockito-core:${versions.mockito}"
     testImplementation "org.robolectric:robolectric:${versions.roboelectric}"
     androidTestImplementation "org.mockito:mockito-android:${versions.mockito}"
