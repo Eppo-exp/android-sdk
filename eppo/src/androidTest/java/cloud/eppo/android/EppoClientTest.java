@@ -1,8 +1,5 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
-import static cloud.eppo.android.util.Utils.logTag;
-import static cloud.eppo.android.util.Utils.safeCacheKey;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -12,16 +9,48 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static cloud.eppo.android.ConfigCacheFile.cacheFileName;
+import static cloud.eppo.android.util.Utils.logTag;
+import static cloud.eppo.android.util.Utils.safeCacheKey;
 
 import android.content.res.AssetManager;
 import android.util.Log;
+
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.IOUtils;
+import org.json.JSONException;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.EppoHttpClient;
 import cloud.eppo.android.helpers.AssignmentTestCase;
@@ -36,29 +65,6 @@ import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.FlagConfig;
 import cloud.eppo.ufc.dto.FlagConfigResponse;
 import cloud.eppo.ufc.dto.VariationType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Field;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import org.apache.commons.io.Charsets;
-import org.apache.commons.io.IOUtils;
-import org.json.JSONException;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 public class EppoClientTest {
   private static final String TAG = logTag(EppoClient.class);
@@ -68,7 +74,8 @@ public class EppoClientTest {
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
-  private AssignmentLogger mockAssignmentLogger;
+  @Mock AssignmentLogger mockAssignmentLogger;
+  @Mock EppoHttpClient mockHttpClient;
 
   private void initClient(
       String host,
@@ -83,7 +90,6 @@ public class EppoClientTest {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
     }
-    mockAssignmentLogger = mock(AssignmentLogger.class);
 
     setBaseClientHttpClientOverrideField(httpClientOverride);
 
@@ -97,10 +103,7 @@ public class EppoClientTest {
             .offlineMode(offlineMode)
             .configStore(configurationStoreOverride)
             .buildAndInitAsync()
-            .thenAccept(
-                client -> {
-                  Log.i(TAG, "Test client async buildAndInit completed.");
-                })
+            .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."))
             .exceptionally(
                 error -> {
                   Log.e(TAG, "Test client async buildAndInit error" + error.getMessage(), error);
@@ -123,6 +126,7 @@ public class EppoClientTest {
 
   @Before
   public void cleanUp() {
+    MockitoAnnotations.openMocks(this);
     // Clear any caches
     String[] apiKeys = {DUMMY_API_KEY, DUMMY_OTHER_API_KEY};
     for (String apiKey : apiKeys) {
@@ -366,7 +370,9 @@ public class EppoClientTest {
     return testCase.getSubjects().size();
   }
 
-  /** Helper method for asserting a subject assignment with a useful failure message. */
+  /**
+   * Helper method for asserting a subject assignment with a useful failure message.
+   */
   private <T> void assertAssignment(
       String flagKey, SubjectAssignment expectedSubjectAssignment, T assignment) {
 
@@ -414,10 +420,6 @@ public class EppoClientTest {
 
   @Test
   public void testInvalidConfigJSON() {
-
-    // Create a mock instance of EppoHttpClient
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
-
     when(mockHttpClient.getAsync(anyString()))
         .thenReturn(CompletableFuture.completedFuture("{}".getBytes()));
 
@@ -433,7 +435,6 @@ public class EppoClientTest {
   public void testInvalidConfigJSONAsync() {
 
     // Create a mock instance of EppoHttpClient
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
     CompletableFuture<byte[]> httpResponse = CompletableFuture.completedFuture("{}".getBytes());
 
     when(mockHttpClient.getAsync(anyString())).thenReturn(httpResponse);
@@ -489,35 +490,35 @@ public class EppoClientTest {
     // Set the experiment_with_boolean_variations flag to always return true
     byte[] jsonBytes =
         ("{\n"
-                + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
-                + "  \"flags\": {\n"
-                + "    \"2c27190d8645fe3bc3c1d63b31f0e4ee\": {\n"
-                + "      \"key\": \"2c27190d8645fe3bc3c1d63b31f0e4ee\",\n"
-                + "      \"enabled\": true,\n"
-                + "      \"variationType\": \"NUMERIC\",\n"
-                + "      \"totalShards\": 10000,\n"
-                + "      \"variations\": {\n"
-                + "        \"cGk=\": {\n"
-                + "          \"key\": \"cGk=\",\n"
-                + "          \"value\": \"MS4yMzQ1\"\n"
-                + // Changed to be 1.2345 encoded
-                "        }\n"
-                + "      },\n"
-                + "      \"allocations\": [\n"
-                + "        {\n"
-                + "          \"key\": \"cm9sbG91dA==\",\n"
-                + "          \"doLog\": true,\n"
-                + "          \"splits\": [\n"
-                + "            {\n"
-                + "              \"variationKey\": \"cGk=\",\n"
-                + "              \"shards\": []\n"
-                + "            }\n"
-                + "          ]\n"
-                + "        }\n"
-                + "      ]\n"
-                + "    }\n"
-                + "  }\n"
-                + "}")
+            + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
+            + "  \"flags\": {\n"
+            + "    \"2c27190d8645fe3bc3c1d63b31f0e4ee\": {\n"
+            + "      \"key\": \"2c27190d8645fe3bc3c1d63b31f0e4ee\",\n"
+            + "      \"enabled\": true,\n"
+            + "      \"variationType\": \"NUMERIC\",\n"
+            + "      \"totalShards\": 10000,\n"
+            + "      \"variations\": {\n"
+            + "        \"cGk=\": {\n"
+            + "          \"key\": \"cGk=\",\n"
+            + "          \"value\": \"MS4yMzQ1\"\n"
+            + // Changed to be 1.2345 encoded
+            "        }\n"
+            + "      },\n"
+            + "      \"allocations\": [\n"
+            + "        {\n"
+            + "          \"key\": \"cm9sbG91dA==\",\n"
+            + "          \"doLog\": true,\n"
+            + "          \"splits\": [\n"
+            + "            {\n"
+            + "              \"variationKey\": \"cGk=\",\n"
+            + "              \"shards\": []\n"
+            + "            }\n"
+            + "          ]\n"
+            + "        }\n"
+            + "      ]\n"
+            + "    }\n"
+            + "  }\n"
+            + "}")
             .getBytes();
     cacheFile2
         .getOutputStream()
@@ -661,7 +662,9 @@ public class EppoClientTest {
     setBaseClientOverrideField("httpClientOverride", httpClient);
   }
 
-  /** Uses reflection to set a static override field used for tests (e.g., httpClientOverride) */
+  /**
+   * Uses reflection to set a static override field used for tests (e.g., httpClientOverride)
+   */
   @SuppressWarnings("SameParameterValue")
   public static <T> void setBaseClientOverrideField(String fieldName, T override) {
     try {

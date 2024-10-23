@@ -55,7 +55,7 @@ android {
 ext {}
 ext.versions = [
     "junit": "4.13.2",
-    "mockito": "3.+",
+    "mockito": "5.14.2",
     "roboelectric": "4.12+",
     "androidx_junit": "1.2.1",
     "androidx_test_core": "1.6.1",
@@ -80,7 +80,7 @@ dependencies {
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "commons-io:commons-io:${versions.commonsio}"
-    testImplementation "org.mockito:mockito-core:${versions.mockito}"
+    testImplementation "org.mockito:mockito-android:${versions.mockito}"
     testImplementation "org.robolectric:robolectric:${versions.roboelectric}"
     androidTestImplementation "org.mockito:mockito-android:${versions.mockito}"
     androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"
