@@ -23,6 +23,7 @@ import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.EppoHttpClient;
+import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
@@ -30,6 +31,7 @@ import cloud.eppo.android.helpers.TestCaseValue;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
+import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.Assignment;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.FlagConfig;
@@ -81,7 +83,8 @@ public class EppoClientTest {
       @Nullable EppoHttpClient httpClientOverride,
       @Nullable ConfigurationStore configurationStoreOverride,
       String apiKey,
-      boolean offlineMode) {
+      boolean offlineMode,
+      IAssignmentCache assignmentCache) {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
     }
@@ -97,6 +100,7 @@ public class EppoClientTest {
             .forceReinitialize(true)
             .offlineMode(offlineMode)
             .configStore(configurationStoreOverride)
+            .assignmentCache(assignmentCache)
             .buildAndInitAsync()
             .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."))
             .exceptionally(
@@ -139,19 +143,19 @@ public class EppoClientTest {
 
   @Test
   public void testUnobfuscatedAssignments() {
-    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY, false, null);
     runTestCases();
   }
 
   @Test
   public void testAssignments() {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     runTestCases();
   }
 
   @Test
   public void testErrorGracefulModeOn() throws JSONException, JsonProcessingException {
-    initClient(TEST_HOST, false, true, true, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, false, true, true, true, null, null, DUMMY_API_KEY, false, null);
 
     EppoClient realClient = EppoClient.getInstance();
     EppoClient spyClient = spy(realClient);
@@ -200,7 +204,7 @@ public class EppoClientTest {
 
   @Test
   public void testErrorGracefulModeOff() {
-    initClient(TEST_HOST, false, true, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, false, true, false, true, null, null, DUMMY_API_KEY, false, null);
 
     EppoClient realClient = EppoClient.getInstance();
     EppoClient spyClient = spy(realClient);
@@ -281,7 +285,8 @@ public class EppoClientTest {
         null,
         null,
         DUMMY_API_KEY,
-        false); // ensure cache is populated
+        false,
+        null); // ensure cache is populated
 
     // wait for a bit since cache file is written asynchronously
     waitForPopulatedCache();
@@ -297,7 +302,8 @@ public class EppoClientTest {
         null,
         null,
         DUMMY_API_KEY,
-        false); // invalid host to force to use cache
+        false,
+        null); // invalid host to force to use cache
 
     runTestCases();
   }
@@ -416,7 +422,8 @@ public class EppoClientTest {
     when(mockHttpClient.getAsync(anyString()))
         .thenReturn(CompletableFuture.completedFuture("{}".getBytes()));
 
-    initClient(TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false);
+    initClient(
+        TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false, null);
 
     String result =
         EppoClient.getInstance()
@@ -432,7 +439,8 @@ public class EppoClientTest {
 
     when(mockHttpClient.getAsync(anyString())).thenReturn(httpResponse);
 
-    initClient(TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false);
+    initClient(
+        TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false, null);
 
     String result =
         EppoClient.getInstance()
@@ -448,7 +456,7 @@ public class EppoClientTest {
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     cacheFile.setContents("NEEDS TO BE A VALID JSON TREE");
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null);
 
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
@@ -463,14 +471,14 @@ public class EppoClientTest {
     Configuration config = Configuration.emptyConfig();
     cacheFile.getOutputStream().write(config.serializeFlagConfigToBytes());
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null);
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
   }
 
   @Test
   public void testDifferentCacheFilesPerKey() throws IOException {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     // API Key 1 will fetch and then populate its cache with the usual test data
     double apiKey1Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
@@ -518,7 +526,7 @@ public class EppoClientTest {
         .write(Configuration.builder(jsonBytes, true).build().serializeFlagConfigToBytes());
 
     // Initialize with offline mode to prevent instance2 from pulling config via fetch.
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true, null);
 
     // Ensure API key 2 uses its cache
     double apiKey2Assignment =
@@ -526,7 +534,7 @@ public class EppoClientTest {
     assertEquals(1.2345, apiKey2Assignment, 0.0000001);
 
     // Reinitialize API key 1 to be sure it used its cache
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null);
     // API Key 1 will fetch and then populate its cache with the usual test data
     apiKey1Assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, apiKey1Assignment, 0.0000001);
@@ -561,7 +569,7 @@ public class EppoClientTest {
           }
         };
 
-    initClient(TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false, null);
 
     EppoClient client = EppoClient.getInstance();
     // Give time for async slow cache read to finish
@@ -604,7 +612,7 @@ public class EppoClientTest {
   @Test
   public void testAssignmentEventCorrectlyCreated() {
     Date testStart = new Date();
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     Attributes subjectAttributes = new Attributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
@@ -643,6 +651,45 @@ public class EppoClientTest {
     expectedMeta.put("sdkLibVersion", BuildConfig.EPPO_VERSION);
 
     assertEquals(expectedMeta, capturedAssignment.getMetaData());
+  }
+
+  @Test
+  public void testAssignmentEventDuplicatedWithoutCache() {
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
+    Attributes subjectAttributes = new Attributes();
+    subjectAttributes.put("age", EppoValue.valueOf(30));
+    subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
+
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+
+    ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
+    verify(mockAssignmentLogger, times(2)).logAssignment(assignmentLogCaptor.capture());
+  }
+
+  @Test
+  public void testAssignmentEventDeDupedWithCache() {
+    initClient(
+        TEST_HOST,
+        true,
+        true,
+        false,
+        true,
+        null,
+        null,
+        DUMMY_API_KEY,
+        false,
+        new LRUAssignmentCache(1024));
+
+    Attributes subjectAttributes = new Attributes();
+    subjectAttributes.put("age", EppoValue.valueOf(30));
+    subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
+
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+    EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", subjectAttributes, 0.0);
+
+    ArgumentCaptor<Assignment> assignmentLogCaptor = ArgumentCaptor.forClass(Assignment.class);
+    verify(mockAssignmentLogger, times(1)).logAssignment(assignmentLogCaptor.capture());
   }
 
   private static SimpleModule module() {
