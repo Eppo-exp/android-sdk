@@ -74,7 +74,6 @@ dependencies {
     implementation 'uk.uuid.slf4j:slf4j-android:2.0.16-0'
 
     implementation "androidx.core:core:${versions.androidx_core}"
-    implementation 'commons-io:commons-io:2.17.0'
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.18.0"
