@@ -32,6 +32,10 @@ public class MainActivity extends AppCompatActivity {
         view ->
             startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
+    findViewById(R.id.button_start_socket)
+        .setOnClickListener(
+            view -> startActivity(new Intent(MainActivity.this, TestClientActivity.class)));
+
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
     clearCacheButton.setOnClickListener(view -> clearCacheFile());
   }

@@ -29,6 +29,12 @@
             android:text="@string/start_offline_assignment_activity" />
 
         <Button
+            android:id="@+id/button_start_socket"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/start_socket_activity" />
+
+        <Button
             android:id="@+id/button_clear_cache"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

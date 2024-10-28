@@ -118,6 +118,7 @@ public class EppoClient extends BaseEppoClient {
     private boolean forceReinitialize = false;
     private boolean offlineMode = false;
     private CompletableFuture<Configuration> initialConfiguration;
+    private boolean ignoreCache = false;
 
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
@@ -151,6 +152,11 @@ public class EppoClient extends BaseEppoClient {
 
     public Builder offlineMode(boolean offlineMode) {
       this.offlineMode = offlineMode;
+      return this;
+    }
+
+    public Builder ignoreCache(boolean ignoreCache) {
+      this.ignoreCache = ignoreCache;
       return this;
     }
 
@@ -200,7 +206,7 @@ public class EppoClient extends BaseEppoClient {
 
       // If the initial config was not set, use the ConfigurationStore's cache as the initial
       // config.
-      if (initialConfiguration == null) {
+      if (initialConfiguration == null && !ignoreCache) {
         initialConfiguration = configStore.loadConfigFromCache();
       }
 
@@ -229,6 +235,9 @@ public class EppoClient extends BaseEppoClient {
                 (success, ex) -> {
                   if (ex == null) {
                     ret.complete(instance);
+                  } else if (ex != null) {
+                    Log.e(TAG, ex.getMessage());
+
                   } else if (failCount.incrementAndGet() == 2
                       || instance.getInitialConfigFuture() == null) {
                     ret.completeExceptionally(

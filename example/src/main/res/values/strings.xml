@@ -3,4 +3,9 @@
     <string name="start_assignment_activity">Launch</string>
     <string name="start_offline_assignment_activity">Launch Offline Mode</string>
     <string name="clear_cache">Clear Cache</string>
+    <string name="label_socket_chat">Socket Log</string>
+    <string name="start_socket_activity">Start Socket Test</string>
+    <string name="label_automated_test">Automated Test Runner</string>
+    <string name="label_assignment_log">Assignment Log</string>
+    <string name="label_status_prefix">status: %1$s</string>
 </resources>
