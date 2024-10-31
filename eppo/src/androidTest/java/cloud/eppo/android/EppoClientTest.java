@@ -566,9 +566,6 @@ public class EppoClientTest {
 
   @Test
   public void testForceIgnoreCache() throws IOException, ExecutionException, InterruptedException {
-    // Note: This test requires hooks into the `CompletableFuture` returned by the builder to
-    // represent a more "immediate" processing of assignments
-
     cacheUselessConfig();
     // Initialize with "useless" cache available.
     new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
@@ -603,8 +600,6 @@ public class EppoClientTest {
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
-
-    cacheFile.delete(); // Deletes file if exists before creating a new one.
 
     Configuration config = new Configuration.Builder(uselessFlagConfigBytes).build();
 
