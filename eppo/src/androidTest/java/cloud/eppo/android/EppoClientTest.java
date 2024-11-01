@@ -565,7 +565,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testForceIgnoreCache() throws IOException, ExecutionException, InterruptedException {
+  public void testForceIgnoreCache() throws ExecutionException, InterruptedException {
     cacheUselessConfig();
     // Initialize with "useless" cache available.
     new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
@@ -587,7 +587,7 @@ public class EppoClientTest {
         .obfuscateConfig(true)
         .forceReinitialize(true)
         .offlineMode(false)
-        .ignoreCache(true)
+        .ignoreCachedConfiguration(true)
         .buildAndInitAsync()
         .get();
 
@@ -596,14 +596,18 @@ public class EppoClientTest {
     assertEquals(3.1415926, properAssignment, 0.0000001);
   }
 
-  private void cacheUselessConfig() throws IOException {
+  private void cacheUselessConfig() {
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
 
     Configuration config = new Configuration.Builder(uselessFlagConfigBytes).build();
 
-    cacheFile.getOutputStream().write(config.serializeFlagConfigToBytes());
+    try {
+      cacheFile.getOutputStream().write(config.serializeFlagConfigToBytes());
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static final byte[] uselessFlagConfigBytes =
