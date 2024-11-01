@@ -121,6 +121,7 @@ public class EppoClient extends BaseEppoClient {
     private boolean forceReinitialize = false;
     private boolean offlineMode = false;
     private CompletableFuture<Configuration> initialConfiguration;
+    private boolean ignoreCachedConfiguration = false;
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
@@ -137,6 +138,11 @@ public class EppoClient extends BaseEppoClient {
 
     public Builder assignmentLogger(AssignmentLogger assignmentLogger) {
       this.assignmentLogger = assignmentLogger;
+      return this;
+    }
+
+    public Builder ignoreCachedConfiguration(boolean ignoreCache) {
+      this.ignoreCachedConfiguration = ignoreCache;
       return this;
     }
 
@@ -211,7 +217,7 @@ public class EppoClient extends BaseEppoClient {
 
       // If the initial config was not set, use the ConfigurationStore's cache as the initial
       // config.
-      if (initialConfiguration == null) {
+      if (initialConfiguration == null && !ignoreCachedConfiguration) {
         initialConfiguration = configStore.loadConfigFromCache();
       }
 
