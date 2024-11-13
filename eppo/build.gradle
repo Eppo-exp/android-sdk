@@ -104,6 +104,25 @@ spotless {
     }
 }
 
+signing {
+    if (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) {
+        // Use in-memory keys for CI builds
+        useInMemoryPgpKeys(
+                System.getenv("GPG_PRIVATE_KEY"),
+                System.getenv("GPG_PASSPHRASE")
+        )
+    } else if (project.hasProperty('signing.keyId') &&
+            project.hasProperty('signing.password') &&
+            project.hasProperty('signing.secretKeyRingFile')) {
+        // Use local GPG setup via gradle.properties for local builds
+        useGpgCmd()
+    } else {
+        throw new GradleException("No GPG signing configuration found. Please set up GPG_PRIVATE_KEY and GPG_PASSPHRASE for CI or configure signing in gradle.properties for local builds.")
+    }
+
+    sign publishing.publications // Sign all Maven publications
+}
+
 mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.S01)
     signAllPublications()
