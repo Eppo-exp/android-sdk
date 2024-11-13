@@ -107,15 +107,7 @@ spotless {
 signing {
     if (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) {
         // Use in-memory keys for CI builds
-        useInMemoryPgpKeys(
-                System.getenv("GPG_PRIVATE_KEY"),
-                System.getenv("GPG_PASSPHRASE")
-        )
-    } else if (project.hasProperty('signing.keyId') &&
-            project.hasProperty('signing.password') &&
-            project.hasProperty('signing.secretKeyRingFile')) {
-        // Use local GPG setup via gradle.properties for local builds
-        useGpgCmd()
+        useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
     }
 
     sign publishing.publications // Sign all Maven publications
