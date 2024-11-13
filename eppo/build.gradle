@@ -116,8 +116,6 @@ signing {
             project.hasProperty('signing.secretKeyRingFile')) {
         // Use local GPG setup via gradle.properties for local builds
         useGpgCmd()
-    } else {
-        throw new GradleException("No GPG signing configuration found. Please set up GPG_PRIVATE_KEY and GPG_PASSPHRASE for CI or configure signing in gradle.properties for local builds.")
     }
 
     sign publishing.publications // Sign all Maven publications
