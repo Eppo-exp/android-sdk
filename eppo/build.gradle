@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "4.3.1"
+version = "4.3.2"
 
 android {
     buildFeatures.buildConfig true
@@ -71,7 +71,6 @@ dependencies {
     api 'cloud.eppo:sdk-common-jvm:3.5.2'
 
     implementation 'org.slf4j:slf4j-api:2.0.16'
-    implementation 'uk.uuid.slf4j:slf4j-android:2.0.16-0'
 
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
@@ -102,6 +101,25 @@ spotless {
 
         googleJavaFormat()
         formatAnnotations()
+    }
+}
+
+signing {
+    if (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) {
+        // Use in-memory keys for CI builds
+        useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
+    }
+
+    sign publishing.publications // Sign all Maven publications
+}
+
+// Make sure signing tasks only run if configured correctly
+tasks.withType(Sign) {
+    onlyIf {
+        (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) ||
+                (project.hasProperty('signing.keyId') &&
+                        project.hasProperty('signing.password') &&
+                        project.hasProperty('signing.secretKeyRingFile'))
     }
 }
 
