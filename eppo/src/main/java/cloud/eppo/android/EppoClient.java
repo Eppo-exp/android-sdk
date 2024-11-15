@@ -8,6 +8,7 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import cloud.eppo.BaseEppoClient;
+import cloud.eppo.Constants;
 import cloud.eppo.IConfigurationStore;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
@@ -25,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
-  private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
 
@@ -111,7 +111,7 @@ public class EppoClient extends BaseEppoClient {
   }
 
   public static class Builder {
-    @NonNull private String host = DEFAULT_HOST;
+    @NonNull private String host = Constants.DEFAULT_BASE_URL;
     private final Application application;
     private final String apiKey;
     @Nullable private AssignmentLogger assignmentLogger;
