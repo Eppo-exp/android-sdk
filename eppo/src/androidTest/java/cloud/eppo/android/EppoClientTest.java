@@ -12,6 +12,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -256,6 +257,92 @@ public class EppoClientTest {
         () ->
             spyClient.getJSONAssignment(
                 "subject1", "experiment1", new Attributes(), mapper.readTree("{}")));
+  }
+
+  private static EppoHttpClient mockHttpError() {
+    // Create a mock instance of EppoHttpClient
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+    // Mock sync get
+    when(mockHttpClient.get(anyString())).thenThrow(new RuntimeException("Intentional Error"));
+
+    // Mock async get
+    CompletableFuture<byte[]> mockAsyncResponse = new CompletableFuture<>();
+    when(mockHttpClient.getAsync(anyString())).thenReturn(mockAsyncResponse);
+    mockAsyncResponse.completeExceptionally(new RuntimeException("Intentional Error"));
+
+    return mockHttpClient;
+  }
+
+  @Test
+  public void testGracefulInitializationFailure() throws ExecutionException, InterruptedException {
+    // Set up bad HTTP response
+    EppoHttpClient http = mockHttpError();
+    setBaseClientHttpClientOverrideField(http);
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(true);
+
+    // Initialize and no exception should be thrown.
+    clientBuilder.buildAndInitAsync().get();
+  }
+
+  @Test
+  public void testClientMakesDefaultAssignmentsAfterFailingToInitialize()
+      throws ExecutionException, InterruptedException {
+    // Set up bad HTTP response
+    setBaseClientHttpClientOverrideField(mockHttpError());
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(true);
+
+    // Initialize and no exception should be thrown.
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+
+    assertEquals("default", eppoClient.getStringAssignment("experiment1", "subject1", "default"));
+  }
+
+  @Test
+  public void testClientMakesDefaultAssignmentsAfterFailingToInitializeNonGracefulMode() {
+    // Set up bad HTTP response
+    setBaseClientHttpClientOverrideField(mockHttpError());
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(false);
+
+    // Initialize, expect the exception and then verify that the client can still complete an
+    // assignment.
+    try {
+      clientBuilder.buildAndInitAsync().get();
+      fail("Expected exception");
+    } catch (RuntimeException | ExecutionException | InterruptedException e) {
+      // Expected
+      assertNotNull(e.getCause());
+
+      assertEquals(
+          "default",
+          EppoClient.getInstance().getStringAssignment("experiment1", "subject1", "default"));
+    }
+  }
+
+  @Test
+  public void testNonGracefulInitializationFailure() {
+    // Set up bad HTTP response
+    setBaseClientHttpClientOverrideField(mockHttpError());
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(false);
+
+    // Initialize and expect an exception.
+    assertThrows(Exception.class, () -> clientBuilder.buildAndInitAsync().get());
   }
 
   private void runTestCases() {
