@@ -275,7 +275,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testGracefulInitializationFailure() {
+  public void testGracefulInitializationFailure() throws ExecutionException, InterruptedException {
     // Set up bad HTTP response
     EppoHttpClient http = mockHttpError();
     setBaseClientHttpClientOverrideField(http);
@@ -286,15 +286,12 @@ public class EppoClientTest {
             .isGracefulMode(true);
 
     // Initialize and no exception should be thrown.
-    try {
-      clientBuilder.buildAndInitAsync().get();
-    } catch (Exception e) {
-      fail("Unexpected exception thrown: " + e.getMessage());
-    }
+    clientBuilder.buildAndInitAsync().get();
   }
 
   @Test
-  public void testClientMakesDefaultAssignmentsAfterFailingToInitialize() {
+  public void testClientMakesDefaultAssignmentsAfterFailingToInitialize()
+      throws ExecutionException, InterruptedException {
     // Set up bad HTTP response
     setBaseClientHttpClientOverrideField(mockHttpError());
 
@@ -304,13 +301,9 @@ public class EppoClientTest {
             .isGracefulMode(true);
 
     // Initialize and no exception should be thrown.
-    try {
-      EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
 
-      assertEquals("default", eppoClient.getStringAssignment("experiment1", "subject1", "default"));
-    } catch (Exception e) {
-      fail("Unexpected exception thrown: " + e.getMessage());
-    }
+    assertEquals("default", eppoClient.getStringAssignment("experiment1", "subject1", "default"));
   }
 
   @Test
@@ -323,7 +316,8 @@ public class EppoClientTest {
             .forceReinitialize(true)
             .isGracefulMode(false);
 
-    // Initialize and no exception should be thrown.
+    // Initialize, expect the exception and then verify that the client can still complete an
+    // assignment.
     try {
       clientBuilder.buildAndInitAsync().get();
       fail("Expected exception");
@@ -347,7 +341,7 @@ public class EppoClientTest {
             .forceReinitialize(true)
             .isGracefulMode(false);
 
-    // Initialize and no exception should be thrown.
+    // Initialize and expect an exception.
     assertThrows(Exception.class, () -> clientBuilder.buildAndInitAsync().get());
   }
 

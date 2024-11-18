@@ -293,14 +293,14 @@ public class EppoClient extends BaseEppoClient {
       } catch (ExecutionException | InterruptedException | CompletionException e) {
         // If the exception was an `EppoInitializationException`, we know for sure that
         // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
-        // wrapped by `CompletableFuture` with a `Completion Exception`
-        if (e instanceof CompletionException
-            && (e.getCause() != null && e.getCause() instanceof RuntimeException)
-            && (e.getCause().getCause() != null
-                && e.getCause().getCause() instanceof EppoInitializationException)) {
-          return instance;
+        // wrapped by `CompletableFuture` with a `CompletionException`.
+        if (e instanceof CompletionException) {
+          Throwable cause = e.getCause();
+          if (cause instanceof RuntimeException
+              && cause.getCause() instanceof EppoInitializationException) {
+            return instance;
+          }
         }
-
         Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
         if (!isGracefulMode) {
           throw new RuntimeException(e);
