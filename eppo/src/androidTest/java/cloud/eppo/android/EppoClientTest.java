@@ -23,7 +23,6 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
-
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.EppoHttpClient;
 import cloud.eppo.android.cache.LRUAssignmentCache;
@@ -72,7 +71,8 @@ public class EppoClientTest {
   private static final String DUMMY_OTHER_API_KEY = "another-mock-api-key";
 
   // Use branch if specified by env variable `TEST_DATA_BRANCH`.
-  private static final String TEST_BRANCH = "tp/fail/test";//InstrumentationRegistry.getArguments().getString("TEST_DATA_BRANCH");
+  private static final String TEST_BRANCH =
+      InstrumentationRegistry.getArguments().getString("TEST_DATA_BRANCH");
   private static final String TEST_HOST_BASE =
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
   private static final String TEST_HOST =
