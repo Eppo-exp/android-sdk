@@ -131,8 +131,7 @@ jobs:
             touch app/emulator.log                            # create log file
             chmod 777 app/emulator.log                        # allow writing to log file
             adb logcat | grep EppoSDK >> app/emulator.log &   # pipe all logcat messages into log file as a background process
-            ./gradlew connectedCheck --no-daemon \
-              -Pandroid.testInstrumentationRunnerArguments.TEST_DATA_BRANCH=${{ env.TEST_DATA_BRANCH }}           # run tests
+            ./gradlew connectedCheck --no-daemon -Pandroid.testInstrumentationRunnerArguments.TEST_DATA_BRANCH=${{ env.TEST_DATA_BRANCH }}           # run tests
 
       - name: Upload Emulator Logs
         if: always()
