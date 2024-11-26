@@ -1,3 +1,4 @@
+[![Test](https://github.com/Eppo-exp/android-sdk/actions/workflows/test.yaml/badge.svg)](https://github.com/Eppo-exp/android-sdk/actions/workflows/test.yaml)
 # Eppo Android SDK
 
 [Eppo](https://geteppo.com) is a feature management and experimentation platform. This SDK enables
