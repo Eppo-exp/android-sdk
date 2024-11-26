@@ -21,8 +21,8 @@ on:
         required: false
 
 env:
-  SDK_BRANCH_NAME: ${{ inputs.sdk_branch  || github.head_ref || github.ref_name }}
-  TEST_DATA_BRANCH_NAME: ${{ inputs.test_data_branch || 'main' }}
+  SDK_BRANCH: ${{ inputs.sdk_branch  || github.head_ref || github.ref_name }}
+  TEST_DATA_BRANCH: ${{ inputs.test_data_branch || 'main' }}
 
   ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
   ORG_GRADLE_PROJECT_ossrhPassword: ${{ secrets.OSSRH_PASSWORD }}
@@ -43,15 +43,15 @@ jobs:
       - name: Display Testing Details
         run: |
           echo "Running SDK Test using"
-          echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH_NAME}"
-          echo "SDK Branch: android-sdk@${SDK_BRANCH_NAME}"
+          echo "Test Data: sdk-test-data@${TEST_DATA_BRANCH}"
+          echo "SDK Branch: android-sdk@${SDK_BRANCH}"
           echo "API Level: ${{ matrix.api-level }}"
 
       - name: Check out Java SDK
         uses: actions/checkout@v4
         with:
           repository: Eppo-exp/android-sdk
-          ref: ${{ env.SDK_BRANCH_NAME}}
+          ref: ${{ env.SDK_BRANCH}}
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -66,7 +66,7 @@ jobs:
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
 
       - name: Set up test data
-        run: make test-data branchName=${{env.TEST_DATA_BRANCH_NAME}}
+        run: make test-data branchName=${{env.TEST_DATA_BRANCH}}
 
       - name: Wait for mock UFC DNS to resolve
         run: |
@@ -131,7 +131,8 @@ jobs:
             touch app/emulator.log                            # create log file
             chmod 777 app/emulator.log                        # allow writing to log file
             adb logcat | grep EppoSDK >> app/emulator.log &   # pipe all logcat messages into log file as a background process
-            ./gradlew connectedCheck --no-daemon              # run tests
+            ./gradlew connectedCheck --no-daemon \
+              -Pandroid.testInstrumentationRunnerArguments.TEST_DATA_BRANCH=${{ env.TEST_DATA_BRANCH }}           # run tests
 
       - name: Upload Emulator Logs
         if: always()
