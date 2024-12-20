@@ -175,13 +175,13 @@ public class EppoClient extends BaseEppoClient {
     public Builder initialConfiguration(byte[] initialFlagConfigResponse) {
       this.initialConfiguration =
           CompletableFuture.completedFuture(
-              Configuration.builder(initialFlagConfigResponse, true).build());
+              new Configuration.Builder(initialFlagConfigResponse).build());
       return this;
     }
 
     public Builder initialConfiguration(CompletableFuture<byte[]> initialFlagConfigResponse) {
       this.initialConfiguration =
-          initialFlagConfigResponse.thenApply(ic -> Configuration.builder(ic, true).build());
+          initialFlagConfigResponse.thenApply(ic -> new Configuration.Builder(ic).build());
       return this;
     }
 

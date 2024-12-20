@@ -370,6 +370,46 @@ public class EppoClientTest {
   }
 
   @Test
+  public void testOfflineInit() throws IOException {
+    testOfflineInit("flags-v1.json");
+  }
+
+  @Test
+  public void testObfuscatedOfflineInit() throws IOException {
+    testOfflineInit("flags-v1-obfuscated.json");
+  }
+
+  public void testOfflineInit(String filepath) throws IOException {
+    AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
+
+    InputStream stream = assets.open(filepath);
+    int size = stream.available();
+    byte[] buffer = new byte[size];
+    int numBytes = stream.read(buffer);
+    stream.close();
+
+    CompletableFuture<Void> futureClient =
+        new EppoClient.Builder("DUMMYKEY", ApplicationProvider.getApplicationContext())
+            .isGracefulMode(false)
+            .offlineMode(true)
+            .assignmentLogger(mockAssignmentLogger)
+            .forceReinitialize(true)
+            .initialConfiguration(buffer)
+            .buildAndInitAsync()
+            .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."));
+
+    Double result =
+        futureClient
+            .thenApply(
+                clVoid -> {
+                  return EppoClient.getInstance().getDoubleAssignment("numeric_flag", "bob", 99.0);
+                })
+            .join();
+
+    assertEquals(3.14, result, 0.1);
+  }
+
+  @Test
   public void testCachedConfigurations() {
     // First initialize successfully
     initClient(
