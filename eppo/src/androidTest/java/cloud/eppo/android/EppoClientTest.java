@@ -371,15 +371,15 @@ public class EppoClientTest {
 
   @Test
   public void testOfflineInit() throws IOException {
-    testOfflineInit("flags-v1.json");
+    testOfflineInitFromFile("flags-v1.json");
   }
 
   @Test
   public void testObfuscatedOfflineInit() throws IOException {
-    testOfflineInit("flags-v1-obfuscated.json");
+    testOfflineInitFromFile("flags-v1-obfuscated.json");
   }
 
-  public void testOfflineInit(String filepath) throws IOException {
+  public void testOfflineInitFromFile(String filepath) throws IOException {
     AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
 
     InputStream stream = assets.open(filepath);
