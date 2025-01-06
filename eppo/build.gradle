@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "4.3.2"
+version = "4.3.6"
 
 android {
     buildFeatures.buildConfig true
@@ -68,14 +68,14 @@ ext.versions = [
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.5.2'
+    api 'cloud.eppo:sdk-common-jvm:3.5.4'
 
     implementation 'org.slf4j:slf4j-api:2.0.16'
 
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.0"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.2"
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "commons-io:commons-io:${versions.commonsio}"

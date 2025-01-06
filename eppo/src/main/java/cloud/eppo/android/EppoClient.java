@@ -21,6 +21,7 @@ import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -174,13 +175,13 @@ public class EppoClient extends BaseEppoClient {
     public Builder initialConfiguration(byte[] initialFlagConfigResponse) {
       this.initialConfiguration =
           CompletableFuture.completedFuture(
-              Configuration.builder(initialFlagConfigResponse, true).build());
+              new Configuration.Builder(initialFlagConfigResponse).build());
       return this;
     }
 
     public Builder initialConfiguration(CompletableFuture<byte[]> initialFlagConfigResponse) {
       this.initialConfiguration =
-          initialFlagConfigResponse.thenApply(ic -> Configuration.builder(ic, true).build());
+          initialFlagConfigResponse.thenApply(ic -> new Configuration.Builder(ic).build());
       return this;
     }
 
@@ -250,7 +251,7 @@ public class EppoClient extends BaseEppoClient {
                   } else if (failCount.incrementAndGet() == 2
                       || instance.getInitialConfigFuture() == null) {
                     ret.completeExceptionally(
-                        new RuntimeException(
+                        new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   }
                   return null;
@@ -266,7 +267,7 @@ public class EppoClient extends BaseEppoClient {
                     ret.complete(instance);
                   } else if (offlineMode || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
-                        new RuntimeException(
+                        new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   } else {
                     Log.d(TAG, "Initial config was not used.");
@@ -275,16 +276,37 @@ public class EppoClient extends BaseEppoClient {
                   return null;
                 });
       }
-      return ret;
+      return ret.exceptionally(
+          e -> {
+            Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
+            if (!isGracefulMode) {
+              throw new RuntimeException(e);
+            }
+            return instance;
+          });
     }
 
     /** Builds and initializes an `EppoClient`, immediately available to compute assignments. */
     public EppoClient buildAndInit() {
       try {
         return buildAndInitAsync().get();
-      } catch (ExecutionException | InterruptedException e) {
-        throw new RuntimeException(e);
+      } catch (ExecutionException | InterruptedException | CompletionException e) {
+        // If the exception was an `EppoInitializationException`, we know for sure that
+        // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
+        // wrapped by `CompletableFuture` with a `CompletionException`.
+        if (e instanceof CompletionException) {
+          Throwable cause = e.getCause();
+          if (cause instanceof RuntimeException
+              && cause.getCause() instanceof EppoInitializationException) {
+            return instance;
+          }
+        }
+        Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
+        if (!isGracefulMode) {
+          throw new RuntimeException(e);
+        }
       }
+      return instance;
     }
   }
 }

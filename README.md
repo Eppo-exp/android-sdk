@@ -1,5 +1,8 @@
 # Eppo Android SDK
 
+[![Test](https://github.com/Eppo-exp/android-sdk/actions/workflows/test.yaml/badge.svg)](https://github.com/Eppo-exp/android-sdk/actions/workflows/test.yaml)  
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/cloud.eppo/android-sdk/badge.svg)](https://maven-badges.herokuapp.com/maven-central/cloud.eppo/android-sdk)
+
 [Eppo](https://geteppo.com) is a feature management and experimentation platform. This SDK enables
 feature flagging and experimentation for Eppo customers. An API key is required to use it.
 
@@ -9,7 +12,7 @@ feature flagging and experimentation for Eppo customers. An API key is required 
 
 ```groovy
 dependencies {
-  implementation 'cloud.eppo:android-sdk:4.3.1'
+  implementation 'cloud.eppo:android-sdk:4.3.3'
 }
 
 dependencyResolutionManagement {

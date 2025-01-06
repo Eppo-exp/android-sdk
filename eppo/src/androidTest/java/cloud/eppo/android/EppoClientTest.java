@@ -12,6 +12,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -21,6 +22,7 @@ import android.content.res.AssetManager;
 import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
+import androidx.test.platform.app.InstrumentationRegistry;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.EppoHttpClient;
 import cloud.eppo.android.cache.LRUAssignmentCache;
@@ -67,8 +69,15 @@ public class EppoClientTest {
   private static final String TAG = logTag(EppoClient.class);
   private static final String DUMMY_API_KEY = "mock-api-key";
   private static final String DUMMY_OTHER_API_KEY = "another-mock-api-key";
-  private static final String TEST_HOST =
+
+  // Use branch if specified by env variable `TEST_DATA_BRANCH`.
+  private static final String TEST_BRANCH =
+      InstrumentationRegistry.getArguments().getString("TEST_DATA_BRANCH");
+  private static final String TEST_HOST_BASE =
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
+  private static final String TEST_HOST =
+      TEST_HOST_BASE + (TEST_BRANCH != null ? "/b/" + TEST_BRANCH : "");
+
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
   @Mock AssignmentLogger mockAssignmentLogger;
@@ -258,6 +267,92 @@ public class EppoClientTest {
                 "subject1", "experiment1", new Attributes(), mapper.readTree("{}")));
   }
 
+  private static EppoHttpClient mockHttpError() {
+    // Create a mock instance of EppoHttpClient
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+    // Mock sync get
+    when(mockHttpClient.get(anyString())).thenThrow(new RuntimeException("Intentional Error"));
+
+    // Mock async get
+    CompletableFuture<byte[]> mockAsyncResponse = new CompletableFuture<>();
+    when(mockHttpClient.getAsync(anyString())).thenReturn(mockAsyncResponse);
+    mockAsyncResponse.completeExceptionally(new RuntimeException("Intentional Error"));
+
+    return mockHttpClient;
+  }
+
+  @Test
+  public void testGracefulInitializationFailure() throws ExecutionException, InterruptedException {
+    // Set up bad HTTP response
+    EppoHttpClient http = mockHttpError();
+    setBaseClientHttpClientOverrideField(http);
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(true);
+
+    // Initialize and no exception should be thrown.
+    clientBuilder.buildAndInitAsync().get();
+  }
+
+  @Test
+  public void testClientMakesDefaultAssignmentsAfterFailingToInitialize()
+      throws ExecutionException, InterruptedException {
+    // Set up bad HTTP response
+    setBaseClientHttpClientOverrideField(mockHttpError());
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(true);
+
+    // Initialize and no exception should be thrown.
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+
+    assertEquals("default", eppoClient.getStringAssignment("experiment1", "subject1", "default"));
+  }
+
+  @Test
+  public void testClientMakesDefaultAssignmentsAfterFailingToInitializeNonGracefulMode() {
+    // Set up bad HTTP response
+    setBaseClientHttpClientOverrideField(mockHttpError());
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(false);
+
+    // Initialize, expect the exception and then verify that the client can still complete an
+    // assignment.
+    try {
+      clientBuilder.buildAndInitAsync().get();
+      fail("Expected exception");
+    } catch (RuntimeException | ExecutionException | InterruptedException e) {
+      // Expected
+      assertNotNull(e.getCause());
+
+      assertEquals(
+          "default",
+          EppoClient.getInstance().getStringAssignment("experiment1", "subject1", "default"));
+    }
+  }
+
+  @Test
+  public void testNonGracefulInitializationFailure() {
+    // Set up bad HTTP response
+    setBaseClientHttpClientOverrideField(mockHttpError());
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(false);
+
+    // Initialize and expect an exception.
+    assertThrows(Exception.class, () -> clientBuilder.buildAndInitAsync().get());
+  }
+
   private void runTestCases() {
     try {
       int testsRan = 0;
@@ -272,6 +367,46 @@ public class EppoClientTest {
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  @Test
+  public void testOfflineInit() throws IOException {
+    testOfflineInitFromFile("flags-v1.json");
+  }
+
+  @Test
+  public void testObfuscatedOfflineInit() throws IOException {
+    testOfflineInitFromFile("flags-v1-obfuscated.json");
+  }
+
+  public void testOfflineInitFromFile(String filepath) throws IOException {
+    AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
+
+    InputStream stream = assets.open(filepath);
+    int size = stream.available();
+    byte[] buffer = new byte[size];
+    int numBytes = stream.read(buffer);
+    stream.close();
+
+    CompletableFuture<Void> futureClient =
+        new EppoClient.Builder("DUMMYKEY", ApplicationProvider.getApplicationContext())
+            .isGracefulMode(false)
+            .offlineMode(true)
+            .assignmentLogger(mockAssignmentLogger)
+            .forceReinitialize(true)
+            .initialConfiguration(buffer)
+            .buildAndInitAsync()
+            .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."));
+
+    Double result =
+        futureClient
+            .thenApply(
+                clVoid -> {
+                  return EppoClient.getInstance().getDoubleAssignment("numeric_flag", "bob", 99.0);
+                })
+            .join();
+
+    assertEquals(3.14, result, 0.1);
   }
 
   @Test
@@ -694,7 +829,7 @@ public class EppoClientTest {
       while (!cachePopulated) {
         if (System.currentTimeMillis() > waitEnd) {
           throw new InterruptedException(
-              "Cache file never populated; assuming configuration error");
+              "Cache file never populated or smaller than expected 8000 bytes; assuming configuration error");
         }
         long expectedMinimumSizeInBytes =
             8000; // Last time this test was updated, cache size was 11,506 bytes
