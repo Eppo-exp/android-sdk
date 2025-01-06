@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
-  private static final String DEFAULT_HOST = "https://fscdn.eppo.cloud";
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
 
@@ -34,9 +33,10 @@ public class EppoClient extends BaseEppoClient {
 
   private EppoClient(
       String apiKey,
-      String host,
       String sdkName,
       String sdkVersion,
+      @Deprecated @Nullable String host,
+      @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       IConfigurationStore configurationStore,
       boolean isGracefulMode,
@@ -48,6 +48,7 @@ public class EppoClient extends BaseEppoClient {
         sdkName,
         sdkVersion,
         host,
+        apiBaseUrl,
         assignmentLogger,
         null,
         configurationStore,
@@ -65,11 +66,13 @@ public class EppoClient extends BaseEppoClient {
   public static EppoClient init(
       @NonNull Application application,
       @NonNull String apiKey,
-      @NonNull String host,
+      @Nullable String host,
+      @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
     return new Builder(apiKey, application)
         .host(host)
+        .apiBaseUrl(apiBaseUrl)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
         .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
@@ -112,7 +115,8 @@ public class EppoClient extends BaseEppoClient {
   }
 
   public static class Builder {
-    @NonNull private String host = DEFAULT_HOST;
+    private String host;
+    private String apiBaseUrl;
     private final Application application;
     private final String apiKey;
     @Nullable private AssignmentLogger assignmentLogger;
@@ -132,8 +136,13 @@ public class EppoClient extends BaseEppoClient {
       this.apiKey = apiKey;
     }
 
-    public Builder host(String host) {
+    public Builder host(@Nullable String host) {
       this.host = host;
+      return this;
+    }
+
+    public Builder apiBaseUrl(@Nullable String apiBaseUrl) {
+      this.apiBaseUrl = apiBaseUrl;
       return this;
     }
 
@@ -225,9 +234,10 @@ public class EppoClient extends BaseEppoClient {
       instance =
           new EppoClient(
               apiKey,
-              host,
               sdkName,
               sdkVersion,
+              host,
+              apiBaseUrl,
               assignmentLogger,
               configStore,
               isGracefulMode,
