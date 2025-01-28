@@ -133,7 +133,7 @@ public class EppoClient extends BaseEppoClient {
     private boolean ignoreCachedConfiguration = false;
     private boolean pollingEnabled = false;
     private long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
-    private long pollingJitterMs = DEFAULT_POLLING_INTERVAL_MS / DEFAULT_JITTER_INTERVAL_RATIO;
+    private long pollingJitterMs = -1;
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
@@ -305,6 +305,9 @@ public class EppoClient extends BaseEppoClient {
       // Start polling, if configured.
       if (pollingEnabled && pollingIntervalMs > 0) {
         Log.d(TAG, "Starting poller");
+        if (pollingJitterMs < 0) {
+          pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
+        }
         instance.startPolling(pollingIntervalMs, pollingJitterMs);
       }
 
