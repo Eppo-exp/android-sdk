@@ -363,11 +363,28 @@ public class EppoClient extends BaseEppoClient {
     }
   }
 
+  private long pollingIntervalMs, pollingJitterMs;
   protected void stopPolling() {
     super.stopPolling();
   }
 
   protected void startPolling(long pollingIntervalMs, long pollingJitterMs) {
+    // Store the polling params for resuming later.
+    this.pollingIntervalMs = pollingIntervalMs;
+    this.pollingJitterMs = pollingJitterMs;
     super.startPolling(pollingIntervalMs, pollingJitterMs);
+  }
+
+  public void pausePolling() {
+    super.stopPolling();
+  }
+
+  public void resumePolling() {
+    if (pollingIntervalMs <= 0) {
+      Log.w(TAG, "resumePolling called, but polling was not started.");
+      return;
+    }
+
+    this.startPolling(pollingIntervalMs,pollingJitterMs);
   }
 }
