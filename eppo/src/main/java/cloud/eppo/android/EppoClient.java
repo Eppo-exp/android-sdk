@@ -308,6 +308,7 @@ public class EppoClient extends BaseEppoClient {
         if (pollingJitterMs < 0) {
           pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
+
         instance.startPolling(pollingIntervalMs, pollingJitterMs);
       }
 
@@ -364,6 +365,7 @@ public class EppoClient extends BaseEppoClient {
   }
 
   private long pollingIntervalMs, pollingJitterMs;
+
   protected void stopPolling() {
     super.stopPolling();
   }
@@ -385,6 +387,6 @@ public class EppoClient extends BaseEppoClient {
       return;
     }
 
-    this.startPolling(pollingIntervalMs,pollingJitterMs);
+    this.startPolling(pollingIntervalMs, pollingJitterMs);
   }
 }
