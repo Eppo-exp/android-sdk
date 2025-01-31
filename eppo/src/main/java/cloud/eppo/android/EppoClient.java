@@ -19,7 +19,6 @@ import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
-import java.util.Timer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -33,7 +32,6 @@ public class EppoClient extends BaseEppoClient {
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
 
   @Nullable private static EppoClient instance;
-  private Timer pollTimer;
 
   private EppoClient(
       String apiKey,
@@ -387,6 +385,6 @@ public class EppoClient extends BaseEppoClient {
       return;
     }
 
-    this.startPolling(pollingIntervalMs, pollingJitterMs);
+    super.startPolling(pollingIntervalMs, pollingJitterMs);
   }
 }
