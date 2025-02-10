@@ -94,4 +94,18 @@ public class SecondActivity extends AppCompatActivity {
     assignmentLog.append(message + "\n\n");
     assignmentLogScrollView.post(() -> assignmentLogScrollView.fullScroll(View.FOCUS_DOWN));
   }
+
+  // Tie into the activity's lifecycle and pause/resume polling where appropriate.
+
+  @Override
+  public void onPause() {
+    super.onPause();
+    EppoClient.getInstance().pausePolling();
+  }
+
+  @Override
+  public void onResume() {
+    super.onResume();
+    EppoClient.getInstance().resumePolling();
+  }
 }
