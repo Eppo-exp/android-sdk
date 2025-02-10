@@ -31,6 +31,8 @@ public class EppoClient extends BaseEppoClient {
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
 
+  private long pollingIntervalMs, pollingJitterMs;
+
   @Nullable private static EppoClient instance;
 
   private EppoClient(
@@ -370,8 +372,6 @@ public class EppoClient extends BaseEppoClient {
       return instance;
     }
   }
-
-  private long pollingIntervalMs, pollingJitterMs;
 
   protected void stopPolling() {
     super.stopPolling();
