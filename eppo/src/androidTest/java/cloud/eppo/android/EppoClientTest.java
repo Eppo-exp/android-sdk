@@ -313,13 +313,13 @@ public class EppoClientTest {
 
     setBaseClientHttpClientOverrideField(mockHttpClient);
 
-    long pollingInterval = 50;
+    long pollingIntervalMs = 50;
 
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
             .pollingEnabled(true)
-            .pollingIntervalMs(pollingInterval)
+            .pollingIntervalMs(pollingIntervalMs)
             .isGracefulMode(false);
 
     // Initialize and no exception should be thrown.
@@ -331,7 +331,7 @@ public class EppoClientTest {
     // Now, return the boolean flag config (bool_flag = true)
     when(mockHttpClient.get(anyString())).thenReturn(BOOL_FLAG_CONFIG);
     // Wait the polling interval
-    Thread.sleep(pollingInterval * 2);
+    Thread.sleep(pollingIntervalMs * 2);
 
     verify(mockHttpClient, atLeast(1)).get(anyString());
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));

@@ -131,6 +131,11 @@ public class EppoClient extends BaseEppoClient {
     private boolean ignoreCachedConfiguration = false;
     private boolean pollingEnabled = false;
     private long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
+
+    /**
+     * -1 causes the default jitter to be used (which is a % of the interval, not a constant
+     * amount).
+     */
     private long pollingJitterMs = -1;
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
@@ -222,7 +227,11 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    /** */
+    /**
+     * Sets the amount of jitter to use when scheduling next poll call. The jitter is the maximum
+     * difference between the specified `pollingIntervalMs` and the effective interval used for each
+     * time the polling waits for the next call.
+     */
     public Builder pollingJitterMs(long pollingJitterMs) {
       this.pollingJitterMs = pollingJitterMs;
       return this;
@@ -381,7 +390,9 @@ public class EppoClient extends BaseEppoClient {
 
   public void resumePolling() {
     if (pollingIntervalMs <= 0) {
-      Log.w(TAG, "resumePolling called, but polling was not started.");
+      Log.w(
+          TAG,
+          "resumePolling called, but polling was not started due to invalid polling interval.");
       return;
     }
 
