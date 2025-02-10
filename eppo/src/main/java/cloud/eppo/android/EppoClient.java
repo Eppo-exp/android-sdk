@@ -28,6 +28,8 @@ public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
+  private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
+  private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
 
   @Nullable private static EppoClient instance;
 
@@ -127,6 +129,14 @@ public class EppoClient extends BaseEppoClient {
     private boolean offlineMode = false;
     private CompletableFuture<Configuration> initialConfiguration;
     private boolean ignoreCachedConfiguration = false;
+    private boolean pollingEnabled = false;
+    private long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
+
+    /**
+     * -1 causes the default jitter to be used (which is a % of the interval, not a constant
+     * amount).
+     */
+    private long pollingJitterMs = -1;
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
@@ -199,6 +209,34 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
+    /**
+     * Sets whether the client should periodically check for updated configuration. Used in
+     * conjunction with `pollingIntervalMs` default 60000 and `pollingJitterMs` default 600.
+     */
+    public Builder pollingEnabled(boolean pollingEnabled) {
+      this.pollingEnabled = pollingEnabled;
+      return this;
+    }
+
+    /**
+     * Sets how often the client should check for updated configurations, in milliseconds. Setting
+     * to 0 prevents the client from polling. A suggested interval is one minute (60000).
+     */
+    public Builder pollingIntervalMs(long pollingIntervalMs) {
+      this.pollingIntervalMs = pollingIntervalMs;
+      return this;
+    }
+
+    /**
+     * Sets the amount of jitter to use when scheduling next poll call. The jitter is the maximum
+     * difference between the specified `pollingIntervalMs` and the effective interval used for each
+     * time the polling waits for the next call.
+     */
+    public Builder pollingJitterMs(long pollingJitterMs) {
+      this.pollingJitterMs = pollingJitterMs;
+      return this;
+    }
+
     public CompletableFuture<EppoClient> buildAndInitAsync() {
       if (application == null) {
         throw new MissingApplicationException();
@@ -211,6 +249,9 @@ public class EppoClient extends BaseEppoClient {
         Log.w(TAG, "Eppo Client instance already initialized");
         return CompletableFuture.completedFuture(instance);
       } else if (instance != null) {
+        // Stop polling (if the client is polling for configuration)
+        instance.stopPolling();
+
         // Always recreate for tests
         Log.d(TAG, "`forceReinitialize` triggered reinitializing Eppo Client");
       }
@@ -268,6 +309,16 @@ public class EppoClient extends BaseEppoClient {
                 });
       }
 
+      // Start polling, if configured.
+      if (pollingEnabled && pollingIntervalMs > 0) {
+        Log.d(TAG, "Starting poller");
+        if (pollingJitterMs < 0) {
+          pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
+        }
+
+        instance.startPolling(pollingIntervalMs, pollingJitterMs);
+      }
+
       if (instance.getInitialConfigFuture() != null) {
         instance
             .getInitialConfigFuture()
@@ -318,5 +369,33 @@ public class EppoClient extends BaseEppoClient {
       }
       return instance;
     }
+  }
+
+  private long pollingIntervalMs, pollingJitterMs;
+
+  protected void stopPolling() {
+    super.stopPolling();
+  }
+
+  protected void startPolling(long pollingIntervalMs, long pollingJitterMs) {
+    // Store the polling params for resuming later.
+    this.pollingIntervalMs = pollingIntervalMs;
+    this.pollingJitterMs = pollingJitterMs;
+    super.startPolling(pollingIntervalMs, pollingJitterMs);
+  }
+
+  public void pausePolling() {
+    super.stopPolling();
+  }
+
+  public void resumePolling() {
+    if (pollingIntervalMs <= 0) {
+      Log.w(
+          TAG,
+          "resumePolling called, but polling was not started due to invalid polling interval.");
+      return;
+    }
+
+    super.startPolling(pollingIntervalMs, pollingJitterMs);
   }
 }

@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -79,6 +80,7 @@ public class EppoClientTest {
       TEST_HOST_BASE + (TEST_BRANCH != null ? "/b/" + TEST_BRANCH : "");
 
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
+  private static final byte[] EMPTY_CONFIG = "{\"flags\":{}}".getBytes();
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
   @Mock AssignmentLogger mockAssignmentLogger;
   @Mock EppoHttpClient mockHttpClient;
@@ -295,6 +297,44 @@ public class EppoClientTest {
 
     // Initialize and no exception should be thrown.
     clientBuilder.buildAndInitAsync().get();
+  }
+
+  @Test
+  public void testPollingClient() throws ExecutionException, InterruptedException {
+    // Set up a changing response from the "server"
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+    // Mock sync get
+    when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
+
+    // Mock async get
+    CompletableFuture<byte[]> emptyResponse = CompletableFuture.completedFuture(EMPTY_CONFIG);
+    when(mockHttpClient.getAsync(anyString())).thenReturn(emptyResponse);
+
+    setBaseClientHttpClientOverrideField(mockHttpClient);
+
+    long pollingIntervalMs = 50;
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .pollingEnabled(true)
+            .pollingIntervalMs(pollingIntervalMs)
+            .isGracefulMode(false);
+
+    // Initialize and no exception should be thrown.
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+
+    verify(mockHttpClient, times(1)).getAsync(anyString());
+    assertFalse(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
+
+    // Now, return the boolean flag config (bool_flag = true)
+    when(mockHttpClient.get(anyString())).thenReturn(BOOL_FLAG_CONFIG);
+    // Wait the polling interval
+    Thread.sleep(pollingIntervalMs * 2);
+
+    verify(mockHttpClient, atLeast(1)).get(anyString());
+    assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
   }
 
   @Test
@@ -949,4 +989,40 @@ public class EppoClientTest {
       throw new RuntimeException(e);
     }
   }
+
+  private static final byte[] BOOL_FLAG_CONFIG =
+      ("{\n"
+              + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
+              + "  \"format\": \"SERVER\",\n"
+              + "  \"environment\": {\n"
+              + "    \"name\": \"Test\"\n"
+              + "  },\n"
+              + "  \"flags\": {\n"
+              + "    \"9a2025738dde19ff44cd30b9d2967000\": {\n"
+              + "      \"key\": \"9a2025738dde19ff44cd30b9d2967000\",\n"
+              + "      \"enabled\": true,\n"
+              + "      \"variationType\": \"BOOLEAN\",\n"
+              + "      \"variations\": {\n"
+              + "        \"b24=\": {\n"
+              + "          \"key\": \"b24=\",\n"
+              + "          \"value\": \"dHJ1ZQ==\"\n"
+              + "        }\n"
+              + "      },\n"
+              + "      \"allocations\": [\n"
+              + "        {\n"
+              + "          \"key\": \"b24=\",\n"
+              + "          \"doLog\": true,\n"
+              + "          \"splits\": [\n"
+              + "            {\n"
+              + "              \"variationKey\": \"b24=\",\n"
+              + "              \"shards\": []\n"
+              + "            }\n"
+              + "          ]\n"
+              + "        }\n"
+              + "      ],\n"
+              + "      \"totalShards\": 10000\n"
+              + "    }\n"
+              + "  }\n"
+              + "}")
+          .getBytes();
 }
