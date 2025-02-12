@@ -335,6 +335,8 @@ public class EppoClientTest {
 
     verify(mockHttpClient, atLeast(1)).get(anyString());
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
+
+    eppoClient.stopPolling();
   }
 
   @Test
