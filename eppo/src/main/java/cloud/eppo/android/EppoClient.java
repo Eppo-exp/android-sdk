@@ -116,6 +116,16 @@ public class EppoClient extends BaseEppoClient {
         flagKey, subjectKey, subjectAttributes, defaultValue, expectedType);
   }
 
+  /** (Re)loads flag and experiment configuration from the API server. */
+  public void loadConfiguration() {
+    super.loadConfiguration();
+  }
+
+  /** Asynchronously (re)loads flag and experiment configuration from the API server. */
+  public CompletableFuture<Void> loadConfigurationAsync() {
+    return super.loadConfigurationAsync();
+  }
+
   public static class Builder {
     private String host;
     private String apiBaseUrl;
