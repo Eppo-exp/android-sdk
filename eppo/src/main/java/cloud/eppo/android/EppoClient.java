@@ -117,11 +117,13 @@ public class EppoClient extends BaseEppoClient {
   }
 
   /** (Re)loads flag and experiment configuration from the API server. */
+  @Override
   public void loadConfiguration() {
     super.loadConfiguration();
   }
 
   /** Asynchronously (re)loads flag and experiment configuration from the API server. */
+  @Override
   public CompletableFuture<Void> loadConfigurationAsync() {
     return super.loadConfigurationAsync();
   }

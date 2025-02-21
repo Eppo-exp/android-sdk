@@ -300,6 +300,59 @@ public class EppoClientTest {
   }
 
   @Test
+  public void testLoadConfiguration() throws ExecutionException, InterruptedException {
+    testLoadConfigurationHelper(false);
+  }
+
+  @Test
+  public void testLoadConfigurationAsync() throws ExecutionException, InterruptedException {
+    testLoadConfigurationHelper(true);
+  }
+
+  private void testLoadConfigurationHelper(boolean loadAsync)
+      throws ExecutionException, InterruptedException {
+    // Set up a changing response from the "server"
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+    // Mock sync get to return empty
+    when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
+
+    // Mock async get to return empty
+    CompletableFuture<byte[]> emptyResponse = CompletableFuture.completedFuture(EMPTY_CONFIG);
+    when(mockHttpClient.getAsync(anyString())).thenReturn(emptyResponse);
+
+    setBaseClientHttpClientOverrideField(mockHttpClient);
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(false);
+
+    // Initialize and no exception should be thrown.
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+
+    verify(mockHttpClient, times(1)).getAsync(anyString());
+    assertFalse(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
+
+    // Now, return the boolean flag config (bool_flag = true)
+    when(mockHttpClient.get(anyString())).thenReturn(BOOL_FLAG_CONFIG);
+
+    // Mock async get to  return the boolean flag config (bool_flag = true)
+    CompletableFuture<byte[]> boolFlagResponse =
+        CompletableFuture.completedFuture(BOOL_FLAG_CONFIG);
+    when(mockHttpClient.getAsync(anyString())).thenReturn(boolFlagResponse);
+
+    // Trigger a reload of the client
+    if (loadAsync) {
+      eppoClient.loadConfigurationAsync().get();
+    } else {
+      eppoClient.loadConfiguration();
+    }
+
+    assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
+  }
+
+  @Test
   public void testPollingClient() throws ExecutionException, InterruptedException {
     // Set up a changing response from the "server"
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
