@@ -19,6 +19,7 @@ import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
+
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -32,7 +33,6 @@ public class EppoClient extends BaseEppoClient {
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
 
   private long pollingIntervalMs, pollingJitterMs;
-
   @Nullable private static EppoClient instance;
 
   private EppoClient(
@@ -136,7 +136,7 @@ public class EppoClient extends BaseEppoClient {
     private final Application application;
     private final String apiKey;
     @Nullable private AssignmentLogger assignmentLogger;
-    @Nullable private ConfigurationStore configStore;
+    @Nullable private AndroidConfigurationStore configStore;
     private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
     private boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
     private boolean forceReinitialize = false;
@@ -154,6 +154,7 @@ public class EppoClient extends BaseEppoClient {
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
+    private ConfigurationChangeListener rootConfigChangeListener = () -> {};
 
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
@@ -223,6 +224,11 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
+    public Builder configurationChangeListener(ConfigurationChangeListener listener) {
+      this.rootConfigChangeListener = listener;
+      return this;
+    }
+
     /**
      * Sets whether the client should periodically check for updated configuration. Used in
      * conjunction with `pollingIntervalMs` default 60000 and `pollingJitterMs` default 600.
@@ -277,7 +283,10 @@ public class EppoClient extends BaseEppoClient {
       if (configStore == null) {
         // Cache at a per-API key level (useful for development)
         String cacheFileNameSuffix = safeCacheKey(apiKey);
-        configStore = new ConfigurationStore(application, cacheFileNameSuffix);
+        configStore = new ListenableConfigurationStore(
+            new ConfigurationStore(application, cacheFileNameSuffix),
+            () -> rootConfigChangeListener.onConfigurationChanged()
+        );
       }
 
       // If the initial config was not set, use the ConfigurationStore's cache as the initial
