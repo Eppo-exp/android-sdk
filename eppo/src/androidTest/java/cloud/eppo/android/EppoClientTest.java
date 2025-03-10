@@ -49,8 +49,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -350,6 +352,48 @@ public class EppoClientTest {
     }
 
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
+  }
+
+  @Test
+  public void testConfigurationChangeListener() throws ExecutionException, InterruptedException {
+    List<Void> received = new ArrayList<Void>();
+
+    // Set up a changing response from the "server"
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+    // Mock sync get to return empty
+    when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
+
+    // Mock async get to return empty
+    CompletableFuture<byte[]> emptyResponse = CompletableFuture.completedFuture(EMPTY_CONFIG);
+    when(mockHttpClient.getAsync(anyString())).thenReturn(emptyResponse);
+
+    setBaseClientHttpClientOverrideField(mockHttpClient);
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .onConfigurationChange(received::add)
+            .isGracefulMode(false);
+
+    // Initialize and no exception should be thrown.
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+
+    verify(mockHttpClient, times(1)).getAsync(anyString());
+    assertEquals(1, received.size());
+
+    // Now, return the boolean flag config so that the config has changed.
+    when(mockHttpClient.get(anyString())).thenReturn(BOOL_FLAG_CONFIG);
+
+    // Trigger a reload of the client
+    eppoClient.loadConfiguration();
+
+    assertEquals(2, received.size());
+
+    // Reload the client again; the config hasn't changed, but Java doesn't check eTag (yet)
+    eppoClient.loadConfiguration();
+
+    assertEquals(3, received.size());
   }
 
   @Test
