@@ -155,7 +155,7 @@ public class EppoClient extends BaseEppoClient {
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
-    @Nullable private Consumer<Void> configChangeCallback;
+    @Nullable private Consumer<Configuration> configChangeCallback;
 
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
@@ -390,7 +390,7 @@ public class EppoClient extends BaseEppoClient {
       return instance;
     }
 
-    public Builder onConfigurationChange(Consumer<Void> configChangeCallback) {
+    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback) {
       this.configChangeCallback = configChangeCallback;
       return this;
     }

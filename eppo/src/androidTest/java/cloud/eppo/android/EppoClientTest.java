@@ -356,7 +356,7 @@ public class EppoClientTest {
 
   @Test
   public void testConfigurationChangeListener() throws ExecutionException, InterruptedException {
-    List<Void> received = new ArrayList<Void>();
+    List<Configuration> received = new ArrayList<>();
 
     // Set up a changing response from the "server"
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
