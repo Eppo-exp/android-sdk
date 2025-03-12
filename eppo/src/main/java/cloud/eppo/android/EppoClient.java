@@ -253,6 +253,14 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
+    /**
+     * Registers a callback for when a new configuration is applied to the `EppoClient` instance.
+     */
+    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback) {
+      this.configChangeCallback = configChangeCallback;
+      return this;
+    }
+
     public CompletableFuture<EppoClient> buildAndInitAsync() {
       if (application == null) {
         throw new MissingApplicationException();
@@ -390,10 +398,6 @@ public class EppoClient extends BaseEppoClient {
       return instance;
     }
 
-    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback) {
-      this.configChangeCallback = configChangeCallback;
-      return this;
-    }
   }
 
   protected void stopPolling() {
