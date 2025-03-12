@@ -397,7 +397,6 @@ public class EppoClient extends BaseEppoClient {
       }
       return instance;
     }
-
   }
 
   protected void stopPolling() {
