@@ -11,7 +11,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -54,6 +53,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -354,14 +354,27 @@ public class EppoClientTest {
 
   @Test
   public void testPollingClient() throws ExecutionException, InterruptedException {
-    // Set up a changing response from the "server"
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
 
-    // Mock sync get
-    when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
+    CountDownLatch pollLatch = new CountDownLatch(1);
 
-    // Mock async get
-    CompletableFuture<byte[]> emptyResponse = CompletableFuture.completedFuture(EMPTY_CONFIG);
+    // The poller fetches synchronously so let's return the boolean flag config
+    when(mockHttpClient.get(anyString()))
+        .thenAnswer(
+            invocation -> {
+              pollLatch.countDown(); // Signal that polling occurred
+              Log.d("TEST", "Polling has occurred");
+              return BOOL_FLAG_CONFIG;
+            });
+
+    // Async get is used for initialization, so we'll return an empty response.
+    CompletableFuture<byte[]> emptyResponse =
+        CompletableFuture.supplyAsync(
+            () -> {
+              Log.d("TEST", "empty config supplied");
+              return EMPTY_CONFIG;
+            });
+
     when(mockHttpClient.getAsync(anyString())).thenReturn(emptyResponse);
 
     setBaseClientHttpClientOverrideField(mockHttpClient);
@@ -375,18 +388,21 @@ public class EppoClientTest {
             .pollingIntervalMs(pollingIntervalMs)
             .isGracefulMode(false);
 
-    // Initialize and no exception should be thrown.
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
 
+    // Empty config on initialization
     verify(mockHttpClient, times(1)).getAsync(anyString());
     assertFalse(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
 
-    // Now, return the boolean flag config (bool_flag = true)
-    when(mockHttpClient.get(anyString())).thenReturn(BOOL_FLAG_CONFIG);
-    // Wait the polling interval
-    Thread.sleep(pollingIntervalMs * 2);
+    // Wait for the client to send the "fetch"
+    assertTrue("Polling did not occur within timeout", pollLatch.await(5, TimeUnit.SECONDS));
 
-    verify(mockHttpClient, atLeast(1)).get(anyString());
+    // Sleep a short period to allow the polling mechanism to complete writing the config.
+    // The above latch releases immediately after the config is "fetched", not necessarily before
+    // the config is applied.
+    Thread.sleep(100);
+
+    // Assignment is now true.
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
 
     eppoClient.stopPolling();
@@ -1048,7 +1064,7 @@ public class EppoClientTest {
   private static final byte[] BOOL_FLAG_CONFIG =
       ("{\n"
               + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
-              + "  \"format\": \"SERVER\",\n"
+              + "  \"format\": \"CLIENT\",\n"
               + "  \"environment\": {\n"
               + "    \"name\": \"Test\"\n"
               + "  },\n"
