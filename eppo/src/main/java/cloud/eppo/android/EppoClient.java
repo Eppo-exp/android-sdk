@@ -23,6 +23,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
@@ -154,6 +155,7 @@ public class EppoClient extends BaseEppoClient {
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
+    @Nullable private Consumer<Configuration> configChangeCallback;
 
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
@@ -251,6 +253,14 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
+    /**
+     * Registers a callback for when a new configuration is applied to the `EppoClient` instance.
+     */
+    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback) {
+      this.configChangeCallback = configChangeCallback;
+      return this;
+    }
+
     public CompletableFuture<EppoClient> buildAndInitAsync() {
       if (application == null) {
         throw new MissingApplicationException();
@@ -299,6 +309,10 @@ public class EppoClient extends BaseEppoClient {
               obfuscateConfig,
               initialConfiguration,
               assignmentCache);
+
+      if (configChangeCallback != null) {
+        instance.onConfigurationChange(configChangeCallback);
+      }
 
       final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
 
