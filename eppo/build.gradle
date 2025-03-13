@@ -75,7 +75,7 @@ dependencies {
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.2"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.3"
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "commons-io:commons-io:${versions.commonsio}"
