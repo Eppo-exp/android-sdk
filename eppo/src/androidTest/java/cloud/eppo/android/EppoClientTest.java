@@ -400,7 +400,7 @@ public class EppoClientTest {
     // Sleep a short period to allow the polling mechanism to complete writing the config.
     // The above latch releases immediately after the config is "fetched", not necessarily before
     // the config is applied.
-    Thread.sleep(100);
+    Thread.sleep(150);
 
     // Assignment is now true.
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
