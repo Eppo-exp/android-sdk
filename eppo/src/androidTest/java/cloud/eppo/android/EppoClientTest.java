@@ -401,6 +401,7 @@ public class EppoClientTest {
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
 
     CountDownLatch pollLatch = new CountDownLatch(1);
+    CountDownLatch configActivatedLatch = new CountDownLatch(1);
 
     // The poller fetches synchronously so let's return the boolean flag config
     when(mockHttpClient.get(anyString()))
@@ -433,6 +434,10 @@ public class EppoClientTest {
             .isGracefulMode(false);
 
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+    eppoClient.onConfigurationChange(
+        (config) -> {
+          configActivatedLatch.countDown();
+        });
 
     // Empty config on initialization
     verify(mockHttpClient, times(1)).getAsync(anyString());
@@ -441,10 +446,10 @@ public class EppoClientTest {
     // Wait for the client to send the "fetch"
     assertTrue("Polling did not occur within timeout", pollLatch.await(5, TimeUnit.SECONDS));
 
-    // Sleep a short period to allow the polling mechanism to complete writing the config.
-    // The above latch releases immediately after the config is "fetched", not necessarily before
-    // the config is applied.
-    Thread.sleep(150);
+    // Wait for the client to apply the fetch and notify of config change.
+    assertTrue(
+        "Configuration not activated within timeout",
+        configActivatedLatch.await(250, TimeUnit.MILLISECONDS));
 
     // Assignment is now true.
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
