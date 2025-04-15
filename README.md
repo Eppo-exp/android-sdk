@@ -12,7 +12,7 @@ feature flagging and experimentation for Eppo customers. An API key is required 
 
 ```groovy
 dependencies {
-  implementation 'cloud.eppo:android-sdk:4.7.0'
+  implementation 'cloud.eppo:android-sdk:4.8.0'
 }
 
 dependencyResolutionManagement {
