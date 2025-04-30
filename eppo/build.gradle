@@ -68,7 +68,9 @@ ext.versions = [
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.10.0'
+    api 'cloud.eppo:sdk-common-jvm:4.0.0'
+
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
 

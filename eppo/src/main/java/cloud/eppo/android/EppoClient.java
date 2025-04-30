@@ -10,11 +10,10 @@ import androidx.annotation.Nullable;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.IConfigurationStore;
 import cloud.eppo.android.cache.LRUAssignmentCache;
-import cloud.eppo.android.exceptions.MissingApiKeyException;
-import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
+import cloud.eppo.api.EppoActionCallback;
 import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
@@ -22,43 +21,42 @@ import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
-  private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
+  private static final Logger log = LoggerFactory.getLogger(EppoClient.class);
 
   private long pollingIntervalMs, pollingJitterMs;
 
   @Nullable private static EppoClient instance;
 
   private EppoClient(
-      String apiKey,
+      String sdkKey,
       String sdkName,
       String sdkVersion,
-      @Deprecated @Nullable String host,
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       IConfigurationStore configurationStore,
       boolean isGracefulMode,
-      boolean obfuscateConfig,
-      @Nullable CompletableFuture<Configuration> initialConfiguration,
+      @Nullable Configuration initialConfiguration,
       @Nullable IAssignmentCache assignmentCache) {
+
     super(
-        apiKey,
+        sdkKey,
         sdkName,
         sdkVersion,
-        host,
         apiBaseUrl,
         assignmentLogger,
         null,
         configurationStore,
         isGracefulMode,
-        obfuscateConfig,
         false,
         initialConfiguration,
         assignmentCache,
@@ -70,17 +68,14 @@ public class EppoClient extends BaseEppoClient {
    */
   public static EppoClient init(
       @NonNull Application application,
-      @NonNull String apiKey,
-      @Nullable String host,
+      @NonNull String sdkKey,
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
-    return new Builder(apiKey, application)
-        .host(host)
+    return new Builder(sdkKey, application)
         .apiBaseUrl(apiBaseUrl)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
-        .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
         .buildAndInit();
   }
 
@@ -89,15 +84,14 @@ public class EppoClient extends BaseEppoClient {
    */
   public static CompletableFuture<EppoClient> initAsync(
       @NonNull Application application,
-      @NonNull String apiKey,
-      @NonNull String host,
+      @NonNull String sdkKey,
+      @NonNull String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
-    return new Builder(apiKey, application)
-        .host(host)
+    return new Builder(sdkKey, application)
+        .apiBaseUrl(apiBaseUrl)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
-        .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
         .buildAndInitAsync();
   }
 
@@ -121,28 +115,51 @@ public class EppoClient extends BaseEppoClient {
 
   /** (Re)loads flag and experiment configuration from the API server. */
   @Override
-  public void loadConfiguration() {
-    super.loadConfiguration();
+  public void fetchAndActivateConfiguration() {
+    try {
+      super.fetchAndActivateConfiguration();
+    } catch (Exception e) {
+      if (!isGracefulMode) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 
   /** Asynchronously (re)loads flag and experiment configuration from the API server. */
-  @Override
-  public CompletableFuture<Void> loadConfigurationAsync() {
-    return super.loadConfigurationAsync();
+  public CompletableFuture<Configuration> loadConfigurationAsync() {
+    CompletableFutureCallback<Configuration> callback = new CompletableFutureCallback<>();
+    super.fetchAndActivateConfigurationAsync(callback);
+    return callback.future;
+  }
+
+  public static class CompletableFutureCallback<T> implements EppoActionCallback<T> {
+    public final CompletableFuture<T> future;
+
+    public CompletableFutureCallback() {
+      future = new CompletableFuture<>();
+    }
+
+    @Override
+    public void onSuccess(T data) {
+      future.complete(data);
+    }
+
+    @Override
+    public void onFailure(Throwable error) {
+      future.completeExceptionally(error);
+    }
   }
 
   public static class Builder {
-    private String host;
     private String apiBaseUrl;
     private final Application application;
-    private final String apiKey;
+    private final String sdkKey;
     @Nullable private AssignmentLogger assignmentLogger;
     @Nullable private ConfigurationStore configStore;
     private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
-    private boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
     private boolean forceReinitialize = false;
     private boolean offlineMode = false;
-    private CompletableFuture<Configuration> initialConfiguration;
+    private Configuration initialConfiguration;
     private boolean ignoreCachedConfiguration = false;
     private boolean pollingEnabled = false;
     private long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
@@ -155,16 +172,11 @@ public class EppoClient extends BaseEppoClient {
 
     // Assignment caching on by default. To disable, call `builder.assignmentCache(null);`
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
-    @Nullable private Consumer<Configuration> configChangeCallback;
+    @Nullable private Configuration.Callback configChangeCallback;
 
-    public Builder(@NonNull String apiKey, @NonNull Application application) {
+    public Builder(@NonNull String sdkKey, @NonNull Application application) {
       this.application = application;
-      this.apiKey = apiKey;
-    }
-
-    public Builder host(@Nullable String host) {
-      this.host = host;
-      return this;
+      this.sdkKey = sdkKey;
     }
 
     public Builder apiBaseUrl(@Nullable String apiBaseUrl) {
@@ -187,11 +199,6 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    public Builder obfuscateConfig(boolean obfuscateConfig) {
-      this.obfuscateConfig = obfuscateConfig;
-      return this;
-    }
-
     public Builder forceReinitialize(boolean forceReinitialize) {
       this.forceReinitialize = forceReinitialize;
       return this;
@@ -208,15 +215,7 @@ public class EppoClient extends BaseEppoClient {
     }
 
     public Builder initialConfiguration(byte[] initialFlagConfigResponse) {
-      this.initialConfiguration =
-          CompletableFuture.completedFuture(
-              new Configuration.Builder(initialFlagConfigResponse).build());
-      return this;
-    }
-
-    public Builder initialConfiguration(CompletableFuture<byte[]> initialFlagConfigResponse) {
-      this.initialConfiguration =
-          initialFlagConfigResponse.thenApply(ic -> new Configuration.Builder(ic).build());
+      this.initialConfiguration = Configuration.builder(initialFlagConfigResponse).build();
       return this;
     }
 
@@ -256,19 +255,12 @@ public class EppoClient extends BaseEppoClient {
     /**
      * Registers a callback for when a new configuration is applied to the `EppoClient` instance.
      */
-    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback) {
+    public Builder onConfigurationChange(Configuration.Callback configChangeCallback) {
       this.configChangeCallback = configChangeCallback;
       return this;
     }
 
     public CompletableFuture<EppoClient> buildAndInitAsync() {
-      if (application == null) {
-        throw new MissingApplicationException();
-      }
-      if (apiKey == null) {
-        throw new MissingApiKeyException();
-      }
-
       if (instance != null && !forceReinitialize) {
         Log.w(TAG, "Eppo Client instance already initialized");
         return CompletableFuture.completedFuture(instance);
@@ -280,33 +272,33 @@ public class EppoClient extends BaseEppoClient {
         Log.d(TAG, "`forceReinitialize` triggered reinitializing Eppo Client");
       }
 
-      String sdkName = obfuscateConfig ? "android" : "android-debug";
+      //      String sdkName = obfuscateConfig ? "android" : "android-debug";
+      String sdkName = "android";
       String sdkVersion = BuildConfig.EPPO_VERSION;
 
       // Get caching from config store
       if (configStore == null) {
         // Cache at a per-API key level (useful for development)
-        String cacheFileNameSuffix = safeCacheKey(apiKey);
+        String cacheFileNameSuffix = safeCacheKey(sdkKey);
         configStore = new ConfigurationStore(application, cacheFileNameSuffix);
       }
-
-      // If the initial config was not set, use the ConfigurationStore's cache as the initial
-      // config.
-      if (initialConfiguration == null && !ignoreCachedConfiguration) {
-        initialConfiguration = configStore.loadConfigFromCache();
-      }
+      //
+      //      // If the initial config was not set, attempt to use the ConfigurationStore's cache as
+      // the
+      //      // initial config.
+      //      if (initialConfiguration == null && !ignoreCachedConfiguration) {
+      //        initialConfiguration = configStore.loadConfigFromCache();
+      //      }
 
       instance =
           new EppoClient(
-              apiKey,
+              sdkKey,
               sdkName,
               sdkVersion,
-              host,
               apiBaseUrl,
               assignmentLogger,
               configStore,
               isGracefulMode,
-              obfuscateConfig,
               initialConfiguration,
               assignmentCache);
 
@@ -314,28 +306,76 @@ public class EppoClient extends BaseEppoClient {
         instance.onConfigurationChange(configChangeCallback);
       }
 
-      final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
+      if (offlineMode) {
+        // Offline mode means initializing without making/waiting on any fetches or polling.
+        // Note: breaking change
+        if (pollingEnabled) {
+          log.warn("Ignoring pollingEnabled parameter as offlineMode is set to true");
+        }
+        return CompletableFuture.completedFuture(instance);
+      }
 
+      final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
+      AtomicInteger attemptCompleteCount = new AtomicInteger(0);
       AtomicInteger failCount = new AtomicInteger(0);
 
-      if (!offlineMode) {
+      // Not in offline mode. We'll kick off a fetch and attempt to load from the cache async.
+      AtomicBoolean configLoaded = new AtomicBoolean(false);
 
-        // Not offline mode. Kick off a fetch.
-        instance
-            .loadConfigurationAsync()
-            .handle(
-                (success, ex) -> {
-                  if (ex == null) {
-                    ret.complete(instance);
-                  } else if (failCount.incrementAndGet() == 2
-                      || instance.getInitialConfigFuture() == null) {
-                    ret.completeExceptionally(
-                        new EppoInitializationException(
-                            "Unable to initialize client; Configuration could not be loaded", ex));
-                  }
-                  return null;
-                });
-      }
+      configStore.loadConfigFromCacheAsync(
+          configuration -> {
+            if (configuration != null && !configuration.isEmpty()) {
+              if (!configLoaded.getAndSet(true)) {
+                // Config is not null, not empty and has not yet been set so set this one.
+                instance.activateConfiguration(configuration);
+                ret.complete(instance);
+              } // else config has already been set
+            } else {
+              if (failCount.incrementAndGet() == 2) {
+                ret.completeExceptionally(
+                    new EppoInitializationException(
+                        "Unable to initialize client; Configuration could not be loaded", null));
+              }
+            }
+          });
+
+      instance.fetchAndActivateConfigurationAsync(
+          new EppoActionCallback<Configuration>() {
+            @Override
+            public void onSuccess(Configuration data) {
+              if (!configLoaded.getAndSet(true)) {
+                // Cache has not yet set the config
+                ret.complete(instance);
+              }
+            }
+
+            @Override
+            public void onFailure(Throwable error) {
+              // If the local load already failed, throw an error
+              if (failCount.incrementAndGet() == 2) {
+                ret.completeExceptionally(
+                    new EppoInitializationException(
+                        "Unable to initialize client; Configuration could not be loaded", null));
+              }
+            }
+          });
+
+      // Not offline mode. Kick off a fetch.
+      //          instance
+      //              .loadConfigurationAsync()
+      //              .handle(
+      //                  (success, ex) -> {
+      //                    if (ex == null) {
+      //                      ret.complete(instance);
+      //                    } else if (failCount.incrementAndGet() == 2
+      //                        || instance.getInitialConfigFuture() == null) {
+      //                      ret.completeExceptionally(
+      //                          new EppoInitializationException(
+      //                              "Unable to initialize client; Configuration could not be
+      // loaded", ex));
+      //                    }
+      //                    return null;
+      //                  });
 
       // Start polling, if configured.
       if (pollingEnabled && pollingIntervalMs > 0) {
@@ -347,30 +387,13 @@ public class EppoClient extends BaseEppoClient {
         instance.startPolling(pollingIntervalMs, pollingJitterMs);
       }
 
-      if (instance.getInitialConfigFuture() != null) {
-        instance
-            .getInitialConfigFuture()
-            .handle(
-                (success, ex) -> {
-                  if (ex == null && success) {
-                    ret.complete(instance);
-                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
-                    ret.completeExceptionally(
-                        new EppoInitializationException(
-                            "Unable to initialize client; Configuration could not be loaded", ex));
-                  } else {
-                    Log.d(TAG, "Initial config was not used.");
-                    failCount.incrementAndGet();
-                  }
-                  return null;
-                });
-      }
       return ret.exceptionally(
           e -> {
             Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
             if (!isGracefulMode) {
               throw new RuntimeException(e);
             }
+            instance.activateConfiguration(Configuration.emptyConfig());
             return instance;
           });
     }
