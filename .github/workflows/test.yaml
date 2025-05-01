@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        api-level: [26, 31, 34]
+        api-level: [21, 26, 31, 34]
       # Allow other tests to continue if one fails
       fail-fast: false
 
