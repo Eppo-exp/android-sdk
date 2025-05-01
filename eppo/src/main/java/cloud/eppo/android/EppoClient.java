@@ -19,8 +19,6 @@ import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
@@ -71,28 +69,30 @@ public class EppoClient extends BaseEppoClient {
       @NonNull String sdkKey,
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
-      boolean isGracefulMode) {
+      boolean isGracefulMode,
+      long timeoutMs) {
     return new Builder(sdkKey, application)
         .apiBaseUrl(apiBaseUrl)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
-        .buildAndInit();
+        .buildAndInit(timeoutMs <= 0 ? 5000 : timeoutMs);
   }
 
   /**
    * @noinspection unused
    */
-  public static CompletableFuture<EppoClient> initAsync(
+  public static EppoClient initAsync(
       @NonNull Application application,
       @NonNull String sdkKey,
       @NonNull String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
-      boolean isGracefulMode) {
+      boolean isGracefulMode,
+      @NonNull EppoActionCallback<EppoClient> onInitializedCallback) {
     return new Builder(sdkKey, application)
         .apiBaseUrl(apiBaseUrl)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
-        .buildAndInitAsync();
+        .buildAndInitAsync(onInitializedCallback);
   }
 
   public static EppoClient getInstance() throws NotInitializedException {
@@ -260,10 +260,45 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    public CompletableFuture<EppoClient> buildAndInitAsync() {
+    private static class GracefulInitCallback implements EppoActionCallback<EppoClient> {
+      private final EppoActionCallback<EppoClient> wrappedCallback;
+      private final boolean isGracefulMode;
+      private final EppoClient fallback;
+
+      public GracefulInitCallback(
+          EppoActionCallback<EppoClient> wrappedCallback,
+          EppoClient fallbackInstance,
+          boolean isGracefulMode) {
+        this.isGracefulMode = isGracefulMode;
+        this.wrappedCallback = wrappedCallback;
+        this.fallback = fallbackInstance;
+      }
+
+      @Override
+      public void onSuccess(EppoClient data) {
+        wrappedCallback.onSuccess(data);
+      }
+
+      @Override
+      public void onFailure(Throwable error) {
+        Log.e(TAG, "Exception caught during initialization: " + error.getMessage(), error);
+        if (!isGracefulMode) {
+
+          wrappedCallback.onFailure(error);
+        } else {
+
+          fallback.activateConfiguration(Configuration.emptyConfig());
+          wrappedCallback.onSuccess(fallback);
+        }
+      }
+    }
+
+    public EppoClient buildAndInitAsync(EppoActionCallback<EppoClient> onInitializedCallback) {
+
       if (instance != null && !forceReinitialize) {
         Log.w(TAG, "Eppo Client instance already initialized");
-        return CompletableFuture.completedFuture(instance);
+        onInitializedCallback.onSuccess(instance);
+        return instance;
       } else if (instance != null) {
         // Stop polling (if the client is polling for configuration)
         instance.stopPolling();
@@ -282,13 +317,6 @@ public class EppoClient extends BaseEppoClient {
         String cacheFileNameSuffix = safeCacheKey(sdkKey);
         configStore = new ConfigurationStore(application, cacheFileNameSuffix);
       }
-      //
-      //      // If the initial config was not set, attempt to use the ConfigurationStore's cache as
-      // the
-      //      // initial config.
-      //      if (initialConfiguration == null && !ignoreCachedConfiguration) {
-      //        initialConfiguration = configStore.loadConfigFromCache();
-      //      }
 
       instance =
           new EppoClient(
@@ -302,21 +330,43 @@ public class EppoClient extends BaseEppoClient {
               initialConfiguration,
               assignmentCache);
 
+      GracefulInitCallback initCallback =
+          new GracefulInitCallback(onInitializedCallback, instance, isGracefulMode);
+
       if (configChangeCallback != null) {
         instance.onConfigurationChange(configChangeCallback);
       }
 
+      // Early return for offline mode.
       if (offlineMode) {
         // Offline mode means initializing without making/waiting on any fetches or polling.
         // Note: breaking change
         if (pollingEnabled) {
           log.warn("Ignoring pollingEnabled parameter as offlineMode is set to true");
         }
-        return CompletableFuture.completedFuture(instance);
+        // If there is not an `initialConfiguration`, attempt to load from the cache, or use an
+        // empty config.
+        if (initialConfiguration == null) {
+          if (!ignoreCachedConfiguration) {
+            configStore.loadConfigFromCacheAsync(
+                config -> {
+                  instance.activateConfiguration(
+                      config != null ? config : Configuration.emptyConfig());
+                  initCallback.onSuccess(instance);
+                });
+
+          } else {
+            // No initial config, offline mode, and ignore cache means bootstrap with an empty
+            // config
+            instance.activateConfiguration(Configuration.emptyConfig());
+            initCallback.onSuccess(instance);
+          }
+        } else {
+          initCallback.onSuccess(instance);
+        }
+        return instance;
       }
 
-      final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
-      AtomicInteger attemptCompleteCount = new AtomicInteger(0);
       AtomicInteger failCount = new AtomicInteger(0);
 
       // Not in offline mode. We'll kick off a fetch and attempt to load from the cache async.
@@ -328,11 +378,11 @@ public class EppoClient extends BaseEppoClient {
               if (!configLoaded.getAndSet(true)) {
                 // Config is not null, not empty and has not yet been set so set this one.
                 instance.activateConfiguration(configuration);
-                ret.complete(instance);
+                initCallback.onSuccess(instance);
               } // else config has already been set
             } else {
               if (failCount.incrementAndGet() == 2) {
-                ret.completeExceptionally(
+                initCallback.onFailure(
                     new EppoInitializationException(
                         "Unable to initialize client; Configuration could not be loaded", null));
               }
@@ -345,7 +395,7 @@ public class EppoClient extends BaseEppoClient {
             public void onSuccess(Configuration data) {
               if (!configLoaded.getAndSet(true)) {
                 // Cache has not yet set the config
-                ret.complete(instance);
+                initCallback.onSuccess(instance);
               }
             }
 
@@ -353,29 +403,12 @@ public class EppoClient extends BaseEppoClient {
             public void onFailure(Throwable error) {
               // If the local load already failed, throw an error
               if (failCount.incrementAndGet() == 2) {
-                ret.completeExceptionally(
+                initCallback.onFailure(
                     new EppoInitializationException(
                         "Unable to initialize client; Configuration could not be loaded", null));
               }
             }
           });
-
-      // Not offline mode. Kick off a fetch.
-      //          instance
-      //              .loadConfigurationAsync()
-      //              .handle(
-      //                  (success, ex) -> {
-      //                    if (ex == null) {
-      //                      ret.complete(instance);
-      //                    } else if (failCount.incrementAndGet() == 2
-      //                        || instance.getInitialConfigFuture() == null) {
-      //                      ret.completeExceptionally(
-      //                          new EppoInitializationException(
-      //                              "Unable to initialize client; Configuration could not be
-      // loaded", ex));
-      //                    }
-      //                    return null;
-      //                  });
 
       // Start polling, if configured.
       if (pollingEnabled && pollingIntervalMs > 0) {
@@ -383,42 +416,82 @@ public class EppoClient extends BaseEppoClient {
         if (pollingJitterMs < 0) {
           pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
-
         instance.startPolling(pollingIntervalMs, pollingJitterMs);
       }
-
-      return ret.exceptionally(
-          e -> {
-            Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
-            if (!isGracefulMode) {
-              throw new RuntimeException(e);
-            }
-            instance.activateConfiguration(Configuration.emptyConfig());
-            return instance;
-          });
+      return instance;
     }
 
     /** Builds and initializes an `EppoClient`, immediately available to compute assignments. */
-    public EppoClient buildAndInit() {
+    public EppoClient buildAndInit(long timeoutMs) {
+      // Using CountDownLatch for synchronization (available since Java 5, compatible with Android
+      // 21)
+      final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+
+      // Using 1 element arrays as a shortcut for passing results back to the main thread
+      // (AtomicReference would also work)
+      final EppoClient[] resultClient = new EppoClient[1];
+      final Throwable[] resultError = new Throwable[1];
+
+      buildAndInitAsync(
+          new EppoActionCallback<EppoClient>() {
+            @Override
+            public void onSuccess(EppoClient data) {
+              resultClient[0] = data;
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable error) {
+              resultError[0] = error;
+              latch.countDown();
+            }
+          });
+
       try {
-        return buildAndInitAsync().get();
-      } catch (ExecutionException | InterruptedException | CompletionException e) {
-        // If the exception was an `EppoInitializationException`, we know for sure that
-        // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
-        // wrapped by `CompletableFuture` with a `CompletionException`.
-        if (e instanceof CompletionException) {
-          Throwable cause = e.getCause();
-          if (cause instanceof RuntimeException
-              && cause.getCause() instanceof EppoInitializationException) {
+        // Wait for initialization to complete with timeout
+        if (!latch.await(timeoutMs, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+          // Check for graceful mode here.
+          if (isGracefulMode) {
+            Log.e(
+                TAG,
+                "Timed out waiting for Eppo initialization, using empty config",
+                new RuntimeException("Initialization timeout"));
+            if (instance != null) {
+              instance.activateConfiguration(Configuration.emptyConfig());
+              return instance;
+            }
+          }
+          throw new RuntimeException("Timed out waiting for Eppo initialization");
+        }
+
+        if (resultError[0] != null) {
+          if (isGracefulMode) {
+            Log.e(TAG, "Failed to initialize Eppo, using empty config", resultError[0]);
+            if (instance != null) {
+              instance.activateConfiguration(Configuration.emptyConfig());
+              return instance;
+            }
+          }
+
+          if (resultError[0] instanceof RuntimeException) {
+            throw (RuntimeException) resultError[0];
+          }
+          throw new RuntimeException("Failed to initialize Eppo", resultError[0]);
+        }
+
+        return resultClient[0];
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        // Check graceful mode here.
+        if (isGracefulMode) {
+          Log.e(TAG, "Interrupted while waiting for Eppo initialization, using empty config", e);
+          if (instance != null) {
+            instance.activateConfiguration(Configuration.emptyConfig());
             return instance;
           }
         }
-        Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
-        if (!isGracefulMode) {
-          throw new RuntimeException(e);
-        }
+        throw new RuntimeException("Interrupted while waiting for Eppo initialization", e);
       }
-      return instance;
     }
   }
 
