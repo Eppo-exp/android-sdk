@@ -47,11 +47,19 @@ jobs:
           echo "SDK Branch: android-sdk@${SDK_BRANCH}"
           echo "API Level: ${{ matrix.api-level }}"
 
+      - name: Check out Common Java SDK
+        uses: actions/checkout@v4
+        with:
+          repository: Eppo-exp/sdk-common-jdk
+          ref: typo/v4-api-tweaks
+          path: sdk-common-jdk
+
       - name: Check out Java SDK
         uses: actions/checkout@v4
         with:
           repository: Eppo-exp/android-sdk
           ref: ${{ env.SDK_BRANCH}}
+          path: android-sdk
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -65,7 +73,15 @@ jobs:
           mkdir -p ~/.gradle/
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
 
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Publish Common SDK to Maven Local
+        working-directory: sdk-common-jdk
+        run: ./gradlew publishToMavenLocal --no-daemon
+
       - name: Set up test data
+        working-directory: android-sdk
         run: make test-data branchName=${{env.TEST_DATA_BRANCH}}
 
       - name: Wait for mock UFC DNS to resolve
@@ -88,10 +104,8 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
       - name: Run tests
+        working-directory: android-sdk
         run: ./gradlew check --no-daemon
 
       - name: AVD cache
@@ -101,7 +115,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-api-${{ matrix.api-level }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          key: avd-api-${{ matrix.api-level }}-${{ hashFiles('android-sdk/**/*.gradle*', 'android-sdk/**/gradle-wrapper.properties') }}
 
       - name: create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -131,7 +145,7 @@ jobs:
             touch app/emulator.log                            # create log file
             chmod 777 app/emulator.log                        # allow writing to log file
             adb logcat | grep EppoSDK >> app/emulator.log &   # pipe all logcat messages into log file as a background process
-            ./gradlew connectedCheck --no-daemon -Pandroid.testInstrumentationRunnerArguments.TEST_DATA_BRANCH=${{ env.TEST_DATA_BRANCH }}           # run tests
+            cd android-sdk && ./gradlew connectedCheck --no-daemon -Pandroid.testInstrumentationRunnerArguments.TEST_DATA_BRANCH=${{ env.TEST_DATA_BRANCH }}           # run tests
 
       - name: Store reports on failure
         if: failure()
@@ -139,8 +153,8 @@ jobs:
         with:
           name: reports
           path: |
-            **/build/reports/
-            **/build/test-results/
+            android-sdk/**/build/reports/
+            android-sdk/**/build/test-results/
 
       - name: Upload Emulator Logs
         if: always()
@@ -154,4 +168,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: report-api-level-${{ matrix.api-level }}
-          path: /Users/runner/work/android-sdk/android-sdk/eppo/build/reports/androidTests/connected/index.html
+          path: /Users/runner/work/android-sdk/android-sdk/android-sdk/eppo/build/reports/androidTests/connected/index.html
