@@ -18,7 +18,6 @@ import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.slf4j.Logger;
@@ -116,38 +115,13 @@ public class EppoClient extends BaseEppoClient {
   /** (Re)loads flag and experiment configuration from the API server. */
   @Override
   public void fetchAndActivateConfiguration() {
-    try {
-      super.fetchAndActivateConfiguration();
-    } catch (Exception e) {
-      if (!isGracefulMode) {
-        throw new RuntimeException(e);
-      }
-    }
+    super.fetchAndActivateConfiguration();
   }
 
-  /** Asynchronously (re)loads flag and experiment configuration from the API server. */
-  public CompletableFuture<Configuration> loadConfigurationAsync() {
-    CompletableFutureCallback<Configuration> callback = new CompletableFutureCallback<>();
+  /** (Re)loads flag and experiment configuration from the API server. */
+  @Override
+  public void fetchAndActivateConfigurationAsync(EppoActionCallback<Configuration> callback) {
     super.fetchAndActivateConfigurationAsync(callback);
-    return callback.future;
-  }
-
-  public static class CompletableFutureCallback<T> implements EppoActionCallback<T> {
-    public final CompletableFuture<T> future;
-
-    public CompletableFutureCallback() {
-      future = new CompletableFuture<>();
-    }
-
-    @Override
-    public void onSuccess(T data) {
-      future.complete(data);
-    }
-
-    @Override
-    public void onFailure(Throwable error) {
-      future.completeExceptionally(error);
-    }
   }
 
   public static class Builder {
@@ -422,9 +396,11 @@ public class EppoClient extends BaseEppoClient {
     }
 
     /** Builds and initializes an `EppoClient`, immediately available to compute assignments. */
+    public EppoClient buildAndInit() {
+      return buildAndInit(5000);
+    }
+
     public EppoClient buildAndInit(long timeoutMs) {
-      // Using CountDownLatch for synchronization (available since Java 5, compatible with Android
-      // 21)
       final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
 
       // Using 1 element arrays as a shortcut for passing results back to the main thread
