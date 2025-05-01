@@ -15,7 +15,7 @@ android {
 
     defaultConfig {
         namespace "cloud.eppo.android"
-        minSdk 26
+        minSdk 21
         targetSdk 34
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
