@@ -428,7 +428,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testPollingClient() throws  InterruptedException {
+  public void testPollingClient() throws InterruptedException {
     TestUtils.MockHttpClient mockHttpClient = spy(new TestUtils.MockHttpClient(EMPTY_CONFIG));
 
     CountDownLatch pollLatch = new CountDownLatch(1);
