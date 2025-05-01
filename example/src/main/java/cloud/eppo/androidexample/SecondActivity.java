@@ -14,10 +14,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import cloud.eppo.android.EppoClient;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.EppoActionCallback;
-
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
-
 import java.util.concurrent.CompletableFuture;
 
 public class SecondActivity extends AppCompatActivity {
@@ -27,8 +25,6 @@ public class SecondActivity extends AppCompatActivity {
   private EditText subject;
   private TextView assignmentLog;
   private ScrollView assignmentLogScrollView;
-
-
 
   public static class CompletableFutureCallback<T> implements EppoActionCallback<T> {
     public final CompletableFuture<T> future;
@@ -72,7 +68,9 @@ public class SecondActivity extends AppCompatActivity {
                       + assignment.getExperiment());
             })
         .buildAndInitAsync(buffer);
-    buffer.future.thenAccept(
+    buffer
+        .future
+        .thenAccept(
             client -> {
               Log.d(TAG, "Eppo SDK initialized");
             })
