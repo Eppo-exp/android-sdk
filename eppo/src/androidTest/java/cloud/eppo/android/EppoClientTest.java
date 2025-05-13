@@ -1,7 +1,7 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.util.Utils.logTag;
-import static cloud.eppo.android.util.Utils.safeCacheKey;
+import static cloud.eppo.android.util.AndroidUtils.logTag;
+import static cloud.eppo.android.util.AndroidUtils.safeCacheKey;
 import static java.lang.Thread.sleep;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

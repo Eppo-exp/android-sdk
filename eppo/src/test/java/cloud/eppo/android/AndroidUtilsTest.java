@@ -1,13 +1,11 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.util.Utils.base64Decode;
-import static cloud.eppo.android.util.Utils.base64Encode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import cloud.eppo.android.util.Utils;
+import cloud.eppo.android.util.AndroidUtils;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -18,11 +16,11 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 
 @RunWith(RobolectricTestRunner.class) // Needed for anything that relies on Base64
-public class UtilsTest {
+public class AndroidUtilsTest {
 
   @Test
   public void testGetISODate() {
-    String isoDate = Utils.getISODate(new Date());
+    String isoDate = AndroidUtils.getISODate(new Date());
     assertNotNull("ISO date should not be null", isoDate);
 
     // Verify the format
@@ -50,7 +48,7 @@ public class UtilsTest {
     try {
       // Set locale to Arabic
       Locale.setDefault(new Locale("ar"));
-      String isoDate = Utils.getISODate(new Date());
+      String isoDate = AndroidUtils.getISODate(new Date());
 
       // Act
       // Check if the date is in the correct ISO 8601 format
@@ -71,10 +69,11 @@ public class UtilsTest {
 
   @Test
   public void testBase64EncodeAndDecode() {
+    AndroidUtils.AndroidCompatBase64Codec codec = new AndroidUtils.AndroidCompatBase64Codec();
     String testInput = "a";
-    String encodedInput = base64Encode(testInput);
+    String encodedInput = codec.base64Encode(testInput);
     assertEquals("YQ==", encodedInput);
-    String decodedOutput = base64Decode(encodedInput);
+    String decodedOutput = codec.base64Decode(encodedInput);
     assertEquals("a", decodedOutput);
   }
 }

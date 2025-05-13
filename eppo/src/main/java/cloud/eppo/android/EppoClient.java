@@ -1,7 +1,7 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.util.Utils.logTag;
-import static cloud.eppo.android.util.Utils.safeCacheKey;
+import static cloud.eppo.android.util.AndroidUtils.logTag;
+import static cloud.eppo.android.util.AndroidUtils.safeCacheKey;
 
 import android.app.Application;
 import android.util.Log;
@@ -9,8 +9,10 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.IConfigurationStore;
+import cloud.eppo.Utils;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.NotInitializedException;
+import cloud.eppo.android.util.AndroidUtils;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoActionCallback;
@@ -33,6 +35,11 @@ public class EppoClient extends BaseEppoClient {
   private long pollingIntervalMs, pollingJitterMs;
 
   @Nullable private static EppoClient instance;
+
+  // Provide a base64 codec based on Androids base64 util.
+  static {
+    Utils.setBase64Codec(new AndroidUtils());
+  }
 
   private EppoClient(
       String sdkKey,
