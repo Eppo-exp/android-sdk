@@ -12,6 +12,7 @@ import cloud.eppo.IConfigurationStore;
 import cloud.eppo.Utils;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.NotInitializedException;
+import cloud.eppo.android.util.AndroidJsonParser;
 import cloud.eppo.android.util.AndroidUtils;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
@@ -22,15 +23,12 @@ import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
-  private static final Logger log = LoggerFactory.getLogger(EppoClient.class);
 
   private long pollingIntervalMs, pollingJitterMs;
 
@@ -39,6 +37,7 @@ public class EppoClient extends BaseEppoClient {
   // Provide a base64 codec based on Androids base64 util.
   static {
     Utils.setBase64Codec(new AndroidUtils());
+    Utils.setJsonDecoder(new AndroidJsonParser());
   }
 
   private EppoClient(
@@ -323,7 +322,7 @@ public class EppoClient extends BaseEppoClient {
         // Offline mode means initializing without making/waiting on any fetches or polling.
         // Note: breaking change
         if (pollingEnabled) {
-          log.warn("Ignoring pollingEnabled parameter as offlineMode is set to true");
+          Log.w(TAG, "Ignoring pollingEnabled parameter as offlineMode is set to true");
         }
         // If there is not an `initialConfiguration`, attempt to load from the cache, or use an
         // empty config.
