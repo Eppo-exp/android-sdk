@@ -20,12 +20,12 @@ on:
         description: The branch of the SDK to test
         required: false
       base_repo:
-        type: boolean
+        type: string
         description: Explictly define the repository to test
         required: false
 
 env:
-  SDK_BRANCH: ${{ inputs.sdk_branch  || github.head_ref || github.ref_name }}
+  SDK_BRANCH: ${{ inputs.sdk_branch || github.ref || github.head_ref || github.ref_name }}
   TEST_DATA_BRANCH: ${{ inputs.test_data_branch || 'main' }}
 
   ORG_GRADLE_PROJECT_ossrhUsername: ${{ secrets.OSSRH_USERNAME }}
