@@ -223,7 +223,7 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    Builder configStore(ConfigurationStore configStore) {
+    public Builder configStore(ConfigurationStore configStore) {
       this.configStore = configStore;
       return this;
     }
