@@ -37,7 +37,7 @@ public class EppoClient extends BaseEppoClient {
   // Provide a base64 codec based on Androids base64 util.
   static {
     Utils.setBase64Codec(new AndroidUtils());
-    Utils.setJsonDecoder(new AndroidJsonParser());
+    Utils.setJsonDeserializer(new AndroidJsonParser());
   }
 
   private EppoClient(
