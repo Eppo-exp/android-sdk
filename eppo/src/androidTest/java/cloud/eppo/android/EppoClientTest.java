@@ -24,6 +24,7 @@ import androidx.test.platform.app.InstrumentationRegistry;
 import cloud.eppo.BaseEppoClient;
 import cloud.eppo.EppoHttpClient;
 import cloud.eppo.IEppoHttpClient;
+import cloud.eppo.Utils;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
 import cloud.eppo.android.helpers.SubjectAssignment;
@@ -36,15 +37,13 @@ import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +51,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.io.Charsets;
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -68,11 +68,14 @@ public class EppoClientTest {
   private static final String TEST_URL_BASE =
       "https://us-central1-eppo-qa.cloudfunctions.net/serveGitHubRacTestFile";
   private static final String TEST_API_BASE_URL =
-      TEST_URL_BASE + (TEST_BRANCH != null ? "/b/" + TEST_BRANCH : "");
+      TEST_URL_BASE + (TEST_BRANCH != null ? "/b/" + TEST_BRANCH : "") + "/api";
 
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
   private static final byte[] EMPTY_CONFIG = "{\"flags\":{}}".getBytes();
-  private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
+
+  AssignmentTestCaseDeserializer assignmentTestCaseDeserializer =
+      new AssignmentTestCaseDeserializer();
+
   @Mock AssignmentLogger mockAssignmentLogger;
   @Mock EppoHttpClient mockHttpClient;
 
@@ -172,7 +175,7 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testErrorGracefulModeOn() throws JSONException, JsonProcessingException {
+  public void testErrorGracefulModeOn() throws JSONException {
     initClient(TEST_API_BASE_URL, false, true, true, null, null, DUMMY_API_KEY, false, null, false);
 
     EppoClient realClient = EppoClient.getInstance();
@@ -203,10 +206,10 @@ public class EppoClientTest {
         "", spyClient.getStringAssignment("experiment1", "subject1", new Attributes(), ""));
 
     assertEquals(
-        mapper.readTree("{\"a\": 1, \"b\": false}").toString(),
+        new JSONObject("{\"a\": 1, \"b\": false}").toString(),
         spyClient
             .getJSONAssignment(
-                "subject1", "experiment1", mapper.readTree("{\"a\": 1, \"b\": false}"))
+                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}"))
             .toString());
 
     assertEquals(
@@ -214,9 +217,9 @@ public class EppoClientTest {
         spyClient.getJSONStringAssignment("subject1", "experiment1", "{\"a\": 1, \"b\": false}"));
 
     assertEquals(
-        mapper.readTree("{}").toString(),
+        new JSONObject("{}").toString(),
         spyClient
-            .getJSONAssignment("subject1", "experiment1", new Attributes(), mapper.readTree("{}"))
+            .getJSONAssignment("subject1", "experiment1", new Attributes(), new JSONObject("{}"))
             .toString());
   }
 
@@ -268,12 +271,12 @@ public class EppoClientTest {
         RuntimeException.class,
         () ->
             spyClient.getJSONAssignment(
-                "subject1", "experiment1", mapper.readTree("{\"a\": 1, \"b\": false}")));
+                "subject1", "experiment1", new JSONObject("{\"a\": 1, \"b\": false}")));
     assertThrows(
         RuntimeException.class,
         () ->
             spyClient.getJSONAssignment(
-                "subject1", "experiment1", new Attributes(), mapper.readTree("{}")));
+                "subject1", "experiment1", new Attributes(), new JSONObject("{}")));
   }
 
   private static IEppoHttpClient mockHttpError() {
@@ -334,8 +337,8 @@ public class EppoClientTest {
   }
 
   private static class LatchedCallback<T> implements EppoActionCallback<T> {
-    public final AtomicReference<T> result = new AtomicReference();
-    public final AtomicReference<Throwable> failure = new AtomicReference();
+    public final AtomicReference<T> result = new AtomicReference<>();
+    public final AtomicReference<Throwable> failure = new AtomicReference<>();
     private final CountDownLatch latch = new CountDownLatch(1);
 
     public boolean await(long duration, TimeUnit timeUnit) throws InterruptedException {
@@ -384,6 +387,9 @@ public class EppoClientTest {
     } else {
       eppoClient.fetchAndActivateConfiguration();
     }
+    Set<String> keySet = new HashSet<>();
+    keySet.add(Utils.getMD5Hex("bool_flag"));
+    assertEquals(keySet, eppoClient.getConfiguration().getFlagKeys());
 
     assertTrue(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
   }
@@ -571,66 +577,74 @@ public class EppoClientTest {
   }
 
   private int runTestCaseFileStream(InputStream testCaseStream) throws IOException, JSONException {
-    String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
-    AssignmentTestCase testCase = mapper.readValue(json, AssignmentTestCase.class);
-    String flagKey = testCase.getFlag();
-    TestCaseValue defaultValue = testCase.getDefaultValue();
-    EppoClient eppoClient = EppoClient.getInstance();
 
-    for (SubjectAssignment subjectAssignment : testCase.getSubjects()) {
-      String subjectKey = subjectAssignment.getSubjectKey();
-      Attributes subjectAttributes = subjectAssignment.getAttributes();
+    try {
+      String json = IOUtils.toString(testCaseStream, Charsets.toCharset("UTF8"));
+      AssignmentTestCase testCase = assignmentTestCaseDeserializer.deserialize(json);
+      String flagKey = testCase.getFlag();
+      TestCaseValue defaultValue = testCase.getDefaultValue();
+      EppoClient eppoClient = EppoClient.getInstance();
 
-      // Depending on the variation type, we will need to change which assignment method we call and
-      // how we get the default value
-      switch (testCase.getVariationType()) {
-        case BOOLEAN:
-          boolean boolAssignment =
-              eppoClient.getBooleanAssignment(
-                  flagKey, subjectKey, subjectAttributes, defaultValue.booleanValue());
-          assertAssignment(flagKey, subjectAssignment, boolAssignment);
-          break;
-        case INTEGER:
-          int intAssignment =
-              eppoClient.getIntegerAssignment(
-                  flagKey,
-                  subjectKey,
-                  subjectAttributes,
-                  Double.valueOf(defaultValue.doubleValue()).intValue());
-          assertAssignment(flagKey, subjectAssignment, intAssignment);
-          break;
-        case NUMERIC:
-          double doubleAssignment =
-              eppoClient.getDoubleAssignment(
-                  flagKey, subjectKey, subjectAttributes, defaultValue.doubleValue());
-          assertAssignment(flagKey, subjectAssignment, doubleAssignment);
-          break;
-        case STRING:
-          String stringAssignment =
-              eppoClient.getStringAssignment(
-                  flagKey, subjectKey, subjectAttributes, defaultValue.stringValue());
-          assertAssignment(flagKey, subjectAssignment, stringAssignment);
-          break;
-        case JSON:
-          JsonNode jsonAssignment =
-              eppoClient.getJSONAssignment(
-                  flagKey,
-                  subjectKey,
-                  subjectAttributes,
-                  mapper.readTree(defaultValue.jsonValue().toString()));
-          assertAssignment(flagKey, subjectAssignment, jsonAssignment);
-          break;
-        default:
-          throw new UnsupportedOperationException(
-              "Unexpected variation type "
-                  + testCase.getVariationType()
-                  + " for "
-                  + flagKey
-                  + " test case");
+      System.out.println("Running for flag: " + testCase.getFlag());
+      for (SubjectAssignment subjectAssignment : testCase.getSubjects()) {
+        String subjectKey = subjectAssignment.getSubjectKey();
+        Attributes subjectAttributes = subjectAssignment.getAttributes();
+
+        // Depending on the variation type, we will need to change which assignment method we call
+        // and
+        // how we get the default value
+        switch (testCase.getVariationType()) {
+          case BOOLEAN:
+            boolean boolAssignment =
+                eppoClient.getBooleanAssignment(
+                    flagKey, subjectKey, subjectAttributes, defaultValue.booleanValue());
+            assertAssignment(flagKey, subjectAssignment, boolAssignment);
+            break;
+          case INTEGER:
+            int intAssignment =
+                eppoClient.getIntegerAssignment(
+                    flagKey,
+                    subjectKey,
+                    subjectAttributes,
+                    Double.valueOf(defaultValue.doubleValue()).intValue());
+            assertAssignment(flagKey, subjectAssignment, intAssignment);
+            break;
+          case NUMERIC:
+            double doubleAssignment =
+                eppoClient.getDoubleAssignment(
+                    flagKey, subjectKey, subjectAttributes, defaultValue.doubleValue());
+            assertAssignment(flagKey, subjectAssignment, doubleAssignment);
+            break;
+          case STRING:
+            String stringAssignment =
+                eppoClient.getStringAssignment(
+                    flagKey, subjectKey, subjectAttributes, defaultValue.stringValue());
+            assertAssignment(flagKey, subjectAssignment, stringAssignment);
+            break;
+          case JSON:
+            JSONObject jsonAssignment =
+                eppoClient.getJSONAssignment(
+                    flagKey,
+                    subjectKey,
+                    subjectAttributes,
+                    new JSONObject(defaultValue.jsonValue().toString()));
+            assertAssignment(flagKey, subjectAssignment, jsonAssignment);
+            break;
+          default:
+            throw new UnsupportedOperationException(
+                "Unexpected variation type "
+                    + testCase.getVariationType()
+                    + " for "
+                    + flagKey
+                    + " test case");
+        }
       }
-    }
 
-    return testCase.getSubjects().size();
+      return testCase.getSubjects().size();
+    } catch (Exception e) {
+
+      throw new RuntimeException(e);
+    }
   }
 
   /** Helper method for asserting a subject assignment with a useful failure message. */
@@ -668,7 +682,7 @@ public class EppoClientTest {
     } else if (assignment instanceof String) {
       assertEquals(
           failureMessage, expectedSubjectAssignment.getAssignment().stringValue(), assignment);
-    } else if (assignment instanceof JsonNode) {
+    } else if (assignment instanceof JSONObject) {
       assertEquals(
           failureMessage,
           expectedSubjectAssignment.getAssignment().jsonValue().toString(),
@@ -677,12 +691,6 @@ public class EppoClientTest {
       throw new IllegalArgumentException(
           "Unexpected assignment type " + assignment.getClass().getCanonicalName());
     }
-  }
-
-  private static SimpleModule module() {
-    SimpleModule module = new SimpleModule();
-    module.addDeserializer(AssignmentTestCase.class, new AssignmentTestCaseDeserializer());
-    return module;
   }
 
   private static void setBaseClientHttpClientOverrideField(IEppoHttpClient httpClient) {

@@ -23,6 +23,8 @@ import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 public class EppoClient extends BaseEppoClient {
   private static final String TAG = logTag(EppoClient.class);
@@ -116,6 +118,28 @@ public class EppoClient extends BaseEppoClient {
       VariationType expectedType) {
     return super.getTypedAssignment(
         flagKey, subjectKey, subjectAttributes, defaultValue, expectedType);
+  }
+
+  public JSONObject getJSONAssignment(String flagKey, String subjectKey, JSONObject defaultValue) {
+    String result = super.getJSONStringAssignment(flagKey, subjectKey, defaultValue.toString());
+    return getJsonObject(defaultValue, result);
+  }
+
+  public JSONObject getJSONAssignment(
+      String flagKey, String subjectKey, Attributes subjectAttributes, JSONObject defaultValue) {
+    String result =
+        super.getJSONStringAssignment(
+            flagKey, subjectKey, subjectAttributes, defaultValue.toString());
+    return getJsonObject(defaultValue, result);
+  }
+
+  private JSONObject getJsonObject(JSONObject defaultValue, String result) {
+    try {
+      return new JSONObject(result);
+    } catch (JSONException e) {
+
+      return throwIfNotGraceful(e, defaultValue);
+    }
   }
 
   /** (Re)loads flag and experiment configuration from the API server. */

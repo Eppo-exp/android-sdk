@@ -78,7 +78,7 @@ public class AndroidJsonParser implements Utils.JsonDeserializer {
         }
       }
 
-      return new FlagConfigResponse(flags, banditRefs);
+      return new FlagConfigResponse(flags, banditRefs, format);
     } catch (JSONException e) {
       //      throw new JsonParsingException("Error parsing flag config response", e);
       return new FlagConfigResponse();
@@ -250,7 +250,7 @@ public class AndroidJsonParser implements Utils.JsonDeserializer {
           continue;
         }
 
-        EppoValue value = eppoValueDeserializer.deserialize(conditionNode.getJSONObject("value"));
+        EppoValue value = eppoValueDeserializer.deserialize(conditionNode.get("value"));
         conditions.add(new TargetingCondition(operator, attribute, value));
       } catch (JSONException e) {
         Log.w(TAG, "Error deserializing condition at index " + i, e);
@@ -269,7 +269,6 @@ public class AndroidJsonParser implements Utils.JsonDeserializer {
     for (int i = 0; i < jsonArray.length(); i++) {
       try {
         JSONObject splitNode = jsonArray.getJSONObject(i);
-        String key = splitNode.getString("key");
         Set<Shard> shards = deserializeShards(splitNode.getJSONArray("shards"));
 
         Map<String, String> extraLogging = new HashMap<>();
@@ -283,6 +282,7 @@ public class AndroidJsonParser implements Utils.JsonDeserializer {
           }
         }
 
+        String key = splitNode.getString("variationKey");
         splits.add(new Split(key, shards, extraLogging));
       } catch (JSONException e) {
         Log.w(TAG, "Error deserializing split at index " + i, e);
@@ -301,10 +301,13 @@ public class AndroidJsonParser implements Utils.JsonDeserializer {
     for (int i = 0; i < jsonArray.length(); i++) {
       try {
         JSONObject shardNode = jsonArray.getJSONObject(i);
-        Set<ShardRange> ranges = deserializeShardRanges(shardNode.optJSONArray("ranges"));
+        Set<ShardRange> ranges =
+            (shardNode.has("ranges"))
+                ? deserializeShardRanges(shardNode.getJSONArray("ranges"))
+                : new HashSet<>();
 
-        String key = shardNode.getString("key");
-        shards.add(new Shard(key, ranges));
+        String salt = shardNode.getString("salt");
+        shards.add(new Shard(salt, ranges));
       } catch (JSONException e) {
         Log.w(TAG, "Error deserializing shard at index " + i, e);
       }
