@@ -355,22 +355,4 @@ public class AndroidJsonParser implements Utils.JsonDeserializer {
 
     return new BanditReference(modelVersion, flagVariations);
   }
-
-  // Method to help handle parsing dates from JSON nodes
-  public static Date parseUtcISODateNode(JSONObject jsonObject, String fieldName) {
-    if (jsonObject == null || !jsonObject.has(fieldName)) {
-      return null;
-    }
-
-    try {
-      String dateString = jsonObject.getString(fieldName);
-      return parseUtcISODateString(dateString);
-    } catch (JSONException e) {
-      Log.w(
-          AndroidUtils.logTag(AndroidJsonParser.class),
-          "Error parsing date field: " + fieldName,
-          e);
-      return null;
-    }
-  }
 }
