@@ -1,13 +1,14 @@
 package cloud.eppo.android;
 
-import static cloud.eppo.android.util.Utils.base64Decode;
-import static cloud.eppo.android.util.Utils.base64Encode;
+import static cloud.eppo.Utils.base64Decode;
+import static cloud.eppo.Utils.base64Encode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import cloud.eppo.android.util.Utils;
+import cloud.eppo.Utils;
+import cloud.eppo.android.util.AndroidUtils;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -19,6 +20,9 @@ import org.robolectric.RobolectricTestRunner;
 
 @RunWith(RobolectricTestRunner.class) // Needed for anything that relies on Base64
 public class UtilsTest {
+  static {
+    Utils.setBase64Codec(new AndroidUtils());
+  }
 
   @Test
   public void testGetISODate() {

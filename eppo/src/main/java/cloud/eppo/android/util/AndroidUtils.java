@@ -1,5 +1,7 @@
 package cloud.eppo.android.util;
 
+import static cloud.eppo.Utils.Base64Codec;
+
 import android.util.Base64;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -9,11 +11,12 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-public final class Utils {
+public final class AndroidUtils implements Base64Codec {
   private static final int BUFFER_SIZE = 8192;
   private static final SimpleDateFormat isoUtcDateFormat = buildUtcIsoDateFormat();
 
-  public static String base64Encode(String input) {
+  @Override
+  public String base64Encode(String input) {
     if (input == null) {
       return null;
     }
@@ -25,7 +28,8 @@ public final class Utils {
     return result;
   }
 
-  public static String base64Decode(String input) {
+  @Override
+  public String base64Decode(String input) {
     if (input == null) {
       return null;
     }
