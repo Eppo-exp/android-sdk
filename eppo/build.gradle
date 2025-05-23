@@ -38,7 +38,8 @@ android {
             matchingFallbacks = ['debug']
         }
     }
-    compileOptions {
+    compileOptions {    // Flag to enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
@@ -51,6 +52,7 @@ android {
         }
     }
 }
+
 
 ext {}
 ext.versions = [
@@ -70,14 +72,13 @@ ext.versions = [
 dependencies {
     api 'cloud.eppo:sdk-common-jvm:4.0.0'
 
-    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
 
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.19.0"
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "commons-io:commons-io:${versions.commonsio}"
