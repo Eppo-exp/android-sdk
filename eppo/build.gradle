@@ -68,7 +68,7 @@ ext.versions = [
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.10.0'
+    api 'cloud.eppo:sdk-common-jvm:3.11.0'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
 
