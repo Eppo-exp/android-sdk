@@ -55,13 +55,22 @@ public class ConfigurationStore implements IConfigurationStore {
     }
     Log.d(TAG, "Loading from cache");
 
-    // Note: Lambda requires desugaring for Android API 21
+    // Use anonymous inner class instead of lambda for Android API 21 compatibility
     backgroundExecutor.execute(
-        () -> {
-          Configuration config = readCacheFile();
+        new Runnable() {
+          @Override
+          public void run() {
+            Configuration config = readCacheFile();
 
-          // Note: Lambda requires desugaring for Android API 21
-          mainHandler.post(() -> callback.accept(config));
+            // Use anonymous inner class instead of lambda for Android API 21 compatibility
+            mainHandler.post(
+                new Runnable() {
+                  @Override
+                  public void run() {
+                    callback.accept(config);
+                  }
+                });
+          }
         });
   }
 

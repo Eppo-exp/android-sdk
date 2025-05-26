@@ -12,7 +12,7 @@ import cloud.eppo.IConfigurationStore;
 import cloud.eppo.Utils;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.NotInitializedException;
-import cloud.eppo.android.util.AndroidJsonParser;
+import cloud.eppo.android.adapters.AndroidJsonDeserializer;
 import cloud.eppo.android.util.AndroidUtils;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
@@ -39,7 +39,7 @@ public class EppoClient extends BaseEppoClient {
   // Provide a base64 codec based on Androids base64 util.
   static {
     Utils.setBase64Codec(new AndroidUtils());
-    Utils.setJsonDeserializer(new AndroidJsonParser());
+    Utils.setJsonDeserializer(new AndroidJsonDeserializer());
   }
 
   private EppoClient(
@@ -353,10 +353,13 @@ public class EppoClient extends BaseEppoClient {
         if (initialConfiguration == null) {
           if (!ignoreCachedConfiguration) {
             configStore.loadConfigFromCacheAsync(
-                config -> {
-                  instance.activateConfiguration(
-                      config != null ? config : Configuration.emptyConfig());
-                  initCallback.onSuccess(instance);
+                new Configuration.Callback() {
+                  @Override
+                  public void accept(Configuration config) {
+                    instance.activateConfiguration(
+                        config != null ? config : Configuration.emptyConfig());
+                    initCallback.onSuccess(instance);
+                  }
                 });
 
           } else {
@@ -377,18 +380,21 @@ public class EppoClient extends BaseEppoClient {
       AtomicBoolean configLoaded = new AtomicBoolean(false);
 
       configStore.loadConfigFromCacheAsync(
-          configuration -> {
-            if (configuration != null && !configuration.isEmpty()) {
-              if (!configLoaded.getAndSet(true)) {
-                // Config is not null, not empty and has not yet been set so set this one.
-                instance.activateConfiguration(configuration);
-                initCallback.onSuccess(instance);
-              } // else config has already been set
-            } else {
-              if (failCount.incrementAndGet() == 2) {
-                initCallback.onFailure(
-                    new EppoInitializationException(
-                        "Unable to initialize client; Configuration could not be loaded", null));
+          new Configuration.Callback() {
+            @Override
+            public void accept(Configuration configuration) {
+              if (configuration != null && !configuration.isEmpty()) {
+                if (!configLoaded.getAndSet(true)) {
+                  // Config is not null, not empty and has not yet been set so set this one.
+                  instance.activateConfiguration(configuration);
+                  initCallback.onSuccess(instance);
+                } // else config has already been set
+              } else {
+                if (failCount.incrementAndGet() == 2) {
+                  initCallback.onFailure(
+                      new EppoInitializationException(
+                          "Unable to initialize client; Configuration could not be loaded", null));
+                }
               }
             }
           });

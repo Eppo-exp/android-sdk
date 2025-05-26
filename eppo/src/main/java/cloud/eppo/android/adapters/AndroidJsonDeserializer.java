@@ -1,10 +1,11 @@
-package cloud.eppo.android.util;
+package cloud.eppo.android.adapters;
 
 import static cloud.eppo.Utils.parseUtcISODateString;
 
 import android.util.Log;
 import androidx.annotation.Nullable;
 import cloud.eppo.Utils;
+import cloud.eppo.android.util.AndroidUtils;
 import cloud.eppo.api.EppoValue;
 import cloud.eppo.exception.JsonParsingException;
 import cloud.eppo.model.ShardRange;
@@ -33,8 +34,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class AndroidJsonParser implements Utils.JsonDeserializer {
-  private static final String TAG = AndroidUtils.logTag(AndroidJsonParser.class);
+public class AndroidJsonDeserializer implements Utils.JsonDeserializer {
+  private static final String TAG = AndroidUtils.logTag(AndroidJsonDeserializer.class);
   private final cloud.eppo.android.adapters.EppoValueDeserializer eppoValueDeserializer =
       new cloud.eppo.android.adapters.EppoValueDeserializer();
 
