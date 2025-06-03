@@ -149,7 +149,7 @@ publishing {
   repositories {
     maven {
       name = 'staging'
-      url = layout.buildDirectory.dir('staging-deploy')
+      url = layout.buildDirectory.dir('eppo/build/staging-deploy')
     }
   }
 }
@@ -167,7 +167,7 @@ jreleaser {
         'release-deploy' {
           active = 'RELEASE'
           url = 'https://central.sonatype.com/api/v1/publisher'
-          stagingRepository('build/staging-deploy')
+          stagingRepository('eppo/build/staging-deploy')
         }
       }
       nexus2 {
@@ -179,7 +179,7 @@ jreleaser {
           snapshotSupported = true
           closeRepository = true
           releaseRepository = true
-          stagingRepository('build/staging-deploy')
+          stagingRepository('eppo/build/staging-deploy')
         }
       }
     }
