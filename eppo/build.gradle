@@ -205,7 +205,7 @@ task checkVersion {
 }
 
 // Ensure checkVersion runs before publishing
-tasks.named('publishReleasePublicationToStagingRepository').configure {
+tasks.named('publish').configure {
     dependsOn checkVersion
 }
 

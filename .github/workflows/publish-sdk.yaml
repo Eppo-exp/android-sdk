@@ -20,7 +20,9 @@ jobs:
       JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
       JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-      JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    
+      JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -43,13 +45,7 @@ jobs:
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
 
       - name: Publish Release artifact
-        run: ./gradlew eppo:assemble eppo:publishReleasePublicationToStagingRepository -Prelease --no-daemon
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./gradlew eppo:assemble eppo:publish -Prelease --no-daemon
 
       - name: Deploy to Maven Central
         run: ./gradlew jreleaserDeploy
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
