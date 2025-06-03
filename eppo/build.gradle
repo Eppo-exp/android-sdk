@@ -149,7 +149,7 @@ publishing {
   repositories {
     maven {
       name = 'staging'
-      url = layout.buildDirectory.dir('eppo/build/staging-deploy')
+      url = layout.buildDirectory.dir('staging-deploy')
     }
   }
 }
