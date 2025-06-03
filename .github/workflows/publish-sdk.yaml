@@ -43,7 +43,7 @@ jobs:
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
 
       - name: Publish Release artifact
-        run: ./gradlew eppo:assemble eppo:publish -Prelease --no-daemon
+        run: ./gradlew eppo:assemble eppo:publishReleasePublicationToStagingRepository -Prelease --no-daemon
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

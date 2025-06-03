@@ -37,7 +37,7 @@ jobs:
         run: ./gradlew eppo:check
 
       - name: Stage artifacts
-        run: ./gradlew eppo:clean eppo:publish -Psnapshot
+        run: ./gradlew eppo:clean eppo:publishReleasePublicationToStagingRepository -Psnapshot
 
       - name: Deploy to Maven Central
         run: ./gradlew eppo:jreleaserDeploy

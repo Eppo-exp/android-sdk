@@ -49,6 +49,13 @@ android {
             excludes += "META-INF/**"
         }
     }
+    
+    publishing {
+        singleVariant('release') {
+            withSourcesJar()
+            withJavadocJar()
+        }
+    }
 }
 
 ext {}
@@ -105,32 +112,44 @@ spotless {
 
 publishing {
   publications {
-    maven(MavenPublication) {
+    release(MavenPublication) {
       groupId = 'cloud.eppo'
-      artifactId = 'eppo-server-sdk'
+      artifactId = 'android-sdk'
+      version = project.version
+      
+      afterEvaluate {
+        from components.release
+      }
 
-        pom {
-            name = 'Eppo Android'
-            description = 'Eppo Android SDK'
-            url = 'https://github.com/Eppo-exp/android-sdk'
-            licenses {
-                license {
-                    name = 'MIT License'
-                    url = 'http://www.opensource.org/licenses/mit-license.php'
-                }
-            }
-            developers {
-                developer {
-                    name = 'Eppo'
-                    email = 'https://www.geteppo.com'
-                }
-            }
-            scm {
-                connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
-                developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
-                url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
-            }
+      pom {
+        name = 'Eppo Android'
+        description = 'Eppo Android SDK'
+        url = 'https://github.com/Eppo-exp/android-sdk'
+        licenses {
+          license {
+            name = 'MIT License'
+            url = 'http://www.opensource.org/licenses/mit-license.php'
+          }
         }
+        developers {
+          developer {
+            name = 'Eppo'
+            email = 'https://www.geteppo.com'
+          }
+        }
+        scm {
+          connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
+          developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
+          url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
+        }
+      }
+    }
+  }
+  
+  repositories {
+    maven {
+      name = 'staging'
+      url = layout.buildDirectory.dir('staging-deploy')
     }
   }
 }
@@ -186,6 +205,13 @@ task checkVersion {
 }
 
 // Ensure checkVersion runs before publishing
-tasks.named('publish').configure {
+tasks.named('publishReleasePublicationToStagingRepository').configure {
     dependsOn checkVersion
+}
+
+// Conditionally enable or disable publishing tasks
+tasks.withType(PublishToMavenRepository) {
+    onlyIf {
+        project.ext.has('shouldPublish') && project.ext.shouldPublish
+    }
 }
