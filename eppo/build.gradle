@@ -1,7 +1,6 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
-    id "com.vanniktech.maven.publish" version "0.31.0"
     id 'org.jreleaser' version '1.18.0'
     id "com.diffplug.spotless" version "7.0.3"
 }
@@ -104,16 +103,6 @@ spotless {
     }
 }
 
-// Make sure signing tasks only run if configured correctly
-tasks.withType(Sign) {
-    onlyIf {
-        (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) ||
-                (project.hasProperty('signing.keyId') &&
-                        project.hasProperty('signing.password') &&
-                        project.hasProperty('signing.secretKeyRingFile'))
-    }
-}
-
 publishing {
   publications {
     maven(MavenPublication) {
@@ -198,11 +187,4 @@ task checkVersion {
 // Ensure checkVersion runs before publishing
 tasks.named('publish').configure {
     dependsOn checkVersion
-}
-
-// Conditionally enable or disable publishing tasks
-tasks.withType(PublishToMavenRepository) {
-    onlyIf {
-        project.ext.has('shouldPublish') && project.ext.shouldPublish
-    }
 }
