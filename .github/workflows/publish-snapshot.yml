@@ -2,11 +2,11 @@ name: Publish SDK Snapshot artifact
 
 on:
   push:
-    branches: [main]
+    branches: [main, tp/*]
 
 env:
-  ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
-  ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
+  MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+  MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
   CI: true
 
 jobs:

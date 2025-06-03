@@ -2,7 +2,7 @@ plugins {
     id 'com.android.library'
     id 'maven-publish'
     id "com.vanniktech.maven.publish" version "0.31.0"
-    id 'signing'
+    id 'org.jreleaser' version '1.18.0'
     id "com.diffplug.spotless" version "7.0.3"
 }
 
@@ -104,15 +104,6 @@ spotless {
     }
 }
 
-signing {
-    if (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) {
-        // Use in-memory keys for CI builds
-        useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
-    }
-
-    sign publishing.publications // Sign all Maven publications
-}
-
 // Make sure signing tasks only run if configured correctly
 tasks.withType(Sign) {
     onlyIf {
@@ -151,6 +142,38 @@ mavenPublishing {
         }
     }
 }
+
+jreleaser {
+  signing {
+    active = 'ALWAYS'
+    armored = true
+    verify = false
+  }
+  deploy {
+    maven {
+      mavenCentral {
+        'release-deploy' {
+          active = 'RELEASE'
+          url = 'https://central.sonatype.com/api/v1/publisher'
+          stagingRepository('build/staging-deploy')
+        }
+      }
+      nexus2 {
+        'snapshot-deploy' {
+          active = 'SNAPSHOT'
+          snapshotUrl = 'https://central.sonatype.com/repository/maven-snapshots'
+          url = 'https://central.sonatype.com/repository/maven-snapshots'
+          applyMavenCentralRules = true
+          snapshotSupported = true
+          closeRepository = true
+          releaseRepository = true
+          stagingRepository('build/staging-deploy')
+        }
+      }
+    }
+  }
+}
+
 
 // Custom task to ensure we can conditionally publish either a release or snapshot artifact
 // based on a command line switch. See github workflow files for more details on usage.
