@@ -114,33 +114,36 @@ tasks.withType(Sign) {
     }
 }
 
-mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.S01)
-    signAllPublications()
-    coordinates("cloud.eppo", "android-sdk", project.version)
+publishing {
+  publications {
+    maven(MavenPublication) {
+      groupId = 'cloud.eppo'
+      artifactId = 'eppo-server-sdk'
 
-    pom {
-        name = 'Eppo Android'
-        description = 'Eppo Android SDK'
-        url = 'https://github.com/Eppo-exp/android-sdk'
-        licenses {
-            license {
-                name = 'MIT License'
-                url = 'http://www.opensource.org/licenses/mit-license.php'
+        pom {
+            name = 'Eppo Android'
+            description = 'Eppo Android SDK'
+            url = 'https://github.com/Eppo-exp/android-sdk'
+            licenses {
+                license {
+                    name = 'MIT License'
+                    url = 'http://www.opensource.org/licenses/mit-license.php'
+                }
             }
-        }
-        developers {
-            developer {
-                name = 'Eppo'
-                email = 'https://www.geteppo.com'
+            developers {
+                developer {
+                    name = 'Eppo'
+                    email = 'https://www.geteppo.com'
+                }
             }
-        }
-        scm {
-            connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
-            developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
-            url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
+            scm {
+                connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
+                developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
+                url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
+            }
         }
     }
+  }
 }
 
 jreleaser {
