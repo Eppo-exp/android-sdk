@@ -43,3 +43,17 @@ jobs:
 
       - name: Deploy to Maven Central
         run: ./gradlew eppo:jreleaserDeploy
+
+      - name: Upload build artifacts and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-and-artifacts-${{ github.run_number }}
+          path: |
+            build/reports/problems/**
+            eppo/build/reports/**
+            build/jreleaser/**
+            eppo/build/staging-deploy/**
+            **/build/libs/**
+            **/hs_err_pid*.log
+          retention-days: 7
