@@ -33,8 +33,11 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Publish Snapshot artifact
-        run: ./gradlew eppo:assemble eppo:publish -Psnapshot --no-daemon
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Test
+        run: ./gradlew eppo:check
+
+      - name: Stage artifacts
+        run: ./gradlew eppo:clean eppo:publish -Prelease
+
+      - name: Deploy to Maven Central
+        run: ./gradlew eppo:jreleaserDeploy
