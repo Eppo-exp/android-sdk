@@ -49,7 +49,7 @@ android {
             excludes += "META-INF/**"
         }
     }
-    
+
     publishing {
         singleVariant('release') {
             withSourcesJar()
@@ -116,7 +116,7 @@ publishing {
       groupId = 'cloud.eppo'
       artifactId = 'android-sdk'
       version = project.version
-      
+
       afterEvaluate {
         from components.release
       }
@@ -145,7 +145,7 @@ publishing {
       }
     }
   }
-  
+
   repositories {
     maven {
       name = 'staging'
