@@ -1037,7 +1037,7 @@ public class EppoClientTest {
     Date parsedTimestamp = capturedAssignment.getTimestamp();
     assertNotNull(parsedTimestamp);
     assertTrue(parsedTimestamp.after(testStart));
-    assertTrue(parsedTimestamp.before(assertionDate));
+    assertTrue(parsedTimestamp.before(assertionDate) || parsedTimestamp.equals(assertionDate));
 
     Map<String, String> expectedMeta = new HashMap<>();
     expectedMeta.put("obfuscated", "true");
