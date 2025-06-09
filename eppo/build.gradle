@@ -164,6 +164,20 @@ jreleaser {
     armored = true
     verify = false
   }
+  project {
+    name = 'android-sdk'
+    description = 'Android SDK for Eppo feature flag and experimentation platform'
+    longDescription = 'Android SDK for Eppo feature flag and experimentation platform'
+    links {
+        homepage = 'https://www.geteppo.com'
+        documentation = 'https://docs.geteppo.com'
+        license = 'https://github.com/Eppo-exp/android-sdk/blob/main/LICENSE'
+        bugTracker = 'https://github.com/Eppo-exp/android-sdk/issues'
+    }
+    authors = ['Eppo']
+    license = 'MIT'
+    inceptionYear = '2021'
+  }
   deploy {
     maven {
       mavenCentral {
