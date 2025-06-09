@@ -115,14 +115,12 @@ spotless {
 
 publishing {
   publications {
-    maven(MavenPublication) {
+    release(MavenPublication) {
       groupId = 'cloud.eppo'
       artifactId = 'android-sdk'
       version = project.version
 
-      afterEvaluate {
-        from components.release
-      }
+      from components.java
 
       pom {
         name = 'Eppo Android'
