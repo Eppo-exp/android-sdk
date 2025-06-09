@@ -42,7 +42,7 @@ jobs:
         run: ./gradlew eppo:clean eppo:publish -Psnapshot
 
       - name: Deploy to Maven Central
-        run: ./gradlew eppo:jreleaserDeploy
+        run: ./gradlew eppo:jreleaserPublish
 
       - name: Upload build artifacts and logs
         if: always()
