@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
-    id 'org.jreleaser' version '1.14.0'
+    id 'org.jreleaser' version '1.18.0'
     id "com.diffplug.spotless" version "7.0.3"
 }
 
@@ -77,6 +77,9 @@ dependencies {
     api 'cloud.eppo:sdk-common-jvm:3.10.0'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
+
+    // Force newer Apache Commons Compress version for JReleaser 1.18.0 compatibility
+    implementation 'org.apache.commons:commons-compress:1.27.1'
 
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
