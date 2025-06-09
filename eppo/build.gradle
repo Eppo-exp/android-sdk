@@ -1,7 +1,7 @@
 plugins {
     id 'com.android.library'
     id 'maven-publish'
-    id 'org.jreleaser' version '1.18.0'
+    id 'org.jreleaser' version '1.14.0'
     id "com.diffplug.spotless" version "7.0.3"
 }
 
@@ -167,7 +167,7 @@ jreleaser {
         'release-deploy' {
           active = 'RELEASE'
           url = 'https://central.sonatype.com/api/v1/publisher'
-          stagingRepository('eppo/build/staging-deploy')
+          stagingRepository('build/staging-deploy')
         }
       }
       nexus2 {
@@ -179,7 +179,7 @@ jreleaser {
           snapshotSupported = true
           closeRepository = true
           releaseRepository = true
-          stagingRepository('eppo/build/staging-deploy')
+          stagingRepository('build/staging-deploy')
         }
       }
     }
