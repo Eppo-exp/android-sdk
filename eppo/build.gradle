@@ -3,7 +3,7 @@ plugins {
     id 'maven-publish'
     id "com.vanniktech.maven.publish" version "0.31.0"
     id 'signing'
-    id "com.diffplug.spotless" version "7.0.3"
+    id "com.diffplug.spotless" version "7.0.4"
 }
 
 group = "cloud.eppo"
