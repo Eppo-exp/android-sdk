@@ -5,12 +5,17 @@ on:
     branches: [main]
 
 env:
-  ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.OSSRH_USERNAME }}
-  ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.OSSRH_PASSWORD }}
   CI: true
 
 jobs:
   publish-snapshot:
+    env:
+      ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_TOKEN_USERNAME }}
+      ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_TOKEN_PASSWORD }}
+      ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+      ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,11 +27,25 @@ jobs:
         with:
           java-version: 17
           distribution: 'adopt'
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Publish Snapshot artifact
-        run: ./gradlew eppo:assemble eppo:publish -Psnapshot --no-daemon
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+
+      - name: Stage snapshot artifact
+        run: ./gradlew eppo:assemble eppo:publish -Psnapshot
+
+      - name: Publish Snapshot to Maven Central Portal
+        working-directory: eppo
+        run: ../gradlew publishAllPublicationsToMavenCentralRepository -Psnapshot --no-daemon --stacktrace
+
+      - name: Upload build artifacts and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs-and-artifacts-${{ github.run_number }}
+          path: |
+            build/**
+            eppo/**
+            **/build/libs/**
+            **/hs_err_pid*.log
+          retention-days: 7

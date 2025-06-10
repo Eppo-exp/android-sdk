@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "4.9.1"
+version = "4.9.2"
 
 android {
     buildFeatures.buildConfig true
@@ -124,7 +124,7 @@ tasks.withType(Sign) {
 }
 
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.S01)
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
     coordinates("cloud.eppo", "android-sdk", project.version)
 
