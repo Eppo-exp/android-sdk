@@ -3,8 +3,6 @@ name: Publish Android SDK
 on:
   release:
     types: [published]
-  push:
-    branches: [tp/maven-central-publish]
 
 env:
   ANDROID_API_LEVEL: 33
