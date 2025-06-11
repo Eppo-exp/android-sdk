@@ -38,6 +38,9 @@ jobs:
           mkdir -p ~/.gradle/
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
       
+      - name: Stage release artifact
+        run: ./gradlew eppo:assemble eppo:publish -Prelease
+
       - name: Publish and Release to Maven Central Portal
         working-directory: eppo
         run: ../gradlew publishAndReleaseToMavenCentral -Prelease --no-daemon --no-configuration-cache
