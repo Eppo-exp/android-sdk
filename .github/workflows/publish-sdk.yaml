@@ -3,6 +3,8 @@ name: Publish Android SDK
 on:
   release:
     types: [published]
+  push:
+    branches: [tp/maven-central-publish]
 
 env:
   ANDROID_API_LEVEL: 33
@@ -38,6 +40,9 @@ jobs:
           mkdir -p ~/.gradle/
           echo "GRADLE_USER_HOME=${HOME}/.gradle" >> $GITHUB_ENV
       
+      - name: Stage release artifact
+        run: ./gradlew eppo:assemble eppo:publish -Prelease
+
       - name: Publish and Release to Maven Central Portal
         working-directory: eppo
         run: ../gradlew publishAndReleaseToMavenCentral -Prelease --no-daemon --no-configuration-cache
