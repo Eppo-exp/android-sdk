@@ -17,13 +17,14 @@ dependencies {
 
 dependencyResolutionManagement {
   repositories {
+    mavenCentral()
     maven {
-      url "https://s01.oss.sonatype.org/content/repositories/snapshots/"
+      url "https://central.sonatype.com/repository/maven-snapshots/"
     }
   }
 }
 ```
-Snapshots of the development version are available in [Sonatype's snapshots repository](https://s01.oss.sonatype.org/content/repositories/snapshots/).
+Snapshots of the development version are available in [Maven Central's snapshotsrepository](https://central.sonatype.com/repository/maven-snapshot).
 
 ## Releasing a new version
 
