@@ -9,6 +9,7 @@ plugins {
 group = "cloud.eppo"
 version = "4.10.1-SNAPSHOT"
 
+
 android {
     buildFeatures.buildConfig true
     compileSdk 34
