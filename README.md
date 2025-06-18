@@ -12,7 +12,7 @@ feature flagging and experimentation for Eppo customers. An API key is required 
 
 ```groovy
 dependencies {
-  implementation 'cloud.eppo:android-sdk:4.10.0'
+  implementation 'cloud.eppo:android-sdk:4.9.3'
 }
 
 dependencyResolutionManagement {
@@ -24,7 +24,7 @@ dependencyResolutionManagement {
   }
 }
 ```
-Snapshots of the development version are available in [Maven Central's snapshotsrepository](https://central.sonatype.com/repository/maven-snapshot).
+Snapshots of the development version are available in [Maven Central's snapshots repository](https://central.sonatype.com/repository/maven-snapshots).
 
 ## Releasing a new version
 
@@ -34,11 +34,11 @@ For publishing a release locally, instead, follow the steps below.
 
 ### Prerequisites
 
-1. [Generate a user token](https://central.sonatype.org/publish/generate-token/) on `s01.oss.sonatype.org`;
+1. [Generate a user token](https://central.sonatype.org/publish/generate-token/) on `central.sonatype.com`;
 2. [Configure a GPG key](https://central.sonatype.org/publish/requirements/gpg/) for signing the artifact. Don't forget to upload it to the key server;
 3. Make sure you have the following vars in your `~/.gradle/gradle.properties` file:
-    1. `ossrhUsername` - User token username for Sonatype generated in step 1
-    2. `ossrhPassword` - User token password for Sonatype generated in step 1
+    1. `mavenCentralUsername` - User token username for Central Portal generated in step 1
+    2. `mavenCentralPassword` - User token password for Central Portal generated in step 1
     3. `signing.keyId` - GPG key ID generated in step 2
     4. `signing.password` - GPG key password generated in step 2
     5. `signing.secretKeyRingFile` - Path to GPG key file generated in step 2
@@ -46,8 +46,8 @@ For publishing a release locally, instead, follow the steps below.
 Once you have the prerequisites, follow the steps below to release a new version:
 
 1. Bump the project version in `build.gradle`
-2. Run `./gradlew publish -Prelease` or `./gradlew publish -Psnapshot`
-3. Follow the steps in [this page](https://central.sonatype.org/publish/release/#credentials) to promote your release
+2. Run `./gradlew eppo:publish -Prelease` or `./gradlew eppo:publish -Psnapshot`
+3. For releases, run `./gradlew eppo:publishAndReleaseToMavenCentral -Prelease` to automatically release to Maven Central
 
 ## Getting Started
 For information on usage, refer to our [SDK Documentation](https://docs.geteppo.com/sdks/client-sdks/android/).
