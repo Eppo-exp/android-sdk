@@ -7,8 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "4.10.1-SNAPSHOT"
-
+version = "4.10.1"
 
 android {
     buildFeatures.buildConfig true
@@ -69,7 +68,7 @@ ext.versions = [
 ]
 
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.12.0'
+    api 'cloud.eppo:sdk-common-jvm:3.12.1'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
 
