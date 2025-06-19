@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "4.10.2-SNAPSHOT"
+version = "4.10.1-SNAPSHOT"
 
 android {
     buildFeatures.buildConfig true
@@ -75,7 +75,7 @@ dependencies {
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.19.0"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.19.1"
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "commons-io:commons-io:${versions.commonsio}"
