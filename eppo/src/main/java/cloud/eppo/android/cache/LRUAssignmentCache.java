@@ -20,6 +20,19 @@ public class LRUAssignmentCache extends AbstractAssignmentCache {
           public String get(String cacheKey) {
             return cache.get(cacheKey);
           }
+
+          // @Override
+          public boolean putIfAbsent(String cacheKey, @NonNull String serializedEntry) {
+            boolean hadNoPreviousEntry;
+            synchronized (cache) {
+              String entry = cache.get(cacheKey);
+              hadNoPreviousEntry = entry == null;
+              if (hadNoPreviousEntry) {
+                  cache.put(cacheKey, serializedEntry);
+              }
+            }
+            return hadNoPreviousEntry;
+          }
         });
   }
 }
