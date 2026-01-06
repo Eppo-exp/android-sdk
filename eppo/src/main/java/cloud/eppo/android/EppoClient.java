@@ -157,6 +157,33 @@ public class EppoClient extends BaseEppoClient {
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
     @Nullable private Consumer<Configuration> configChangeCallback;
 
+    /**
+     * Wrapper for one-shot configuration change callbacks that auto-unsubscribes after first invocation.
+     */
+    private static class OneShotConfigCallback implements Consumer<Configuration> {
+      private final Consumer<Configuration> delegate;
+      private Runnable unsubscriber;
+
+      OneShotConfigCallback(Consumer<Configuration> delegate) {
+        this.delegate = delegate;
+      }
+
+      void setUnsubscriber(Runnable unsubscriber) {
+        this.unsubscriber = unsubscriber;
+      }
+
+      @Override
+      public void accept(Configuration config) {
+        try {
+          delegate.accept(config);
+        } finally {
+          if (unsubscriber != null) {
+            unsubscriber.run();
+          }
+        }
+      }
+    }
+
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
       this.apiKey = apiKey;
@@ -261,6 +288,16 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
+    /**
+     * Registers a callback for when a new configuration is applied to the `EppoClient` instance.
+     * @param configChangeCallback The callback to invoke when configuration changes
+     * @param oneShot If true, the callback will be automatically unsubscribed after the first invocation
+     */
+    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback, boolean oneShot) {
+      this.configChangeCallback = oneShot ? new OneShotConfigCallback(configChangeCallback) : configChangeCallback;
+      return this;
+    }
+
     public CompletableFuture<EppoClient> buildAndInitAsync() {
       if (application == null) {
         throw new MissingApplicationException();
@@ -311,7 +348,11 @@ public class EppoClient extends BaseEppoClient {
               assignmentCache);
 
       if (configChangeCallback != null) {
-        instance.onConfigurationChange(configChangeCallback);
+        Runnable unsubscriber = instance.onConfigurationChange(configChangeCallback);
+        // If this is a one-shot callback, set the unsubscriber so it can clean up after first call
+        if (configChangeCallback instanceof OneShotConfigCallback) {
+          ((OneShotConfigCallback) configChangeCallback).setUnsubscriber(unsubscriber);
+        }
       }
 
       final CompletableFuture<EppoClient> ret = new CompletableFuture<>();

@@ -397,6 +397,49 @@ public class EppoClientTest {
   }
 
   @Test
+  public void testConfigurationChangeListenerOneShot() throws ExecutionException, InterruptedException {
+    List<Configuration> received = new ArrayList<>();
+
+    // Set up a changing response from the "server"
+    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+
+    // Mock sync get to return empty
+    when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
+
+    // Mock async get to return empty
+    CompletableFuture<byte[]> emptyResponse = CompletableFuture.completedFuture(EMPTY_CONFIG);
+    when(mockHttpClient.getAsync(anyString())).thenReturn(emptyResponse);
+
+    setBaseClientHttpClientOverrideField(mockHttpClient);
+
+    EppoClient.Builder clientBuilder =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .onConfigurationChange(received::add, true) // oneShot = true
+            .isGracefulMode(false);
+
+    // Initialize and no exception should be thrown.
+    EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
+
+    verify(mockHttpClient, times(1)).getAsync(anyString());
+    assertEquals(1, received.size());
+
+    // Now, return the boolean flag config so that the config has changed.
+    when(mockHttpClient.get(anyString())).thenReturn(BOOL_FLAG_CONFIG);
+
+    // Trigger a reload of the client
+    eppoClient.loadConfiguration();
+
+    // Callback should NOT be invoked again because it was oneShot
+    assertEquals(1, received.size());
+
+    // Reload the client again to verify it's still not called
+    eppoClient.loadConfiguration();
+
+    assertEquals(1, received.size());
+  }
+
+  @Test
   public void testPollingClient() throws ExecutionException, InterruptedException {
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
 
