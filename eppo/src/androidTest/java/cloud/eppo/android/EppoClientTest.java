@@ -397,7 +397,8 @@ public class EppoClientTest {
   }
 
   @Test
-  public void testConfigurationChangeListenerOneShot() throws ExecutionException, InterruptedException {
+  public void testConfigurationChangeListenerOneShot()
+      throws ExecutionException, InterruptedException {
     List<Configuration> received = new ArrayList<>();
 
     // Set up a changing response from the "server"

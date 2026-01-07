@@ -158,7 +158,8 @@ public class EppoClient extends BaseEppoClient {
     @Nullable private Consumer<Configuration> configChangeCallback;
 
     /**
-     * Wrapper for one-shot configuration change callbacks that auto-unsubscribes after first invocation.
+     * Wrapper for one-shot configuration change callbacks that auto-unsubscribes after first
+     * invocation.
      */
     private static class OneShotConfigCallback implements Consumer<Configuration> {
       private final Consumer<Configuration> delegate;
@@ -290,11 +291,15 @@ public class EppoClient extends BaseEppoClient {
 
     /**
      * Registers a callback for when a new configuration is applied to the `EppoClient` instance.
+     *
      * @param configChangeCallback The callback to invoke when configuration changes
-     * @param oneShot If true, the callback will be automatically unsubscribed after the first invocation
+     * @param oneShot If true, the callback will be automatically unsubscribed after the first
+     *     invocation
      */
-    public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback, boolean oneShot) {
-      this.configChangeCallback = oneShot ? new OneShotConfigCallback(configChangeCallback) : configChangeCallback;
+    public Builder onConfigurationChange(
+        Consumer<Configuration> configChangeCallback, boolean oneShot) {
+      this.configChangeCallback =
+          oneShot ? new OneShotConfigCallback(configChangeCallback) : configChangeCallback;
       return this;
     }
 
