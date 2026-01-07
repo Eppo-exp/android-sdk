@@ -1,7 +1,9 @@
+import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
+
 plugins {
     id 'com.android.library'
     id 'maven-publish'
-    id "com.vanniktech.maven.publish" version "0.35.0"
+    id "com.vanniktech.maven.publish" version "0.34.0"
     id 'signing'
     id "com.diffplug.spotless" version "8.0.0"
 }
@@ -124,9 +126,11 @@ tasks.withType(Sign) {
 }
 
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    publishToMavenCentral()
     signAllPublications()
     coordinates("cloud.eppo", "android-sdk", project.version)
+
+    configure(new AndroidSingleVariantLibrary("release", true, true))
 
     pom {
         name = 'Eppo Android'
