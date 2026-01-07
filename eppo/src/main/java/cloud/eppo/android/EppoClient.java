@@ -175,13 +175,10 @@ public class EppoClient extends BaseEppoClient {
 
       @Override
       public void accept(Configuration config) {
-        try {
-          delegate.accept(config);
-        } finally {
-          if (unsubscriber != null) {
-            unsubscriber.run();
-          }
+        if (unsubscriber != null) {
+          unsubscriber.run();
         }
+        delegate.accept(config);
       }
     }
 
