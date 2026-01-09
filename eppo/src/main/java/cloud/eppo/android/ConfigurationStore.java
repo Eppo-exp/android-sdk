@@ -46,7 +46,14 @@ public class ConfigurationStore implements IConfigurationStore {
         CompletableFuture.supplyAsync(
             () -> {
               Log.d(TAG, "Loading from cache");
-              return readCacheFile();
+              Configuration config = readCacheFile();
+              if (config != null) {
+                // Update the store's configuration so getConfiguration() returns the cached config
+                // This prevents a race condition where getConfiguration() is called before the
+                // initial config future completes
+                this.configuration = config;
+              }
+              return config;
             });
   }
 

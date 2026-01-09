@@ -539,6 +539,76 @@ public class EppoClientTest {
     testOfflineInitFromFile("flags-v1-obfuscated.json");
   }
 
+  @Test
+  public void testOfflineInitWithPreSeededCache()
+      throws IOException, ExecutionException, InterruptedException {
+    // This test exercises a race condition where getConfiguration() is called immediately
+    // after initialization with a pre-seeded cache, before the async cache load completes.
+    // Without the fix in ConfigurationStore.loadConfigFromCache(), this test would fail
+    // because getConfiguration() would return an empty config.
+
+    // Pre-seed the cache with a known configuration
+    ConfigCacheFile cacheFile =
+        new ConfigCacheFile(
+            ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
+    byte[] configJson =
+        ("{\n"
+                + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
+                + "  \"format\": \"SERVER\",\n"
+                + "  \"flags\": {\n"
+                + "    \"test_flag\": {\n"
+                + "      \"key\": \"test_flag\",\n"
+                + "      \"enabled\": true,\n"
+                + "      \"variationType\": \"NUMERIC\",\n"
+                + "      \"totalShards\": 10000,\n"
+                + "      \"variations\": {\n"
+                + "        \"pi\": {\n"
+                + "          \"key\": \"pi\",\n"
+                + "          \"value\": 3.14159\n"
+                + "        }\n"
+                + "      },\n"
+                + "      \"allocations\": [\n"
+                + "        {\n"
+                + "          \"key\": \"rollout\",\n"
+                + "          \"doLog\": true,\n"
+                + "          \"splits\": [\n"
+                + "            {\n"
+                + "              \"variationKey\": \"pi\",\n"
+                + "              \"shards\": []\n"
+                + "            }\n"
+                + "          ]\n"
+                + "        }\n"
+                + "      ]\n"
+                + "    }\n"
+                + "  }\n"
+                + "}")
+            .getBytes();
+    cacheFile
+        .getOutputStream()
+        .write(new Configuration.Builder(configJson).build().serializeFlagConfigToBytes());
+
+    // Initialize in offline mode so the only source of config is the cache
+    CompletableFuture<EppoClient> futureClient =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .isGracefulMode(false)
+            .offlineMode(true)
+            .assignmentLogger(mockAssignmentLogger)
+            .forceReinitialize(true)
+            .buildAndInitAsync();
+
+    // Wait for initialization to complete
+    EppoClient client = futureClient.get();
+
+    // This call to getAssignment exercises the race condition:
+    // getConfiguration() is called to evaluate the assignment, and it must return
+    // the cached config even though it was loaded asynchronously
+    double result = client.getDoubleAssignment("test_flag", "alice", 99.0);
+
+    // If the race condition exists, this would return 99.0 (default)
+    // With the fix, it returns 3.14159 from the cached config
+    assertEquals(3.14159, result, 0.00001);
+  }
+
   public void testOfflineInitFromFile(String filepath) throws IOException {
     AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
 
