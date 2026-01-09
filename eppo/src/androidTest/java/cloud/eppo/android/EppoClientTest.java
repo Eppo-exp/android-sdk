@@ -163,13 +163,6 @@ public class EppoClientTest {
     runTestCases();
   }
 
-  // NOTE: testErrorGracefulModeOn and testErrorGracefulModeOff were removed because they relied
-  // on mocking the private BaseEppoClient.getTypedAssignment() method, which is not accessible
-  // for mocking with standard Mockito. Graceful mode behavior during initialization is still
-  // tested by testGracefulInitializationFailure().
-  // If more comprehensive testing of graceful mode during assignment evaluation is needed,
-  // consider adding tests at the BaseEppoClient level or using integration tests.
-
   private static EppoHttpClient mockHttpError() {
     // Create a mock instance of EppoHttpClient
     EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
