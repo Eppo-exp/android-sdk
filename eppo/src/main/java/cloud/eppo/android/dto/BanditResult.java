@@ -19,8 +19,7 @@ public class BanditResult {
   }
 
   /** Returns the action associated with the assignment, or null if not available. */
-  @Nullable
-  public String getAction() {
+  @Nullable public String getAction() {
     return action;
   }
 }

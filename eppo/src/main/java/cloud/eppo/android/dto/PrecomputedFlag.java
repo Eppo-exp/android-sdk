@@ -37,14 +37,12 @@ public class PrecomputedFlag {
   }
 
   /** Returns the Base64-encoded allocation key, or null if not assigned. */
-  @Nullable
-  public String getAllocationKey() {
+  @Nullable public String getAllocationKey() {
     return allocationKey;
   }
 
   /** Returns the Base64-encoded variation key, or null if not assigned. */
-  @Nullable
-  public String getVariationKey() {
+  @Nullable public String getVariationKey() {
     return variationKey;
   }
 
@@ -59,8 +57,7 @@ public class PrecomputedFlag {
   }
 
   /** Returns the Base64-encoded extra logging map, or null if not present. */
-  @Nullable
-  public Map<String, String> getExtraLogging() {
+  @Nullable public Map<String, String> getExtraLogging() {
     return extraLogging;
   }
 

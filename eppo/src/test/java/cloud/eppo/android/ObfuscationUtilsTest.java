@@ -74,7 +74,9 @@ public class ObfuscationUtilsTest {
   @Test
   public void testMd5HexLength() {
     // MD5 should always produce 32 character hex string
-    String[] inputs = {"", "a", "test", "a longer string with spaces", "unicode: \u00e9\u00e8\u00ea"};
+    String[] inputs = {
+      "", "a", "test", "a longer string with spaces", "unicode: \u00e9\u00e8\u00ea"
+    };
 
     for (String input : inputs) {
       String result = ObfuscationUtils.md5Hex(input);

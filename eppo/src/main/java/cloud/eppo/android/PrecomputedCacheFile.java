@@ -30,7 +30,9 @@ public class PrecomputedCacheFile {
     return cacheFile.exists();
   }
 
-  /** @noinspection ResultOfMethodCallIgnored */
+  /**
+   * @noinspection ResultOfMethodCallIgnored
+   */
   public void delete() {
     if (cacheFile.exists()) {
       cacheFile.delete();

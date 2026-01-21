@@ -42,8 +42,7 @@ public class PrecomputedConfigurationResponse {
     this.bandits = bandits != null ? bandits : Collections.emptyMap();
   }
 
-  @Nullable
-  private static String extractEnvironmentName(@Nullable JsonNode environment) {
+  @Nullable private static String extractEnvironmentName(@Nullable JsonNode environment) {
     if (environment == null) {
       return null;
     }
@@ -72,8 +71,7 @@ public class PrecomputedConfigurationResponse {
   }
 
   /** Returns the environment name, or null if not present. */
-  @Nullable
-  public String getEnvironmentName() {
+  @Nullable public String getEnvironmentName() {
     return environmentName;
   }
 
@@ -95,13 +93,7 @@ public class PrecomputedConfigurationResponse {
   /** Creates an empty configuration response. */
   public static PrecomputedConfigurationResponse empty() {
     return new PrecomputedConfigurationResponse(
-        "PRECOMPUTED",
-        true,
-        "",
-        null,
-        "",
-        Collections.emptyMap(),
-        Collections.emptyMap());
+        "PRECOMPUTED", true, "", null, "", Collections.emptyMap(), Collections.emptyMap());
   }
 
   /**

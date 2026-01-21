@@ -32,46 +32,39 @@ public class PrecomputedConfigurationStore {
   }
 
   /** Returns the current configuration. */
-  @NonNull
-  public PrecomputedConfigurationResponse getConfiguration() {
+  @NonNull public PrecomputedConfigurationResponse getConfiguration() {
     return configuration;
   }
 
   /** Returns the salt from the current configuration, or null if not set. */
-  @Nullable
-  public String getSalt() {
+  @Nullable public String getSalt() {
     String salt = configuration.getSalt();
     return (salt != null && !salt.isEmpty()) ? salt : null;
   }
 
   /** Returns the format from the current configuration, or null if not set. */
-  @Nullable
-  public String getFormat() {
+  @Nullable public String getFormat() {
     String format = configuration.getFormat();
     return (format != null && !format.isEmpty()) ? format : null;
   }
 
   /** Returns a flag by its MD5-hashed key, or null if not found. */
-  @Nullable
-  public PrecomputedFlag getFlag(String hashedKey) {
+  @Nullable public PrecomputedFlag getFlag(String hashedKey) {
     return configuration.getFlags().get(hashedKey);
   }
 
   /** Returns a bandit by its MD5-hashed key, or null if not found. */
-  @Nullable
-  public PrecomputedBandit getBandit(String hashedKey) {
+  @Nullable public PrecomputedBandit getBandit(String hashedKey) {
     return configuration.getBandits().get(hashedKey);
   }
 
   /** Returns the flags map. */
-  @NonNull
-  public Map<String, PrecomputedFlag> getFlags() {
+  @NonNull public Map<String, PrecomputedFlag> getFlags() {
     return configuration.getFlags();
   }
 
   /** Returns the bandits map. */
-  @NonNull
-  public Map<String, PrecomputedBandit> getBandits() {
+  @NonNull public Map<String, PrecomputedBandit> getBandits() {
     return configuration.getBandits();
   }
 
@@ -98,8 +91,7 @@ public class PrecomputedConfigurationStore {
   }
 
   /** Reads the cache file and returns the configuration. */
-  @Nullable
-  protected PrecomputedConfigurationResponse readCacheFile() {
+  @Nullable protected PrecomputedConfigurationResponse readCacheFile() {
     synchronized (cacheLock) {
       try (InputStream inputStream = cacheFile.getInputStream()) {
         Log.d(TAG, "Attempting to inflate precomputed config");

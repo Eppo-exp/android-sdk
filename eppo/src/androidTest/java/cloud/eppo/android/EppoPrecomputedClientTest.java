@@ -17,7 +17,6 @@ import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.dto.BanditResult;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingSubjectKeyException;
-import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.android.util.ObfuscationUtils;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.EppoValue;
@@ -52,8 +51,8 @@ public class EppoPrecomputedClientTest {
   }
 
   /**
-   * Creates a mock precomputed configuration response. The MD5 hashes are computed as:
-   * MD5(salt + flagKey)
+   * Creates a mock precomputed configuration response. The MD5 hashes are computed as: MD5(salt +
+   * flagKey)
    */
   private String getMockPrecomputedResponse() {
     // Compute MD5 hashes for the flag keys with the salt
@@ -299,8 +298,8 @@ public class EppoPrecomputedClientTest {
   // =============================================
 
   /**
-   * Loads the precomputed test data from sdk-test-data and extracts the response JSON.
-   * The file format is: { "version": 1, "precomputed": { "response": "escaped-json-string", ... } }
+   * Loads the precomputed test data from sdk-test-data and extracts the response JSON. The file
+   * format is: { "version": 1, "precomputed": { "response": "escaped-json-string", ... } }
    */
   private byte[] loadPrecomputedTestData() throws Exception {
     Context context = ApplicationProvider.getApplicationContext();

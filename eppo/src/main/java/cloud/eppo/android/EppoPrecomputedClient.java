@@ -235,8 +235,7 @@ public class EppoPrecomputedClient {
 
   // Internal assignment logic
 
-  @Nullable
-  private Object getPrecomputedAssignment(
+  @Nullable private Object getPrecomputedAssignment(
       String flagKey, Object defaultValue, String expectedType) {
     if (flagKey == null || flagKey.isEmpty()) {
       Log.w(TAG, "Invalid argument: flagKey cannot be blank");
@@ -580,8 +579,7 @@ public class EppoPrecomputedClient {
                   try (ResponseBody body = response.body()) {
                     if (!response.isSuccessful()) {
                       String responseText = body != null ? body.string() : "(no body)";
-                      String errorMsg =
-                          "HTTP error: " + response.code() + " - " + responseText;
+                      String errorMsg = "HTTP error: " + response.code() + " - " + responseText;
                       Log.e(TAG, errorMsg);
                       future.completeExceptionally(new IOException(errorMsg));
                       return;
