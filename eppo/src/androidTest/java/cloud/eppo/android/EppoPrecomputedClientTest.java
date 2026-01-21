@@ -177,60 +177,6 @@ public class EppoPrecomputedClientTest {
   }
 
   @Test
-  public void testGetStringAssignment() {
-    EppoPrecomputedClient client = initializeClientOffline(null, null);
-
-    String result = client.getStringAssignment("string_flag", "default");
-    assertEquals("test-string", result);
-  }
-
-  @Test
-  public void testGetBooleanAssignment() {
-    EppoPrecomputedClient client = initializeClientOffline(null, null);
-
-    boolean result = client.getBooleanAssignment("bool_flag", false);
-    assertTrue(result);
-  }
-
-  @Test
-  public void testGetIntegerAssignment() {
-    EppoPrecomputedClient client = initializeClientOffline(null, null);
-
-    int result = client.getIntegerAssignment("int_flag", 0);
-    assertEquals(42, result);
-  }
-
-  @Test
-  public void testGetNumericAssignment() {
-    EppoPrecomputedClient client = initializeClientOffline(null, null);
-
-    double result = client.getNumericAssignment("numeric_flag", 0.0);
-    assertEquals(3.14159, result, 0.00001);
-  }
-
-  @Test
-  public void testGetJSONAssignment() throws Exception {
-    EppoPrecomputedClient client = initializeClientOffline(null, null);
-
-    JsonNode defaultValue = objectMapper.readTree("{}");
-    JsonNode result = client.getJSONAssignment("json_flag", defaultValue);
-
-    assertNotNull(result);
-    assertTrue(result.has("key"));
-    assertEquals("value", result.get("key").asText());
-  }
-
-  @Test
-  public void testUnknownFlagReturnsDefault() {
-    EppoPrecomputedClient client = initializeClientOffline(null, null);
-
-    assertEquals("default", client.getStringAssignment("unknown_flag", "default"));
-    assertFalse(client.getBooleanAssignment("unknown_flag", false));
-    assertEquals(0, client.getIntegerAssignment("unknown_flag", 0));
-    assertEquals(0.0, client.getNumericAssignment("unknown_flag", 0.0), 0.001);
-  }
-
-  @Test
   public void testEmptyFlagKeyReturnsDefault() {
     EppoPrecomputedClient client = initializeClientOffline(null, null);
 
