@@ -1,0 +1,348 @@
+package cloud.eppo.android;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThrows;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
+import android.app.Application;
+import androidx.test.core.app.ApplicationProvider;
+import cloud.eppo.android.cache.LRUAssignmentCache;
+import cloud.eppo.android.dto.BanditResult;
+import cloud.eppo.android.exceptions.MissingApiKeyException;
+import cloud.eppo.android.exceptions.MissingSubjectKeyException;
+import cloud.eppo.android.exceptions.NotInitializedException;
+import cloud.eppo.android.util.ObfuscationUtils;
+import cloud.eppo.api.Attributes;
+import cloud.eppo.api.EppoValue;
+import cloud.eppo.api.IAssignmentCache;
+import cloud.eppo.logging.Assignment;
+import cloud.eppo.logging.AssignmentLogger;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.nio.charset.StandardCharsets;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+
+public class EppoPrecomputedClientTest {
+
+  private static final String TEST_API_KEY = "test-api-key";
+  private static final String TEST_SUBJECT_KEY = "test-subject-123";
+  private static final String TEST_SALT = "test-salt";
+  private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  private Application application;
+
+  @Mock AssignmentLogger mockAssignmentLogger;
+
+  @Before
+  public void setUp() {
+    MockitoAnnotations.openMocks(this);
+    application = ApplicationProvider.getApplicationContext();
+  }
+
+  /**
+   * Creates a mock precomputed configuration response. The MD5 hashes are computed as:
+   * MD5(salt + flagKey)
+   */
+  private String getMockPrecomputedResponse() {
+    // Compute MD5 hashes for the flag keys with the salt
+    String stringFlagHash = ObfuscationUtils.md5Hex("string_flag", TEST_SALT);
+    String boolFlagHash = ObfuscationUtils.md5Hex("bool_flag", TEST_SALT);
+    String intFlagHash = ObfuscationUtils.md5Hex("int_flag", TEST_SALT);
+    String numericFlagHash = ObfuscationUtils.md5Hex("numeric_flag", TEST_SALT);
+    String jsonFlagHash = ObfuscationUtils.md5Hex("json_flag", TEST_SALT);
+
+    // Base64 encoded values:
+    // "test-string" = dGVzdC1zdHJpbmc=
+    // "true" = dHJ1ZQ==
+    // "42" = NDI=
+    // "3.14159" = My4xNDE1OQ==
+    // {"key":"value"} = eyJrZXkiOiJ2YWx1ZSJ9
+    // "allocation-1" = YWxsb2NhdGlvbi0x
+    // "variant-a" = dmFyaWFudC1h
+
+    return "{\n"
+        + "  \"format\": \"PRECOMPUTED\",\n"
+        + "  \"obfuscated\": true,\n"
+        + "  \"createdAt\": \"2024-01-20T12:00:00.000Z\",\n"
+        + "  \"environment\": { \"name\": \"Test\" },\n"
+        + "  \"salt\": \""
+        + TEST_SALT
+        + "\",\n"
+        + "  \"flags\": {\n"
+        + "    \""
+        + stringFlagHash
+        + "\": {\n"
+        + "      \"allocationKey\": \"YWxsb2NhdGlvbi0x\",\n"
+        + "      \"variationKey\": \"dmFyaWFudC1h\",\n"
+        + "      \"variationType\": \"STRING\",\n"
+        + "      \"variationValue\": \"dGVzdC1zdHJpbmc=\",\n"
+        + "      \"doLog\": true,\n"
+        + "      \"extraLogging\": {}\n"
+        + "    },\n"
+        + "    \""
+        + boolFlagHash
+        + "\": {\n"
+        + "      \"allocationKey\": \"YWxsb2NhdGlvbi0x\",\n"
+        + "      \"variationKey\": \"dmFyaWFudC1h\",\n"
+        + "      \"variationType\": \"BOOLEAN\",\n"
+        + "      \"variationValue\": \"dHJ1ZQ==\",\n"
+        + "      \"doLog\": true,\n"
+        + "      \"extraLogging\": {}\n"
+        + "    },\n"
+        + "    \""
+        + intFlagHash
+        + "\": {\n"
+        + "      \"allocationKey\": \"YWxsb2NhdGlvbi0x\",\n"
+        + "      \"variationKey\": \"dmFyaWFudC1h\",\n"
+        + "      \"variationType\": \"INTEGER\",\n"
+        + "      \"variationValue\": \"NDI=\",\n"
+        + "      \"doLog\": true,\n"
+        + "      \"extraLogging\": {}\n"
+        + "    },\n"
+        + "    \""
+        + numericFlagHash
+        + "\": {\n"
+        + "      \"allocationKey\": \"YWxsb2NhdGlvbi0x\",\n"
+        + "      \"variationKey\": \"dmFyaWFudC1h\",\n"
+        + "      \"variationType\": \"NUMERIC\",\n"
+        + "      \"variationValue\": \"My4xNDE1OQ==\",\n"
+        + "      \"doLog\": true,\n"
+        + "      \"extraLogging\": {}\n"
+        + "    },\n"
+        + "    \""
+        + jsonFlagHash
+        + "\": {\n"
+        + "      \"allocationKey\": \"YWxsb2NhdGlvbi0x\",\n"
+        + "      \"variationKey\": \"dmFyaWFudC1h\",\n"
+        + "      \"variationType\": \"JSON\",\n"
+        + "      \"variationValue\": \"eyJrZXkiOiJ2YWx1ZSJ9\",\n"
+        + "      \"doLog\": true,\n"
+        + "      \"extraLogging\": {}\n"
+        + "    }\n"
+        + "  },\n"
+        + "  \"bandits\": {}\n"
+        + "}";
+  }
+
+  private EppoPrecomputedClient initializeClientOffline(
+      AssignmentLogger assignmentLogger, IAssignmentCache cache) {
+    byte[] configBytes = getMockPrecomputedResponse().getBytes(StandardCharsets.UTF_8);
+
+    return new EppoPrecomputedClient.Builder(TEST_API_KEY, application)
+        .subjectKey(TEST_SUBJECT_KEY)
+        .offlineMode(true)
+        .initialConfiguration(configBytes)
+        .assignmentLogger(assignmentLogger)
+        .assignmentCache(cache)
+        .forceReinitialize(true)
+        .buildAndInit();
+  }
+
+  @Test
+  public void testBuilderRequiresApiKey() {
+    assertThrows(
+        MissingApiKeyException.class,
+        () ->
+            new EppoPrecomputedClient.Builder("", application)
+                .subjectKey(TEST_SUBJECT_KEY)
+                .buildAndInit());
+  }
+
+  @Test
+  public void testBuilderRequiresSubjectKey() {
+    assertThrows(
+        MissingSubjectKeyException.class,
+        () ->
+            new EppoPrecomputedClient.Builder(TEST_API_KEY, application)
+                .offlineMode(true)
+                .buildAndInit());
+  }
+
+  @Test
+  public void testOfflineModeWithInitialConfiguration() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+    assertNotNull(client);
+  }
+
+  @Test
+  public void testGetStringAssignment() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    String result = client.getStringAssignment("string_flag", "default");
+    assertEquals("test-string", result);
+  }
+
+  @Test
+  public void testGetBooleanAssignment() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    boolean result = client.getBooleanAssignment("bool_flag", false);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testGetIntegerAssignment() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    int result = client.getIntegerAssignment("int_flag", 0);
+    assertEquals(42, result);
+  }
+
+  @Test
+  public void testGetNumericAssignment() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    double result = client.getNumericAssignment("numeric_flag", 0.0);
+    assertEquals(3.14159, result, 0.00001);
+  }
+
+  @Test
+  public void testGetJSONAssignment() throws Exception {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    JsonNode defaultValue = objectMapper.readTree("{}");
+    JsonNode result = client.getJSONAssignment("json_flag", defaultValue);
+
+    assertNotNull(result);
+    assertTrue(result.has("key"));
+    assertEquals("value", result.get("key").asText());
+  }
+
+  @Test
+  public void testUnknownFlagReturnsDefault() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    assertEquals("default", client.getStringAssignment("unknown_flag", "default"));
+    assertFalse(client.getBooleanAssignment("unknown_flag", false));
+    assertEquals(0, client.getIntegerAssignment("unknown_flag", 0));
+    assertEquals(0.0, client.getNumericAssignment("unknown_flag", 0.0), 0.001);
+  }
+
+  @Test
+  public void testEmptyFlagKeyReturnsDefault() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    assertEquals("default", client.getStringAssignment("", "default"));
+    assertEquals("default", client.getStringAssignment(null, "default"));
+  }
+
+  @Test
+  public void testTypeMismatchReturnsDefault() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    // string_flag is STRING type, requesting boolean should return default
+    assertFalse(client.getBooleanAssignment("string_flag", false));
+
+    // bool_flag is BOOLEAN type, requesting string should return default
+    assertEquals("default", client.getStringAssignment("bool_flag", "default"));
+  }
+
+  @Test
+  public void testAssignmentLogging() {
+    AssignmentLogger mockLogger = mock(AssignmentLogger.class);
+    EppoPrecomputedClient client = initializeClientOffline(mockLogger, null);
+
+    // Make an assignment request
+    client.getStringAssignment("string_flag", "default");
+
+    // Verify logger was called
+    ArgumentCaptor<Assignment> captor = ArgumentCaptor.forClass(Assignment.class);
+    verify(mockLogger, times(1)).logAssignment(captor.capture());
+
+    Assignment logged = captor.getValue();
+    assertEquals(TEST_SUBJECT_KEY, logged.getSubject());
+    assertEquals("string_flag", logged.getFeatureFlag());
+    assertEquals("allocation-1", logged.getAllocation());
+    assertEquals("variant-a", logged.getVariation());
+    assertNotNull(logged.getMetaData());
+    assertEquals("true", logged.getMetaData().get("obfuscated"));
+    assertEquals("android", logged.getMetaData().get("sdkLanguage"));
+  }
+
+  @Test
+  public void testAssignmentDeduplicationWithCache() {
+    AssignmentLogger mockLogger = mock(AssignmentLogger.class);
+    IAssignmentCache cache = new LRUAssignmentCache(100);
+
+    EppoPrecomputedClient client = initializeClientOffline(mockLogger, cache);
+
+    // Make the same assignment request twice
+    client.getStringAssignment("string_flag", "default");
+    client.getStringAssignment("string_flag", "default");
+
+    // Logger should only be called once due to cache deduplication
+    verify(mockLogger, times(1)).logAssignment(org.mockito.ArgumentMatchers.any());
+  }
+
+  @Test
+  public void testBanditResultDefaultValue() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    BanditResult result = client.getBanditAction("unknown_bandit", "default_variation");
+    assertEquals("default_variation", result.getVariation());
+    assertNull(result.getAction());
+  }
+
+  @Test
+  public void testSubjectAttributes() {
+    Attributes attributes = new Attributes();
+    attributes.put("age", EppoValue.valueOf(25));
+    attributes.put("country", EppoValue.valueOf("US"));
+
+    byte[] configBytes = getMockPrecomputedResponse().getBytes(StandardCharsets.UTF_8);
+
+    EppoPrecomputedClient client =
+        new EppoPrecomputedClient.Builder(TEST_API_KEY, application)
+            .subjectKey(TEST_SUBJECT_KEY)
+            .subjectAttributes(attributes)
+            .offlineMode(true)
+            .initialConfiguration(configBytes)
+            .forceReinitialize(true)
+            .buildAndInit();
+
+    assertNotNull(client);
+    // Assignments should still work
+    assertEquals("test-string", client.getStringAssignment("string_flag", "default"));
+  }
+
+  @Test
+  public void testPollingCanBePausedAndResumed() {
+    EppoPrecomputedClient client = initializeClientOffline(null, null);
+
+    // Start polling manually
+    client.startPolling(60000, 6000);
+
+    // Pause, resume, and stop should not throw
+    client.pausePolling();
+    client.resumePolling();
+    client.stopPolling();
+  }
+
+  @Test
+  public void testGracefulModeReturnsDefaultsWithNoConfig() {
+    // Initialize without any configuration
+    EppoPrecomputedClient client =
+        new EppoPrecomputedClient.Builder(TEST_API_KEY, application)
+            .subjectKey(TEST_SUBJECT_KEY)
+            .offlineMode(true)
+            .isGracefulMode(true)
+            .forceReinitialize(true)
+            .buildAndInit();
+
+    // Should return defaults when no configuration is available
+    assertEquals("default", client.getStringAssignment("any_flag", "default"));
+    assertFalse(client.getBooleanAssignment("any_flag", false));
+    assertEquals(0, client.getIntegerAssignment("any_flag", 0));
+    assertEquals(0.0, client.getNumericAssignment("any_flag", 0.0), 0.001);
+  }
+}
