@@ -902,7 +902,9 @@ public class EppoPrecomputedClient {
 
       // Create configuration store
       if (configStore == null) {
-        String cacheFileNameSuffix = safeCacheKey(apiKey) + "-" + safeCacheKey(subjectKey);
+        // Use MD5 hash of subject key to ensure consistent length and privacy
+        String subjectKeyHash = ObfuscationUtils.md5Hex(subjectKey, null).substring(0, 8);
+        String cacheFileNameSuffix = safeCacheKey(apiKey) + "-" + subjectKeyHash;
         configStore = new PrecomputedConfigurationStore(application, cacheFileNameSuffix);
       }
 
