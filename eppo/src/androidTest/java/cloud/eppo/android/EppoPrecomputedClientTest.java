@@ -11,6 +11,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import android.app.Application;
+import android.content.Context;
 import androidx.test.core.app.ApplicationProvider;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.dto.BanditResult;
@@ -25,6 +26,7 @@ import cloud.eppo.logging.Assignment;
 import cloud.eppo.logging.AssignmentLogger;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.Before;
 import org.junit.Test;
@@ -344,5 +346,145 @@ public class EppoPrecomputedClientTest {
     assertFalse(client.getBooleanAssignment("any_flag", false));
     assertEquals(0, client.getIntegerAssignment("any_flag", 0));
     assertEquals(0.0, client.getNumericAssignment("any_flag", 0.0), 0.001);
+  }
+
+  // =============================================
+  // Tests using sdk-test-data precomputed files
+  // =============================================
+
+  /**
+   * Loads the precomputed test data from sdk-test-data and extracts the response JSON.
+   * The file format is: { "version": 1, "precomputed": { "response": "escaped-json-string", ... } }
+   */
+  private byte[] loadPrecomputedTestData() throws Exception {
+    Context context = ApplicationProvider.getApplicationContext();
+    InputStream inputStream = context.getAssets().open("precomputed-v1.json");
+    byte[] bytes = new byte[inputStream.available()];
+    inputStream.read(bytes);
+    inputStream.close();
+
+    // Parse the wrapper and extract the response string
+    JsonNode wrapper = objectMapper.readTree(bytes);
+    String responseJson = wrapper.get("precomputed").get("response").asText();
+    return responseJson.getBytes(StandardCharsets.UTF_8);
+  }
+
+  private EppoPrecomputedClient initializeClientWithTestData(AssignmentLogger logger)
+      throws Exception {
+    byte[] configBytes = loadPrecomputedTestData();
+
+    return new EppoPrecomputedClient.Builder(TEST_API_KEY, application)
+        .subjectKey("test-subject-key")
+        .offlineMode(true)
+        .initialConfiguration(configBytes)
+        .assignmentLogger(logger)
+        .forceReinitialize(true)
+        .buildAndInit();
+  }
+
+  @Test
+  public void testSdkTestData_StringFlag() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    String result = client.getStringAssignment("string-flag", "default");
+    assertEquals("red", result);
+  }
+
+  @Test
+  public void testSdkTestData_BooleanFlag() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    boolean result = client.getBooleanAssignment("boolean-flag", false);
+    assertTrue(result);
+  }
+
+  @Test
+  public void testSdkTestData_IntegerFlag() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    int result = client.getIntegerAssignment("integer-flag", 0);
+    assertEquals(42, result);
+  }
+
+  @Test
+  public void testSdkTestData_NumericFlag() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    double result = client.getNumericAssignment("numeric-flag", 0.0);
+    assertEquals(3.14, result, 0.001);
+  }
+
+  @Test
+  public void testSdkTestData_JsonFlag() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    JsonNode defaultValue = objectMapper.readTree("{}");
+    JsonNode result = client.getJSONAssignment("json-flag", defaultValue);
+
+    assertNotNull(result);
+    assertTrue(result.has("key"));
+    assertEquals("value", result.get("key").asText());
+    assertTrue(result.has("number"));
+    assertEquals(123, result.get("number").asInt());
+  }
+
+  @Test
+  public void testSdkTestData_StringFlagWithExtraLogging() throws Exception {
+    AssignmentLogger mockLogger = mock(AssignmentLogger.class);
+    EppoPrecomputedClient client = initializeClientWithTestData(mockLogger);
+
+    String result = client.getStringAssignment("string-flag-with-extra-logging", "default");
+    assertEquals("red", result);
+
+    // Verify the assignment was logged with extra logging info
+    ArgumentCaptor<Assignment> captor = ArgumentCaptor.forClass(Assignment.class);
+    verify(mockLogger, times(1)).logAssignment(captor.capture());
+
+    Assignment logged = captor.getValue();
+    assertEquals("string-flag-with-extra-logging", logged.getFeatureFlag());
+    // Extra logging should include holdout information
+    assertNotNull(logged.getMetaData());
+  }
+
+  @Test
+  public void testSdkTestData_NotABanditFlag() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    String result = client.getStringAssignment("not-a-bandit-flag", "default");
+    assertEquals("control", result);
+  }
+
+  @Test
+  public void testSdkTestData_BanditAction() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    // string-flag has a bandit associated with it
+    BanditResult result = client.getBanditAction("string-flag", "default");
+
+    assertNotNull(result);
+    assertEquals("red", result.getVariation());
+    assertEquals("show_red_button", result.getAction());
+  }
+
+  @Test
+  public void testSdkTestData_BanditActionWithExtraLogging() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    // string-flag-with-extra-logging has a bandit
+    BanditResult result = client.getBanditAction("string-flag-with-extra-logging", "default");
+
+    assertNotNull(result);
+    assertEquals("red", result.getVariation());
+    assertEquals("featured_content", result.getAction());
+  }
+
+  @Test
+  public void testSdkTestData_UnknownFlagReturnsDefault() throws Exception {
+    EppoPrecomputedClient client = initializeClientWithTestData(null);
+
+    assertEquals("default", client.getStringAssignment("non-existent-flag", "default"));
+    assertFalse(client.getBooleanAssignment("non-existent-flag", false));
+    assertEquals(99, client.getIntegerAssignment("non-existent-flag", 99));
+    assertEquals(1.5, client.getNumericAssignment("non-existent-flag", 1.5), 0.001);
   }
 }
