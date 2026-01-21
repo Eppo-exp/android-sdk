@@ -25,6 +25,9 @@
 
         <activity
             android:name="cloud.eppo.androidexample.SecondActivity" />
+
+        <activity
+            android:name="cloud.eppo.androidexample.PrecomputedActivity" />
     </application>
 
 </manifest>

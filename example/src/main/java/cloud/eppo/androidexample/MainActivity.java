@@ -32,6 +32,10 @@ public class MainActivity extends AppCompatActivity {
         view ->
             startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
+    Button precomputedButton = findViewById(R.id.button_start_precomputed);
+    Intent launchPrecomputed = new Intent(MainActivity.this, PrecomputedActivity.class);
+    precomputedButton.setOnClickListener(view -> startActivity(launchPrecomputed));
+
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
     clearCacheButton.setOnClickListener(view -> clearCacheFile());
   }
