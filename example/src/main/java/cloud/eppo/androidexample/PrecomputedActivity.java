@@ -4,7 +4,9 @@ import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.RadioGroup;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -14,6 +16,8 @@ import cloud.eppo.api.Attributes;
 import cloud.eppo.api.EppoValue;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Example activity demonstrating the EppoPrecomputedClient. The precomputed client computes all
@@ -29,6 +33,8 @@ public class PrecomputedActivity extends AppCompatActivity {
   private TextView assignmentLog;
   private ScrollView assignmentLogScrollView;
   private TextView statusText;
+  private LinearLayout attributesContainer;
+  private List<View> attributeRows = new ArrayList<>();
 
   private EppoPrecomputedClient precomputedClient;
 
@@ -43,9 +49,88 @@ public class PrecomputedActivity extends AppCompatActivity {
     assignmentLog = findViewById(R.id.precomputed_assignment_log);
     assignmentLogScrollView = findViewById(R.id.precomputed_assignment_log_scrollview);
     statusText = findViewById(R.id.precomputed_status);
+    attributesContainer = findViewById(R.id.attributes_container);
 
     findViewById(R.id.btn_initialize).setOnClickListener(view -> initializeClient());
     findViewById(R.id.btn_get_assignment).setOnClickListener(view -> getAssignment());
+    findViewById(R.id.btn_add_attribute).setOnClickListener(view -> addAttributeRow("", ""));
+
+    // Add default attributes
+    addAttributeRow("platform", "android");
+    addAttributeRow("appVersion", BuildConfig.VERSION_NAME);
+  }
+
+  private void addAttributeRow(String key, String value) {
+    LinearLayout row = new LinearLayout(this);
+    row.setOrientation(LinearLayout.HORIZONTAL);
+    row.setLayoutParams(
+        new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+    EditText keyInput = new EditText(this);
+    keyInput.setHint("Key");
+    keyInput.setText(key);
+    LinearLayout.LayoutParams keyParams =
+        new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+    keyInput.setLayoutParams(keyParams);
+    keyInput.setTag("key");
+
+    EditText valueInput = new EditText(this);
+    valueInput.setHint("Value");
+    valueInput.setText(value);
+    LinearLayout.LayoutParams valueParams =
+        new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+    valueParams.setMarginStart(8);
+    valueInput.setLayoutParams(valueParams);
+    valueInput.setTag("value");
+
+    Button removeButton = new Button(this);
+    removeButton.setText("X");
+    removeButton.setMinWidth(0);
+    removeButton.setMinHeight(0);
+    removeButton.setMinimumWidth(0);
+    removeButton.setMinimumHeight(0);
+    removeButton.setPadding(16, 8, 16, 8);
+    LinearLayout.LayoutParams removeParams =
+        new LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+    removeParams.setMarginStart(8);
+    removeButton.setLayoutParams(removeParams);
+    removeButton.setOnClickListener(
+        v -> {
+          attributesContainer.removeView(row);
+          attributeRows.remove(row);
+        });
+
+    row.addView(keyInput);
+    row.addView(valueInput);
+    row.addView(removeButton);
+
+    attributesContainer.addView(row);
+    attributeRows.add(row);
+  }
+
+  private Attributes collectAttributes() {
+    Attributes attributes = new Attributes();
+    for (View row : attributeRows) {
+      EditText keyInput = row.findViewWithTag("key");
+      EditText valueInput = row.findViewWithTag("value");
+      if (keyInput != null && valueInput != null) {
+        String key = keyInput.getText().toString().trim();
+        String value = valueInput.getText().toString().trim();
+        if (!key.isEmpty()) {
+          // Try to parse as number first
+          try {
+            double numValue = Double.parseDouble(value);
+            attributes.put(key, EppoValue.valueOf(numValue));
+          } catch (NumberFormatException e) {
+            // Use as string
+            attributes.put(key, EppoValue.valueOf(value));
+          }
+        }
+      }
+    }
+    return attributes;
   }
 
   private void initializeClient() {
@@ -58,10 +143,9 @@ public class PrecomputedActivity extends AppCompatActivity {
     statusText.setText("Initializing...");
     appendToLog("Initializing precomputed client for subject: " + subjectKey);
 
-    // Create subject attributes (example)
-    Attributes subjectAttributes = new Attributes();
-    subjectAttributes.put("platform", EppoValue.valueOf("android"));
-    subjectAttributes.put("appVersion", EppoValue.valueOf(BuildConfig.VERSION_NAME));
+    // Collect subject attributes from the UI
+    Attributes subjectAttributes = collectAttributes();
+    appendToLog("Subject attributes: " + subjectAttributes.size() + " attributes");
 
     new EppoPrecomputedClient.Builder(API_KEY, getApplication())
         .subjectKey(subjectKey)

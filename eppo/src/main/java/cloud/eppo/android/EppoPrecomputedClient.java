@@ -554,6 +554,9 @@ public class EppoPrecomputedClient {
       String url = buildRequestUrl();
       String requestBody = buildRequestBody();
 
+      Log.d(TAG, "Fetching precomputed flags from: " + url);
+      Log.d(TAG, "Request payload: " + requestBody);
+
       Request request =
           new Request.Builder()
               .url(url)
@@ -574,7 +577,9 @@ public class EppoPrecomputedClient {
                 public void onResponse(@NonNull Call call, @NonNull Response response) {
                   try (ResponseBody body = response.body()) {
                     if (!response.isSuccessful()) {
-                      String errorMsg = "HTTP error: " + response.code();
+                      String responseText = body != null ? body.string() : "(no body)";
+                      String errorMsg =
+                          "HTTP error: " + response.code() + " - " + responseText;
                       Log.e(TAG, errorMsg);
                       future.completeExceptionally(new IOException(errorMsg));
                       return;

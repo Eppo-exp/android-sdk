@@ -53,6 +53,46 @@
                 android:text="Initialize" />
         </LinearLayout>
 
+        <!-- Subject Attributes Section -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="vertical">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Subject Attributes"
+                    android:textColor="@color/black"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btn_add_attribute"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:minWidth="0dp"
+                    android:minHeight="0dp"
+                    android:padding="8dp"
+                    android:text="+ Add"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- Container for dynamic attribute rows -->
+            <LinearLayout
+                android:id="@+id/attributes_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+
         <!-- Flag Key Input -->
         <EditText
             android:id="@+id/precomputed_flag_key"
