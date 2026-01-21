@@ -326,13 +326,14 @@ public class EppoPrecomputedClient {
     // Get the variation from the flag assignment
     String assignedVariation = getStringAssignment(flagKey, defaultValue);
 
-    // Decode action attributes
+    // Decode action attributes (both keys and values are Base64 encoded)
     Attributes decodedNumericAttrs = new Attributes();
     if (bandit.getActionNumericAttributes() != null) {
       for (Map.Entry<String, String> entry : bandit.getActionNumericAttributes().entrySet()) {
         try {
-          String decoded = Utils.base64Decode(entry.getValue());
-          decodedNumericAttrs.put(entry.getKey(), EppoValue.valueOf(Double.parseDouble(decoded)));
+          String decodedKey = Utils.base64Decode(entry.getKey());
+          String decodedValue = Utils.base64Decode(entry.getValue());
+          decodedNumericAttrs.put(decodedKey, EppoValue.valueOf(Double.parseDouble(decodedValue)));
         } catch (NumberFormatException e) {
           Log.w(TAG, "Failed to parse numeric attribute: " + entry.getKey());
         }
@@ -342,8 +343,9 @@ public class EppoPrecomputedClient {
     Attributes decodedCategoricalAttrs = new Attributes();
     if (bandit.getActionCategoricalAttributes() != null) {
       for (Map.Entry<String, String> entry : bandit.getActionCategoricalAttributes().entrySet()) {
-        decodedCategoricalAttrs.put(
-            entry.getKey(), EppoValue.valueOf(Utils.base64Decode(entry.getValue())));
+        String decodedKey = Utils.base64Decode(entry.getKey());
+        String decodedValue = Utils.base64Decode(entry.getValue());
+        decodedCategoricalAttrs.put(decodedKey, EppoValue.valueOf(decodedValue));
       }
     }
 
