@@ -14,7 +14,7 @@
         android:theme="@style/Theme.EppoExample"
         tools:targetApi="30">
         <activity
-            android:name="cloud.eppo.androidexample.MainActivity"
+            android:name="cloud.eppo.androidexample.HomeActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -24,10 +24,12 @@
         </activity>
 
         <activity
-            android:name="cloud.eppo.androidexample.SecondActivity" />
+            android:name="cloud.eppo.androidexample.StandardClientActivity"
+            android:parentActivityName="cloud.eppo.androidexample.HomeActivity" />
 
         <activity
-            android:name="cloud.eppo.androidexample.PrecomputedActivity" />
+            android:name="cloud.eppo.androidexample.PrecomputedActivity"
+            android:parentActivityName="cloud.eppo.androidexample.HomeActivity" />
     </application>
 
 </manifest>

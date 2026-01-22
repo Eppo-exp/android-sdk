@@ -3,6 +3,7 @@ package cloud.eppo.androidexample;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -42,6 +43,12 @@ public class PrecomputedActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_precomputed);
+
+    // Enable the action bar back button
+    if (getSupportActionBar() != null) {
+      getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+      getSupportActionBar().setTitle("Precomputed Client");
+    }
 
     subjectInput = findViewById(R.id.precomputed_subject);
     flagKeyInput = findViewById(R.id.precomputed_flag_key);
@@ -225,6 +232,15 @@ public class PrecomputedActivity extends AppCompatActivity {
   private void appendToLog(String message) {
     assignmentLog.append(message + "\n\n");
     assignmentLogScrollView.post(() -> assignmentLogScrollView.fullScroll(View.FOCUS_DOWN));
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    if (item.getItemId() == android.R.id.home) {
+      finish();
+      return true;
+    }
+    return super.onOptionsItemSelected(item);
   }
 
   @Override

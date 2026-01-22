@@ -15,15 +15,15 @@ import cloud.eppo.android.EppoClient;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 
-public class MainActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity {
   private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+    setContentView(R.layout.activity_home);
     Button button = findViewById(R.id.button_start_assigner);
-    Intent launchAssigner = new Intent(MainActivity.this, SecondActivity.class);
+    Intent launchAssigner = new Intent(HomeActivity.this, StandardClientActivity.class);
 
     button.setOnClickListener(view -> startActivity(launchAssigner));
 
@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
             startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
     Button precomputedButton = findViewById(R.id.button_start_precomputed);
-    Intent launchPrecomputed = new Intent(MainActivity.this, PrecomputedActivity.class);
+    Intent launchPrecomputed = new Intent(HomeActivity.this, PrecomputedActivity.class);
     precomputedButton.setOnClickListener(view -> startActivity(launchPrecomputed));
 
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
