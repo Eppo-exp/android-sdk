@@ -35,6 +35,7 @@ public class PrecomputedActivity extends AppCompatActivity {
   private ScrollView assignmentLogScrollView;
   private TextView statusText;
   private LinearLayout attributesContainer;
+  private Button getAssignmentButton;
   private List<View> attributeRows = new ArrayList<>();
 
   private EppoPrecomputedClient precomputedClient;
@@ -60,7 +61,9 @@ public class PrecomputedActivity extends AppCompatActivity {
 
     findViewById(R.id.btn_init_server).setOnClickListener(view -> initializeClient(false));
     findViewById(R.id.btn_init_disk).setOnClickListener(view -> initializeClient(true));
-    findViewById(R.id.btn_get_assignment).setOnClickListener(view -> getAssignment());
+    getAssignmentButton = findViewById(R.id.btn_get_assignment);
+    getAssignmentButton.setEnabled(false);
+    getAssignmentButton.setOnClickListener(view -> getAssignment());
     findViewById(R.id.btn_add_attribute).setOnClickListener(view -> addAttributeRow("", ""));
 
     // Add default attributes
@@ -180,6 +183,7 @@ public class PrecomputedActivity extends AppCompatActivity {
                   () -> {
                     statusText.setText("Initialized for: " + subjectKey + " (from " + source + ")");
                     appendToLog("Client initialized successfully from " + source + "!");
+                    getAssignmentButton.setEnabled(true);
                   });
             })
         .exceptionally(
