@@ -22,25 +22,34 @@
             android:textSize="14sp" />
 
         <!-- Subject Input Section -->
+        <EditText
+            android:id="@+id/precomputed_subject"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="Subject ID"
+            android:inputType="text" />
+
+        <!-- Initialize Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
             android:orientation="horizontal">
 
-            <EditText
-                android:id="@+id/precomputed_subject"
+            <Button
+                android:id="@+id/btn_init_server"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Subject ID"
-                android:inputType="text" />
+                android:text="From Server" />
 
             <Button
-                android:id="@+id/btn_initialize"
-                android:layout_width="wrap_content"
+                android:id="@+id/btn_init_disk"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="8dp"
-                android:text="Initialize" />
+                android:layout_weight="1"
+                android:text="From Disk" />
         </LinearLayout>
 
         <!-- Subject Attributes Section -->

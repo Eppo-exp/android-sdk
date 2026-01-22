@@ -58,7 +58,8 @@ public class PrecomputedActivity extends AppCompatActivity {
     statusText = findViewById(R.id.precomputed_status);
     attributesContainer = findViewById(R.id.attributes_container);
 
-    findViewById(R.id.btn_initialize).setOnClickListener(view -> initializeClient());
+    findViewById(R.id.btn_init_server).setOnClickListener(view -> initializeClient(false));
+    findViewById(R.id.btn_init_disk).setOnClickListener(view -> initializeClient(true));
     findViewById(R.id.btn_get_assignment).setOnClickListener(view -> getAssignment());
     findViewById(R.id.btn_add_attribute).setOnClickListener(view -> addAttributeRow("", ""));
 
@@ -140,15 +141,17 @@ public class PrecomputedActivity extends AppCompatActivity {
     return attributes;
   }
 
-  private void initializeClient() {
+  private void initializeClient(boolean offlineMode) {
     String subjectKey = subjectInput.getText().toString();
     if (TextUtils.isEmpty(subjectKey)) {
       appendToLog("Subject ID is required");
       return;
     }
 
-    statusText.setText("Initializing...");
-    appendToLog("Initializing precomputed client for subject: " + subjectKey);
+    String source = offlineMode ? "disk" : "server";
+    statusText.setText("Initializing from " + source + "...");
+    appendToLog(
+        "Initializing precomputed client for subject: " + subjectKey + " (from " + source + ")");
 
     // Collect subject attributes from the UI
     Attributes subjectAttributes = collectAttributes();
@@ -159,6 +162,7 @@ public class PrecomputedActivity extends AppCompatActivity {
         .subjectAttributes(subjectAttributes)
         .isGracefulMode(true)
         .forceReinitialize(true)
+        .offlineMode(offlineMode)
         .assignmentLogger(
             assignment -> {
               Log.d(
@@ -174,8 +178,8 @@ public class PrecomputedActivity extends AppCompatActivity {
               precomputedClient = client;
               runOnUiThread(
                   () -> {
-                    statusText.setText("Initialized for: " + subjectKey);
-                    appendToLog("Client initialized successfully!");
+                    statusText.setText("Initialized for: " + subjectKey + " (from " + source + ")");
+                    appendToLog("Client initialized successfully from " + source + "!");
                   });
             })
         .exceptionally(
@@ -192,7 +196,7 @@ public class PrecomputedActivity extends AppCompatActivity {
 
   private void getAssignment() {
     if (precomputedClient == null) {
-      appendToLog("Client not initialized. Click 'Initialize Client' first.");
+      appendToLog("Client not initialized. Click 'From Server' or 'From Disk' first.");
       return;
     }
 
