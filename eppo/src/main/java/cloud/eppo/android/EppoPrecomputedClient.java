@@ -452,8 +452,8 @@ public class EppoPrecomputedClient {
             variationKey,
             subjectKey,
             subjectAttributes != null ? subjectAttributes : new Attributes(),
-            metaData,
-            decodedExtraLogging);
+            decodedExtraLogging,
+            metaData);
 
     try {
       assignmentLogger.logAssignment(assignment);
