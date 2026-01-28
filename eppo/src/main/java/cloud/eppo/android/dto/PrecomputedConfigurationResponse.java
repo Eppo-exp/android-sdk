@@ -2,12 +2,15 @@ package cloud.eppo.android.dto;
 
 import androidx.annotation.Nullable;
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /** Wire protocol response from the precomputed edge endpoint. */
@@ -71,8 +74,20 @@ public class PrecomputedConfigurationResponse {
   }
 
   /** Returns the environment name, or null if not present. */
+  @JsonIgnore
   @Nullable public String getEnvironmentName() {
     return environmentName;
+  }
+
+  /** Returns the environment as a map for JSON serialization. */
+  @JsonGetter("environment")
+  @Nullable public Map<String, String> getEnvironment() {
+    if (environmentName == null) {
+      return null;
+    }
+    Map<String, String> env = new HashMap<>();
+    env.put("name", environmentName);
+    return env;
   }
 
   /** Returns the salt used for MD5 hashing flag keys. */
