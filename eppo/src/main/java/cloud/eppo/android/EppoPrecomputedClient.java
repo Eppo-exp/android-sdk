@@ -235,7 +235,7 @@ public class EppoPrecomputedClient {
 
   // Internal assignment logic
 
-  @Nullable private Object getPrecomputedAssignment(
+  private Object getPrecomputedAssignment(
       String flagKey, Object defaultValue, String expectedType) {
     if (flagKey == null || flagKey.isEmpty()) {
       Log.w(TAG, "Invalid argument: flagKey cannot be blank");
@@ -728,6 +728,10 @@ public class EppoPrecomputedClient {
     if (isPolling.getAndSet(true)) {
       Log.w(TAG, "Polling is already running");
       return;
+    }
+
+    if (poller == null || poller.isShutdown()) {
+      poller = Executors.newSingleThreadScheduledExecutor();
     }
 
     scheduleNextPoll();

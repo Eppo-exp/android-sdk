@@ -25,6 +25,7 @@ public class PrecomputedConfigurationStore {
 
   private volatile PrecomputedConfigurationResponse configuration =
       PrecomputedConfigurationResponse.empty();
+  private final Object cacheLoadLock = new Object();
   private CompletableFuture<PrecomputedConfigurationResponse> cacheLoadFuture = null;
 
   public PrecomputedConfigurationStore(Application application, String cacheFileNameSuffix) {
@@ -75,19 +76,21 @@ public class PrecomputedConfigurationStore {
 
   /** Loads configuration from the cache file asynchronously. */
   public CompletableFuture<PrecomputedConfigurationResponse> loadConfigFromCache() {
-    if (cacheLoadFuture != null) {
-      return cacheLoadFuture;
+    synchronized (cacheLoadLock) {
+      if (cacheLoadFuture != null) {
+        return cacheLoadFuture;
+      }
+      if (!cacheFile.exists()) {
+        Log.d(TAG, "Not loading from cache (file does not exist)");
+        return CompletableFuture.completedFuture(null);
+      }
+      return cacheLoadFuture =
+          CompletableFuture.supplyAsync(
+              () -> {
+                Log.d(TAG, "Loading precomputed config from cache");
+                return readCacheFile();
+              });
     }
-    if (!cacheFile.exists()) {
-      Log.d(TAG, "Not loading from cache (file does not exist)");
-      return CompletableFuture.completedFuture(null);
-    }
-    return cacheLoadFuture =
-        CompletableFuture.supplyAsync(
-            () -> {
-              Log.d(TAG, "Loading precomputed config from cache");
-              return readCacheFile();
-            });
   }
 
   /** Reads the cache file and returns the configuration. */
