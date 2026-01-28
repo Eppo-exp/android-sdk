@@ -61,6 +61,7 @@ public class EppoPrecomputedClient {
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
   private static final String DEFAULT_BASE_URL = "https://fs-edge-assignment.eppo.cloud";
   private static final String ASSIGNMENTS_ENDPOINT = "/assignments";
+  private static final int SUBJECT_KEY_HASH_LENGTH = 8;
   private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
   private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -317,10 +318,13 @@ public class EppoPrecomputedClient {
       return new BanditResult(defaultValue, null);
     }
 
-    // Decode bandit values
-    String decodedBanditKey = Utils.base64Decode(bandit.getBanditKey());
-    String decodedAction = Utils.base64Decode(bandit.getAction());
-    String decodedModelVersion = Utils.base64Decode(bandit.getModelVersion());
+    // Decode bandit values (with null safety)
+    String decodedBanditKey =
+        bandit.getBanditKey() != null ? Utils.base64Decode(bandit.getBanditKey()) : null;
+    String decodedAction =
+        bandit.getAction() != null ? Utils.base64Decode(bandit.getAction()) : null;
+    String decodedModelVersion =
+        bandit.getModelVersion() != null ? Utils.base64Decode(bandit.getModelVersion()) : null;
 
     // Get the variation from the flag assignment
     String assignedVariation = getStringAssignment(flagKey, defaultValue);
@@ -557,7 +561,6 @@ public class EppoPrecomputedClient {
       String requestBody = buildRequestBody();
 
       Log.d(TAG, "Fetching precomputed flags from: " + baseUrl + ASSIGNMENTS_ENDPOINT);
-      Log.d(TAG, "Request payload: " + requestBody);
 
       Request request =
           new Request.Builder()
@@ -867,7 +870,7 @@ public class EppoPrecomputedClient {
     }
 
     /** Sets the base URL for the API. Default is the edge endpoint. */
-    public Builder baseUrl(String baseUrl) {
+    public Builder baseUrl(@NonNull String baseUrl) {
       this.baseUrl = baseUrl;
       return this;
     }
@@ -913,7 +916,8 @@ public class EppoPrecomputedClient {
       // Create configuration store
       if (configStore == null) {
         // Use MD5 hash of subject key to ensure consistent length and privacy
-        String subjectKeyHash = ObfuscationUtils.md5Hex(subjectKey, null).substring(0, 8);
+        String subjectKeyHash =
+            ObfuscationUtils.md5Hex(subjectKey, null).substring(0, SUBJECT_KEY_HASH_LENGTH);
         String cacheFileNameSuffix = safeCacheKey(apiKey) + "-" + subjectKeyHash;
         configStore = new PrecomputedConfigurationStore(application, cacheFileNameSuffix);
       }
@@ -939,34 +943,36 @@ public class EppoPrecomputedClient {
       CompletableFuture<EppoPrecomputedClient> result = new CompletableFuture<>();
 
       // Load initial configuration
-      CompletableFuture<PrecomputedConfigurationResponse> initialConfigFuture = null;
-
       if (initialConfiguration != null) {
         // Use provided initial configuration
         try {
           PrecomputedConfigurationResponse config =
               PrecomputedConfigurationResponse.fromBytes(initialConfiguration);
           configStore.setConfiguration(config);
-          initialConfigFuture = CompletableFuture.completedFuture(config);
+          Log.d(TAG, "Loaded initial configuration with " + config.getFlags().size() + " flags");
         } catch (Exception e) {
           Log.e(TAG, "Failed to parse initial configuration", e);
         }
       } else if (!ignoreCachedConfiguration) {
-        // Try to load from cache
-        initialConfigFuture = configStore.loadConfigFromCache();
+        // Try to load from cache (runs concurrently with network fetch)
+        configStore
+            .loadConfigFromCache()
+            .thenAccept(
+                config -> {
+                  if (config != null && !config.getFlags().isEmpty()) {
+                    configStore.setConfiguration(config);
+                    Log.d(
+                        TAG,
+                        "Loaded cached configuration with " + config.getFlags().size() + " flags");
+                  }
+                });
       }
 
-      if (initialConfigFuture != null) {
-        initialConfigFuture.thenAccept(
-            config -> {
-              if (config != null && !config.getFlags().isEmpty()) {
-                configStore.setConfiguration(config);
-                Log.d(
-                    TAG,
-                    "Loaded initial configuration with " + config.getFlags().size() + " flags");
-              }
-            });
-      }
+      // Capture final values for lambda
+      final long finalPollingIntervalMs = pollingIntervalMs;
+      final long finalPollingJitterMs =
+          pollingJitterMs < 0 ? pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO : pollingJitterMs;
+      final boolean shouldStartPolling = pollingEnabled && pollingIntervalMs > 0;
 
       if (!offlineMode) {
         // Fetch configuration from server
@@ -974,6 +980,10 @@ public class EppoPrecomputedClient {
             .fetchPrecomputedFlagsAsync()
             .thenRun(
                 () -> {
+                  // Start polling after initial fetch completes
+                  if (shouldStartPolling) {
+                    instance.startPolling(finalPollingIntervalMs, finalPollingJitterMs);
+                  }
                   result.complete(instance);
                 })
             .exceptionally(
@@ -981,6 +991,10 @@ public class EppoPrecomputedClient {
                   Log.e(TAG, "Failed to fetch precomputed flags", ex);
                   if (isGracefulMode) {
                     // Still complete successfully in graceful mode
+                    // Start polling even on failure so we can retry
+                    if (shouldStartPolling) {
+                      instance.startPolling(finalPollingIntervalMs, finalPollingJitterMs);
+                    }
                     result.complete(instance);
                   } else {
                     result.completeExceptionally(
@@ -990,16 +1004,8 @@ public class EppoPrecomputedClient {
                   return null;
                 });
       } else {
-        // In offline mode, complete immediately
+        // In offline mode, complete immediately (no polling in offline mode)
         result.complete(instance);
-      }
-
-      // Start polling if enabled
-      if (pollingEnabled && pollingIntervalMs > 0) {
-        if (pollingJitterMs < 0) {
-          pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
-        }
-        instance.startPolling(pollingIntervalMs, pollingJitterMs);
       }
 
       return result.exceptionally(

@@ -115,14 +115,16 @@ public class PrecomputedConfigurationStore {
     return CompletableFuture.supplyAsync(
         () -> {
           synchronized (cacheLock) {
+            // Always update in-memory configuration, even if disk write fails
+            this.configuration = newConfiguration;
+
             Log.d(TAG, "Saving precomputed configuration to cache file");
             try (OutputStream outputStream = cacheFile.getOutputStream()) {
               outputStream.write(newConfiguration.toBytes());
               Log.d(TAG, "Updated precomputed cache file");
-              this.configuration = newConfiguration;
             } catch (IOException e) {
-              Log.e(TAG, "Unable to write precomputed config to file", e);
-              throw new RuntimeException(e);
+              Log.e(TAG, "Unable to write precomputed config to file (in-memory updated)", e);
+              // Don't throw - in-memory config is already updated
             }
             return null;
           }
