@@ -70,7 +70,8 @@ public class PrecomputedConfigurationStoreTest {
   }
 
   @Test
-  public void testSaveConfigurationUpdatesInMemory() throws ExecutionException, InterruptedException {
+  public void testSaveConfigurationUpdatesInMemory()
+      throws ExecutionException, InterruptedException {
     String json =
         "{\n"
             + "  \"format\": \"PRECOMPUTED\",\n"
