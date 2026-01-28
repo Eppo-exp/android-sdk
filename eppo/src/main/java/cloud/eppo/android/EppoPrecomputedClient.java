@@ -438,7 +438,8 @@ public class EppoPrecomputedClient {
     Map<String, String> decodedExtraLogging = new HashMap<>();
     if (extraLogging != null) {
       for (Map.Entry<String, String> entry : extraLogging.entrySet()) {
-        decodedExtraLogging.put(entry.getKey(), Utils.base64Decode(entry.getValue()));
+        decodedExtraLogging.put(
+            Utils.base64Decode(entry.getKey()), Utils.base64Decode(entry.getValue()));
       }
     }
 
@@ -555,7 +556,7 @@ public class EppoPrecomputedClient {
       String url = buildRequestUrl();
       String requestBody = buildRequestBody();
 
-      Log.d(TAG, "Fetching precomputed flags from: " + url);
+      Log.d(TAG, "Fetching precomputed flags from: " + baseUrl + ASSIGNMENTS_ENDPOINT);
       Log.d(TAG, "Request payload: " + requestBody);
 
       Request request =
