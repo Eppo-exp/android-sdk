@@ -1,0 +1,53 @@
+package cloud.eppo.android.util;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
+/** Utility class for obfuscation operations used in precomputed flag lookups. */
+public final class ObfuscationUtils {
+
+  private ObfuscationUtils() {
+    // Prevent instantiation
+  }
+
+  /**
+   * Generates an MD5 hash of the input string with an optional salt.
+   *
+   * @param input The string to hash
+   * @param salt Optional salt to prepend to the input (can be null)
+   * @return 32-character lowercase hexadecimal MD5 hash
+   */
+  public static String md5Hex(String input, String salt) {
+    String saltedInput = salt != null ? salt + input : input;
+    try {
+      MessageDigest md = MessageDigest.getInstance("MD5");
+      byte[] digest = md.digest(saltedInput.getBytes(StandardCharsets.UTF_8));
+      return bytesToHex(digest);
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("MD5 algorithm not available", e);
+    }
+  }
+
+  /**
+   * Generates an MD5 hash of the input string (without salt).
+   *
+   * @param input The string to hash
+   * @return 32-character lowercase hexadecimal MD5 hash
+   */
+  public static String md5Hex(String input) {
+    return md5Hex(input, null);
+  }
+
+  private static String bytesToHex(byte[] bytes) {
+    StringBuilder hexString = new StringBuilder(32);
+    for (byte b : bytes) {
+      String hex = Integer.toHexString(0xff & b);
+      if (hex.length() == 1) {
+        hexString.append('0');
+      }
+      hexString.append(hex);
+    }
+    return hexString.toString();
+  }
+}
