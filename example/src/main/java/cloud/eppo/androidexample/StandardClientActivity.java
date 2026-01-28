@@ -6,6 +6,7 @@ import static cloud.eppo.androidexample.Constants.INITIAL_SUBJECT_ID;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ScrollView;
@@ -16,8 +17,8 @@ import cloud.eppo.api.Attributes;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 
-public class SecondActivity extends AppCompatActivity {
-  private static final String TAG = SecondActivity.class.getSimpleName();
+public class StandardClientActivity extends AppCompatActivity {
+  private static final String TAG = StandardClientActivity.class.getSimpleName();
   private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
   private EditText experiment;
   private EditText subject;
@@ -60,6 +61,12 @@ public class SecondActivity extends AppCompatActivity {
 
     setContentView(R.layout.activity_assigner);
 
+    // Enable the action bar back button
+    if (getSupportActionBar() != null) {
+      getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+      getSupportActionBar().setTitle("Standard Client");
+    }
+
     experiment = findViewById(R.id.experiment);
     subject = findViewById(R.id.subject);
     assignmentLog = findViewById(R.id.assignment_log);
@@ -93,6 +100,15 @@ public class SecondActivity extends AppCompatActivity {
   private void appendToAssignmentLogView(String message) {
     assignmentLog.append(message + "\n\n");
     assignmentLogScrollView.post(() -> assignmentLogScrollView.fullScroll(View.FOCUS_DOWN));
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(MenuItem item) {
+    if (item.getItemId() == android.R.id.home) {
+      finish();
+      return true;
+    }
+    return super.onOptionsItemSelected(item);
   }
 
   // Tie into the activity's lifecycle and pause/resume polling where appropriate.
