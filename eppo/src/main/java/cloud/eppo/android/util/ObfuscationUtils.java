@@ -7,6 +7,9 @@ import java.security.NoSuchAlgorithmException;
 /** Utility class for obfuscation operations used in precomputed flag lookups. */
 public final class ObfuscationUtils {
 
+  /** Pre-computed hex character lookup table for efficient byte-to-hex conversion. */
+  private static final char[] HEX_DIGITS = "0123456789abcdef".toCharArray();
+
   private ObfuscationUtils() {
     // Prevent instantiation
   }
@@ -39,15 +42,17 @@ public final class ObfuscationUtils {
     return md5Hex(input, null);
   }
 
+  /**
+   * Converts a byte array to a hexadecimal string using a pre-computed lookup table. This avoids
+   * creating intermediate String objects for each byte (as Integer.toHexString would).
+   */
   private static String bytesToHex(byte[] bytes) {
-    StringBuilder hexString = new StringBuilder(32);
-    for (byte b : bytes) {
-      String hex = Integer.toHexString(0xff & b);
-      if (hex.length() == 1) {
-        hexString.append('0');
-      }
-      hexString.append(hex);
+    char[] hexChars = new char[bytes.length * 2];
+    for (int i = 0; i < bytes.length; i++) {
+      int v = bytes[i] & 0xFF;
+      hexChars[i * 2] = HEX_DIGITS[v >>> 4];
+      hexChars[i * 2 + 1] = HEX_DIGITS[v & 0x0F];
     }
-    return hexString.toString();
+    return new String(hexChars);
   }
 }
