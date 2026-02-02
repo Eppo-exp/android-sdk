@@ -2,6 +2,7 @@ package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 
 import cloud.eppo.android.util.ObfuscationUtils;
 import org.junit.Test;
@@ -82,5 +83,62 @@ public class ObfuscationUtilsTest {
       String result = ObfuscationUtils.md5Hex(input);
       assertEquals("MD5 hash should be 32 characters for input: " + input, 32, result.length());
     }
+  }
+
+  // md5HexPrefix tests
+
+  @Test
+  public void testMd5HexPrefixMatchesFullHash() {
+    // md5HexPrefix should return the same prefix as md5Hex().substring()
+    String input = "test-input";
+    String salt = "test-salt";
+
+    String fullHash = ObfuscationUtils.md5Hex(input, salt);
+
+    // Test various prefix lengths
+    for (int len = 1; len <= 32; len++) {
+      String prefix = ObfuscationUtils.md5HexPrefix(input, salt, len);
+      assertEquals(len, prefix.length());
+      assertEquals(fullHash.substring(0, len), prefix);
+    }
+  }
+
+  @Test
+  public void testMd5HexPrefix8Chars() {
+    // Common case: 8 character prefix (used for cache file naming)
+    String prefix = ObfuscationUtils.md5HexPrefix("subject-key", null, 8);
+    assertEquals(8, prefix.length());
+
+    // Should match substring of full hash
+    String fullHash = ObfuscationUtils.md5Hex("subject-key");
+    assertEquals(fullHash.substring(0, 8), prefix);
+  }
+
+  @Test
+  public void testMd5HexPrefixWithSalt() {
+    String prefix = ObfuscationUtils.md5HexPrefix("input", "salt", 8);
+    String fullWithSalt = ObfuscationUtils.md5Hex("input", "salt");
+    assertEquals(fullWithSalt.substring(0, 8), prefix);
+  }
+
+  @Test
+  public void testMd5HexPrefixInvalidLength() {
+    assertThrows(
+        IllegalArgumentException.class, () -> ObfuscationUtils.md5HexPrefix("test", null, 0));
+
+    assertThrows(
+        IllegalArgumentException.class, () -> ObfuscationUtils.md5HexPrefix("test", null, -1));
+
+    assertThrows(
+        IllegalArgumentException.class, () -> ObfuscationUtils.md5HexPrefix("test", null, 33));
+  }
+
+  @Test
+  public void testMd5HexPrefixConsistency() {
+    // Same input should always produce same output
+    String input = "consistent";
+    String prefix1 = ObfuscationUtils.md5HexPrefix(input, null, 8);
+    String prefix2 = ObfuscationUtils.md5HexPrefix(input, null, 8);
+    assertEquals(prefix1, prefix2);
   }
 }
