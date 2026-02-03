@@ -93,7 +93,7 @@ public class PrecomputedConfigurationStore {
     }
   }
 
-  /** Reads the cache file and returns the configuration. */
+  /** Reads the cache file and returns the configuration, or null if reading fails. */
   @Nullable protected PrecomputedConfigurationResponse readCacheFile() {
     synchronized (cacheLock) {
       try (InputStream inputStream = cacheFile.getInputStream()) {
@@ -104,7 +104,7 @@ public class PrecomputedConfigurationStore {
         return config;
       } catch (IOException e) {
         Log.e(TAG, "Error loading precomputed config from the cache: " + e.getMessage());
-        return PrecomputedConfigurationResponse.empty();
+        return null;
       }
     }
   }
