@@ -59,7 +59,7 @@ public class EppoPrecomputedClient {
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
-  private static final String DEFAULT_BASE_URL = "https://fs-edge-assignment.eppo.cloud";
+  private static final String DEFAULT_EDGE_HOST = "fs-edge-assignment.eppo.cloud";
   private static final String ASSIGNMENTS_ENDPOINT = "/assignments";
   // Hash prefix length for cache file naming; 8 hex chars = 32 bits of entropy
   private static final int SUBJECT_KEY_HASH_LENGTH = 8;
@@ -808,7 +808,7 @@ public class EppoPrecomputedClient {
     private boolean pollingEnabled = false;
     private long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
     private long pollingJitterMs = -1;
-    private String baseUrl = DEFAULT_BASE_URL;
+    @Nullable private String baseUrl;
     @Nullable private byte[] initialConfiguration;
     private boolean ignoreCachedConfiguration = false;
     @Nullable private OkHttpClient httpClient;
@@ -958,6 +958,17 @@ public class EppoPrecomputedClient {
       // Create HTTP client
       OkHttpClient client = httpClient != null ? httpClient : new OkHttpClient();
 
+      // Derive base URL from API key if not explicitly set
+      String effectiveBaseUrl = baseUrl;
+      if (effectiveBaseUrl == null) {
+        String envPrefix = Utils.getEnvironmentFromSdkKey(apiKey);
+        if (envPrefix != null) {
+          effectiveBaseUrl = "https://" + envPrefix + "." + DEFAULT_EDGE_HOST;
+        } else {
+          effectiveBaseUrl = "https://" + DEFAULT_EDGE_HOST;
+        }
+      }
+
       instance =
           new EppoPrecomputedClient(
               apiKey,
@@ -970,7 +981,7 @@ public class EppoPrecomputedClient {
               banditCache,
               configStore,
               isGracefulMode,
-              baseUrl,
+              effectiveBaseUrl,
               client);
 
       CompletableFuture<EppoPrecomputedClient> result = new CompletableFuture<>();

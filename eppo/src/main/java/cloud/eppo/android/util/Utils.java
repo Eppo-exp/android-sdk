@@ -53,6 +53,47 @@ public final class Utils {
     return key.substring(0, 8).replaceAll("\\W", "");
   }
 
+  /**
+   * Extracts the environment prefix from an SDK key. The SDK key format is:
+   * {random_key}.{base64_encoded_params} where params decode to "eh={prefix}.e.eppo.cloud&cs=..."
+   *
+   * @param sdkKey The SDK key
+   * @return The environment prefix (e.g., "5qhpgd"), or null if not found
+   */
+  public static String getEnvironmentFromSdkKey(String sdkKey) {
+    if (sdkKey == null || !sdkKey.contains(".")) {
+      return null;
+    }
+
+    try {
+      String[] parts = sdkKey.split("\\.", 2);
+      if (parts.length < 2) {
+        return null;
+      }
+
+      String decoded = base64Decode(parts[1]);
+      if (decoded == null) {
+        return null;
+      }
+
+      // Parse query string format: "eh=5qhpgd.e.eppo.cloud&cs=5qhpgd"
+      for (String param : decoded.split("&")) {
+        if (param.startsWith("eh=")) {
+          String envHost = param.substring(3); // Remove "eh="
+          // Extract subdomain (everything before first ".")
+          int dotIndex = envHost.indexOf('.');
+          if (dotIndex > 0) {
+            return envHost.substring(0, dotIndex);
+          }
+        }
+      }
+    } catch (Exception e) {
+      // Return null if parsing fails
+    }
+
+    return null;
+  }
+
   public static String logTag(Class loggingClass) {
     // Common prefix can make filtering logs easier
     String logTag = ("EppoSDK:" + loggingClass.getSimpleName());

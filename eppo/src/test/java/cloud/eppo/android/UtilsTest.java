@@ -4,6 +4,7 @@ import static cloud.eppo.android.util.Utils.base64Decode;
 import static cloud.eppo.android.util.Utils.base64Encode;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -76,5 +77,43 @@ public class UtilsTest {
     assertEquals("YQ==", encodedInput);
     String decodedOutput = base64Decode(encodedInput);
     assertEquals("a", decodedOutput);
+  }
+
+  @Test
+  public void testGetEnvironmentFromSdkKey() {
+    // SDK key with encoded params: eh=5qhpgd.e.eppo.cloud&cs=5qhpgd
+    String sdkKey = "nx3VNR-S6H2RQexXkQffFKaxwd9SAr4u.ZWg9NXFocGdkLmUuZXBwby5jbG91ZCZjcz01cWhwZ2Q";
+    String env = Utils.getEnvironmentFromSdkKey(sdkKey);
+    assertEquals("5qhpgd", env);
+  }
+
+  @Test
+  public void testGetEnvironmentFromSdkKeyWithDifferentFormat() {
+    // Test another valid key format
+    String sdkKey = "someRandomKey.ZWg9YWJjMTIzLmUuZXBwby5jbG91ZCZjcz1hYmMxMjM=";
+    String env = Utils.getEnvironmentFromSdkKey(sdkKey);
+    assertEquals("abc123", env);
+  }
+
+  @Test
+  public void testGetEnvironmentFromSdkKeyReturnsNullForInvalidKey() {
+    // No dot separator
+    assertNull(Utils.getEnvironmentFromSdkKey("invalidKeyWithoutDot"));
+
+    // Null key
+    assertNull(Utils.getEnvironmentFromSdkKey(null));
+
+    // Empty string
+    assertNull(Utils.getEnvironmentFromSdkKey(""));
+
+    // Invalid base64
+    assertNull(Utils.getEnvironmentFromSdkKey("key.!!!invalidbase64!!!"));
+  }
+
+  @Test
+  public void testGetEnvironmentFromSdkKeyWithMissingEhParam() {
+    // Encoded params without "eh" parameter: cs=something
+    String sdkKey = "key.Y3M9c29tZXRoaW5n";
+    assertNull(Utils.getEnvironmentFromSdkKey(sdkKey));
   }
 }
