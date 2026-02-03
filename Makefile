@@ -33,13 +33,15 @@ gitDataDir := ${tempDir}/sdk-test-data
 branchName := main
 githubRepoLink := https://github.com/Eppo-exp/sdk-test-data.git
 .PHONY: test-data
-test-data: 
+test-data:
 	rm -rf $(testDataDir)
 	mkdir -p $(tempDir)
 	git clone -b ${branchName} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
 	cp ${gitDataDir}/ufc/flags-v1.json ${testDataDir}
 	cp ${gitDataDir}/ufc/flags-v1-obfuscated.json ${testDataDir}
 	cp -r ${gitDataDir}/ufc/tests ${testDataDir}
+	cp ${gitDataDir}/configuration-wire/precomputed-v1.json ${testDataDir}
+	cp ${gitDataDir}/configuration-wire/precomputed-v1-deobfuscated.json ${testDataDir}
 	rm -rf ${tempDir}
 
 ## test

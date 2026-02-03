@@ -10,7 +10,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 
 /** Wire protocol response from the precomputed edge endpoint. */
@@ -18,6 +17,10 @@ import java.util.Map;
 public class PrecomputedConfigurationResponse {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  private static final PrecomputedConfigurationResponse EMPTY =
+      new PrecomputedConfigurationResponse(
+          "PRECOMPUTED", true, "", null, "", Collections.emptyMap(), Collections.emptyMap());
 
   private final String format;
   private final boolean obfuscated;
@@ -85,9 +88,7 @@ public class PrecomputedConfigurationResponse {
     if (environmentName == null) {
       return null;
     }
-    Map<String, String> env = new HashMap<>();
-    env.put("name", environmentName);
-    return env;
+    return Collections.singletonMap("name", environmentName);
   }
 
   /** Returns the salt used for MD5 hashing flag keys. */
@@ -105,10 +106,9 @@ public class PrecomputedConfigurationResponse {
     return bandits;
   }
 
-  /** Creates an empty configuration response. */
+  /** Returns a singleton empty configuration response. */
   public static PrecomputedConfigurationResponse empty() {
-    return new PrecomputedConfigurationResponse(
-        "PRECOMPUTED", true, "", null, "", Collections.emptyMap(), Collections.emptyMap());
+    return EMPTY;
   }
 
   /**
