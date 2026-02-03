@@ -447,7 +447,7 @@ public class EppoPrecomputedClientTest {
   }
 
   @Test
-  public void testNonGracefulModeThrowsOnMissingConfig() {
+  public void testNonGracefulModeCanBeConfigured() {
     // Initialize without configuration and with graceful mode disabled
     EppoPrecomputedClient client =
         new EppoPrecomputedClient.Builder(TEST_API_KEY, application)
@@ -457,9 +457,9 @@ public class EppoPrecomputedClientTest {
             .forceReinitialize(true)
             .buildAndInit();
 
-    // In non-graceful mode, accessing a flag with no config should throw
-    // Note: Currently returns default because salt is null, which is handled gracefully
-    // This test verifies the client was created with non-graceful mode
+    // Client should be created successfully even in non-graceful mode
+    // When no config is loaded, assignments return defaults (salt is null)
     assertNotNull(client);
+    assertEquals("default", client.getStringAssignment("any_flag", "default"));
   }
 }

@@ -61,9 +61,11 @@ public class EppoPrecomputedClient {
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
   private static final String DEFAULT_BASE_URL = "https://fs-edge-assignment.eppo.cloud";
   private static final String ASSIGNMENTS_ENDPOINT = "/assignments";
+  // Hash prefix length for cache file naming; 8 hex chars = 32 bits of entropy
   private static final int SUBJECT_KEY_HASH_LENGTH = 8;
   private static final MediaType JSON_MEDIA_TYPE = MediaType.get("application/json; charset=utf-8");
   private static final ObjectMapper objectMapper = new ObjectMapper();
+  private static final String NO_ACTION_CACHE_KEY = "__eppo_no_action";
 
   @Nullable private static EppoPrecomputedClient instance;
 
@@ -80,8 +82,8 @@ public class EppoPrecomputedClient {
   private final String baseUrl;
   private final OkHttpClient httpClient;
 
-  private long pollingIntervalMs;
-  private long pollingJitterMs;
+  private volatile long pollingIntervalMs;
+  private volatile long pollingJitterMs;
   @Nullable private ScheduledExecutorService poller;
   @Nullable private ScheduledFuture<?> pollFuture;
   private final AtomicBoolean isPolling = new AtomicBoolean(false);
@@ -271,7 +273,8 @@ public class EppoPrecomputedClient {
     }
 
     // Decode the value
-    Object decodedValue = decodeValue(flag.getVariationValue(), flag.getVariationType());
+    Object decodedValue =
+        decodeValue(flag.getVariationValue(), flag.getVariationType(), defaultValue);
 
     // Log assignment if needed
     if (flag.isDoLog() && assignmentLogger != null) {
@@ -357,7 +360,7 @@ public class EppoPrecomputedClient {
       // Check bandit cache for deduplication
       boolean shouldLog = true;
       if (banditCache != null) {
-        String actionKey = decodedAction != null ? decodedAction : "__eppo_no_action";
+        String actionKey = decodedAction != null ? decodedAction : NO_ACTION_CACHE_KEY;
         AssignmentCacheEntry cacheEntry =
             new AssignmentCacheEntry(
                 new AssignmentCacheKey(subjectKey, flagKey),
@@ -392,7 +395,7 @@ public class EppoPrecomputedClient {
     return false;
   }
 
-  private Object decodeValue(String encodedValue, String variationType) {
+  private Object decodeValue(String encodedValue, String variationType, Object defaultValue) {
     String decoded = Utils.base64Decode(encodedValue);
 
     switch (variationType.toUpperCase()) {
@@ -405,21 +408,21 @@ public class EppoPrecomputedClient {
           return Integer.parseInt(decoded);
         } catch (NumberFormatException e) {
           Log.w(TAG, "Failed to parse integer value: " + decoded);
-          return 0;
+          return defaultValue;
         }
       case "NUMERIC":
         try {
           return Double.parseDouble(decoded);
         } catch (NumberFormatException e) {
           Log.w(TAG, "Failed to parse numeric value: " + decoded);
-          return 0.0;
+          return defaultValue;
         }
       case "JSON":
         try {
           return objectMapper.readTree(decoded);
         } catch (Exception e) {
           Log.w(TAG, "Failed to parse JSON value: " + decoded);
-          return objectMapper.createObjectNode();
+          return defaultValue;
         }
       default:
         return decoded;
@@ -665,7 +668,37 @@ public class EppoPrecomputedClient {
     body.put("subject_attributes", subjectAttrsMap);
 
     if (banditActions != null && !banditActions.isEmpty()) {
-      body.put("bandit_actions", banditActions);
+      // Transform banditActions to match the expected wire format with numericAttributes and
+      // categoricalAttributes (same structure as subject_attributes)
+      Map<String, Map<String, Map<String, Object>>> serializedBanditActions = new HashMap<>();
+      for (Map.Entry<String, Map<String, Attributes>> flagEntry : banditActions.entrySet()) {
+        Map<String, Map<String, Object>> actionsForFlag = new HashMap<>();
+        for (Map.Entry<String, Attributes> actionEntry : flagEntry.getValue().entrySet()) {
+          Map<String, Object> actionAttrsMap = new HashMap<>();
+          Map<String, Number> actionNumericAttrs = new HashMap<>();
+          Map<String, String> actionCategoricalAttrs = new HashMap<>();
+
+          Attributes attrs = actionEntry.getValue();
+          if (attrs != null) {
+            for (String key : attrs.keySet()) {
+              EppoValue value = attrs.get(key);
+              if (value != null) {
+                if (value.isNumeric()) {
+                  actionNumericAttrs.put(key, value.doubleValue());
+                } else {
+                  actionCategoricalAttrs.put(key, value.stringValue());
+                }
+              }
+            }
+          }
+
+          actionAttrsMap.put("numericAttributes", actionNumericAttrs);
+          actionAttrsMap.put("categoricalAttributes", actionCategoricalAttrs);
+          actionsForFlag.put(actionEntry.getKey(), actionAttrsMap);
+        }
+        serializedBanditActions.put(flagEntry.getKey(), actionsForFlag);
+      }
+      body.put("bandit_actions", serializedBanditActions);
     }
 
     return objectMapper.writeValueAsString(body);
@@ -970,6 +1003,7 @@ public class EppoPrecomputedClient {
 
       // Capture final values for lambda
       final long finalPollingIntervalMs = pollingIntervalMs;
+      // Default jitter to 10% of polling interval if not explicitly set
       final long finalPollingJitterMs =
           pollingJitterMs < 0 ? pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO : pollingJitterMs;
       final boolean shouldStartPolling = pollingEnabled && pollingIntervalMs > 0;
