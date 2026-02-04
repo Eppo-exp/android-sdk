@@ -97,16 +97,9 @@ public class UtilsTest {
 
   @Test
   public void testGetEnvironmentFromSdkKeyReturnsNullForInvalidKey() {
-    // No dot separator
     assertNull(Utils.getEnvironmentFromSdkKey("invalidKeyWithoutDot"));
-
-    // Null key
     assertNull(Utils.getEnvironmentFromSdkKey(null));
-
-    // Empty string
     assertNull(Utils.getEnvironmentFromSdkKey(""));
-
-    // Invalid base64
     assertNull(Utils.getEnvironmentFromSdkKey("key.!!!invalidbase64!!!"));
   }
 
