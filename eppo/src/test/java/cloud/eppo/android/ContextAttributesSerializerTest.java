@@ -213,7 +213,7 @@ public class ContextAttributesSerializerTest {
     // This test verifies the format matches what's in sdk-test-data/precomputed-v1.json
     // The test data has:
     // "subjectAttributes": {
-    //   "categoricalAttributes": { "platform": "ios", "hasPushEnabled": false, "buildNumber": 42 },
+    //   "categoricalAttributes": { "platform": "ios", "hasPushEnabled": false },
     //   "numericAttributes": { "lastLoginDays": 3, "lifetimeValue": 543.21 }
     // }
 
