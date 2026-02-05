@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "precomputed": {
+    "subjectKey": "test-subject-key",
+    "subjectAttributes": {
+      "categoricalAttributes": {
+        "platform": "ios",
+        "language": "en-US",
+        "hasPushEnabled": false,
+        "buildNumber": 42
+      },
+      "numericAttributes": {
+        "lastLoginDays": 3,
+        "lifetimeValue": 543.21
+      }
+    },
+    "fetchedAt": "2024-11-18T14:23:39.456Z",
+    "response": "{\"createdAt\":\"2024-11-18T14:23:25.123Z\",\"format\":\"PRECOMPUTED\",\"salt\":\"c29kaXVtY2hsb3JpZGU=\",\"obfuscated\":true,\"environment\":{\"name\":\"Test\"},\"flags\":{\"41a27b85ebdd7b1a5ae367a1a240a214\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjM=\",\"variationKey\":\"dmFyaWF0aW9uLTEyMw==\",\"variationType\":\"STRING\",\"variationValue\":\"cmVk\",\"extraLogging\":{},\"doLog\":true},\"2309e3afb59efcf9675c0a8eaa565879\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjQ=\",\"variationKey\":\"dmFyaWF0aW9uLTEyNA==\",\"variationType\":\"BOOLEAN\",\"variationValue\":\"dHJ1ZQ==\",\"extraLogging\":{},\"doLog\":true},\"06307a361b7f244ca792cc0dc5f264f7\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjU=\",\"variationKey\":\"dmFyaWF0aW9uLTEyNQ==\",\"variationType\":\"INTEGER\",\"variationValue\":\"NDI=\",\"extraLogging\":{},\"doLog\":true},\"60d9c95b958bdfe620111a1ab618c1f2\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjY=\",\"variationKey\":\"dmFyaWF0aW9uLTEyNg==\",\"variationType\":\"NUMERIC\",\"variationValue\":\"My4xNA==\",\"extraLogging\":{},\"doLog\":true},\"155bbb597e48b282ceff3a342f28001f\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjc=\",\"variationKey\":\"dmFyaWF0aW9uLTEyNw==\",\"variationType\":\"JSON\",\"variationValue\":\"eyJrZXkiOiJ2YWx1ZSIsIm51bWJlciI6MTIzfQ==\",\"extraLogging\":{},\"doLog\":true},\"35f919d963a541a0bd28f349f84050fb\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjg=\",\"variationKey\":\"dmFyaWF0aW9uLTEyOA==\",\"variationType\":\"STRING\",\"variationValue\":\"cmVk\",\"extraLogging\":{\"aG9sZG91dEtleQ==\":\"YWN0aXZlSG9sZG91dA==\",\"aG9sZG91dFZhcmlhdGlvbg==\":\"YWxsX3NoaXBwZWQ=\"},\"doLog\":true},\"770abe0d1848a609c8e30b97f4653607\":{\"allocationKey\":\"YWxsb2NhdGlvbi0xMjk=\",\"variationKey\":\"dmFyaWF0aW9uLTEyOQ==\",\"variationType\":\"STRING\",\"variationValue\":\"Y29udHJvbA==\",\"extraLogging\":{},\"doLog\":true}},\"bandits\":{\"41a27b85ebdd7b1a5ae367a1a240a214\":{\"banditKey\":\"cmVjb21tZW5kYXRpb24tbW9kZWwtdjE=\",\"action\":\"c2hvd19yZWRfYnV0dG9u\",\"actionProbability\":0.85,\"optimalityGap\":0.12,\"modelVersion\":\"djIuMy4x\",\"actionNumericAttributes\":{\"ZXhwZWN0ZWRDb252ZXJzaW9u\":\"MC4yMw==\",\"ZXhwZWN0ZWRSZXZlbnVl\":\"MTUuNzU=\"},\"actionCategoricalAttributes\":{\"Y2F0ZWdvcnk=\":\"cHJvbW90aW9u\",\"cGxhY2VtZW50\":\"aG9tZV9zY3JlZW4=\"}},\"35f919d963a541a0bd28f349f84050fb\":{\"banditKey\":\"Y29udGVudC1yZWNvbW1lbmRhdGlvbg==\",\"action\":\"ZmVhdHVyZWRfY29udGVudA==\",\"actionProbability\":0.72,\"optimalityGap\":0.08,\"modelVersion\":\"djEuNS4w\",\"actionNumericAttributes\":{\"ZXhwZWN0ZWRFbmdhZ2VtZW50\":\"MC40NQ==\",\"dGltZU9uUGFnZQ==\":\"MTIwLjU=\"},\"actionCategoricalAttributes\":{\"Y29udGVudFR5cGU=\":\"YXJ0aWNsZQ==\",\"dGhlbWU=\":\"ZGFyaw==\"}}}}"
+  }
+}
