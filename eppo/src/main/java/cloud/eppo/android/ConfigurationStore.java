@@ -42,12 +42,21 @@ public class ConfigurationStore implements IConfigurationStore {
 
       return CompletableFuture.completedFuture(null);
     }
-    return cacheLoadFuture =
-        CompletableFuture.supplyAsync(
-            () -> {
-              Log.d(TAG, "Loading from cache");
-              return readCacheFile();
-            });
+
+    // Load synchronously to ensure configuration is available immediately for offline mode
+    // This prevents race conditions where getConfiguration() is called before async load completes
+    try {
+      Log.d(TAG, "Loading from cache");
+      Configuration config = readCacheFile();
+      if (config != null) {
+        // Update the store's configuration so getConfiguration() returns the cached config
+        this.configuration = config;
+      }
+      return cacheLoadFuture = CompletableFuture.completedFuture(config);
+    } catch (Exception e) {
+      Log.e(TAG, "Error during cache load", e);
+      return cacheLoadFuture = CompletableFuture.completedFuture(null);
+    }
   }
 
   @Nullable protected Configuration readCacheFile() {

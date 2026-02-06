@@ -13,12 +13,9 @@ import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
-import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
-import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.AssignmentLogger;
-import cloud.eppo.ufc.dto.VariationType;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -52,8 +49,7 @@ public class EppoClient extends BaseEppoClient {
         apiKey,
         sdkName,
         sdkVersion,
-        host,
-        apiBaseUrl,
+        apiBaseUrl != null ? apiBaseUrl : host,
         assignmentLogger,
         null,
         configurationStore,
@@ -107,16 +103,6 @@ public class EppoClient extends BaseEppoClient {
     }
 
     return EppoClient.instance;
-  }
-
-  protected EppoValue getTypedAssignment(
-      String flagKey,
-      String subjectKey,
-      Attributes subjectAttributes,
-      EppoValue defaultValue,
-      VariationType expectedType) {
-    return super.getTypedAssignment(
-        flagKey, subjectKey, subjectAttributes, defaultValue, expectedType);
   }
 
   /** (Re)loads flag and experiment configuration from the API server. */
