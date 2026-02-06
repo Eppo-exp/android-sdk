@@ -16,6 +16,7 @@ import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.MissingSubjectKeyException;
 import cloud.eppo.android.exceptions.NotInitializedException;
+import cloud.eppo.android.util.ContextAttributesSerializer;
 import cloud.eppo.android.util.ObfuscationUtils;
 import cloud.eppo.android.util.Utils;
 import cloud.eppo.api.Attributes;
@@ -645,27 +646,7 @@ public class EppoPrecomputedClient {
   private String buildRequestBody() throws Exception {
     Map<String, Object> body = new HashMap<>();
     body.put("subject_key", subjectKey);
-
-    Map<String, Object> subjectAttrsMap = new HashMap<>();
-    Map<String, Number> numericAttrs = new HashMap<>();
-    Map<String, String> categoricalAttrs = new HashMap<>();
-
-    if (subjectAttributes != null) {
-      for (String key : subjectAttributes.keySet()) {
-        EppoValue value = subjectAttributes.get(key);
-        if (value != null) {
-          if (value.isNumeric()) {
-            numericAttrs.put(key, value.doubleValue());
-          } else {
-            categoricalAttrs.put(key, value.stringValue());
-          }
-        }
-      }
-    }
-
-    subjectAttrsMap.put("numericAttributes", numericAttrs);
-    subjectAttrsMap.put("categoricalAttributes", categoricalAttrs);
-    body.put("subject_attributes", subjectAttrsMap);
+    body.put("subject_attributes", ContextAttributesSerializer.serialize(subjectAttributes));
 
     if (banditActions != null && !banditActions.isEmpty()) {
       // Transform banditActions to match the expected wire format with numericAttributes and
@@ -674,27 +655,8 @@ public class EppoPrecomputedClient {
       for (Map.Entry<String, Map<String, Attributes>> flagEntry : banditActions.entrySet()) {
         Map<String, Map<String, Object>> actionsForFlag = new HashMap<>();
         for (Map.Entry<String, Attributes> actionEntry : flagEntry.getValue().entrySet()) {
-          Map<String, Object> actionAttrsMap = new HashMap<>();
-          Map<String, Number> actionNumericAttrs = new HashMap<>();
-          Map<String, String> actionCategoricalAttrs = new HashMap<>();
-
-          Attributes attrs = actionEntry.getValue();
-          if (attrs != null) {
-            for (String key : attrs.keySet()) {
-              EppoValue value = attrs.get(key);
-              if (value != null) {
-                if (value.isNumeric()) {
-                  actionNumericAttrs.put(key, value.doubleValue());
-                } else {
-                  actionCategoricalAttrs.put(key, value.stringValue());
-                }
-              }
-            }
-          }
-
-          actionAttrsMap.put("numericAttributes", actionNumericAttrs);
-          actionAttrsMap.put("categoricalAttributes", actionCategoricalAttrs);
-          actionsForFlag.put(actionEntry.getKey(), actionAttrsMap);
+          actionsForFlag.put(
+              actionEntry.getKey(), ContextAttributesSerializer.serialize(actionEntry.getValue()));
         }
         serializedBanditActions.put(flagEntry.getKey(), actionsForFlag);
       }
