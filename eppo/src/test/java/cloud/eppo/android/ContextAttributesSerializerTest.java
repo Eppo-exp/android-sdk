@@ -111,7 +111,7 @@ public class ContextAttributesSerializerTest {
   }
 
   @Test
-  public void testNullValuesExcluded() {
+  public void testEppoNullValuesExcluded() {
     Attributes attrs = new Attributes();
     attrs.put("validString", EppoValue.valueOf("test"));
     attrs.put("validNumber", EppoValue.valueOf(42));
@@ -125,11 +125,32 @@ public class ContextAttributesSerializerTest {
     Map<String, Object> categoricalAttrs =
         (Map<String, Object>) result.get("categoricalAttributes");
 
-    // Null values should be excluded
+    // EppoValue.nullValue() entries should be excluded from both maps
     assertEquals(1, numericAttrs.size());
     assertEquals(1, categoricalAttrs.size());
     assertFalse(numericAttrs.containsKey("nullValue"));
     assertFalse(categoricalAttrs.containsKey("nullValue"));
+  }
+
+  @Test
+  public void testJavaNullValuesExcluded() {
+    Attributes attrs = new Attributes();
+    attrs.put("validString", EppoValue.valueOf("test"));
+    attrs.put("javaNullValue", (EppoValue) null);
+
+    Map<String, Object> result = ContextAttributesSerializer.serialize(attrs);
+
+    @SuppressWarnings("unchecked")
+    Map<String, Number> numericAttrs = (Map<String, Number>) result.get("numericAttributes");
+    @SuppressWarnings("unchecked")
+    Map<String, Object> categoricalAttrs =
+        (Map<String, Object>) result.get("categoricalAttributes");
+
+    // Java null entries should be excluded from both maps
+    assertEquals(0, numericAttrs.size());
+    assertEquals(1, categoricalAttrs.size());
+    assertFalse(numericAttrs.containsKey("javaNullValue"));
+    assertFalse(categoricalAttrs.containsKey("javaNullValue"));
   }
 
   @Test
