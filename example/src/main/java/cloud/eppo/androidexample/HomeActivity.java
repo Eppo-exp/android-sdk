@@ -14,16 +14,17 @@ import cloud.eppo.android.ConfigCacheFile;
 import cloud.eppo.android.EppoClient;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
+import java.io.File;
 
-public class MainActivity extends AppCompatActivity {
+public class HomeActivity extends AppCompatActivity {
   private static final String API_KEY = BuildConfig.API_KEY; // Set in root-level local.properties
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+    setContentView(R.layout.activity_home);
     Button button = findViewById(R.id.button_start_assigner);
-    Intent launchAssigner = new Intent(MainActivity.this, SecondActivity.class);
+    Intent launchAssigner = new Intent(HomeActivity.this, StandardClientActivity.class);
 
     button.setOnClickListener(view -> startActivity(launchAssigner));
 
@@ -32,15 +33,39 @@ public class MainActivity extends AppCompatActivity {
         view ->
             startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
+    Button precomputedButton = findViewById(R.id.button_start_precomputed);
+    Intent launchPrecomputed = new Intent(HomeActivity.this, PrecomputedActivity.class);
+    precomputedButton.setOnClickListener(view -> startActivity(launchPrecomputed));
+
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
     clearCacheButton.setOnClickListener(view -> clearCacheFile());
   }
 
   private void clearCacheFile() {
+    // Clear standard client cache
     String cacheFileNameSuffix = safeCacheKey(API_KEY);
     ConfigCacheFile cacheFile = new ConfigCacheFile(getApplication(), cacheFileNameSuffix);
     cacheFile.delete();
-    Toast.makeText(this, "Cache Cleared", Toast.LENGTH_SHORT).show();
+
+    // Clear all precomputed client caches (they include subject key hash in filename)
+    File filesDir = getApplication().getFilesDir();
+    File[] precomputedCaches =
+        filesDir.listFiles(
+            (dir, name) -> name.startsWith("eppo-sdk-precomputed-") && name.endsWith(".json"));
+    int precomputedCount = 0;
+    if (precomputedCaches != null) {
+      for (File file : precomputedCaches) {
+        if (file.delete()) {
+          precomputedCount++;
+        }
+      }
+    }
+
+    String message =
+        precomputedCount > 0
+            ? "Cache Cleared (" + precomputedCount + " precomputed)"
+            : "Cache Cleared";
+    Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
   }
 
   @Override
