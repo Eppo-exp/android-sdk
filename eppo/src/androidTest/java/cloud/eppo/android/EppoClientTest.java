@@ -242,7 +242,7 @@ public class EppoClientTest {
     // Mock execute to return a failed future
     CompletableFuture<EppoConfigurationResponse> mockResponse = new CompletableFuture<>();
     mockResponse.completeExceptionally(new RuntimeException("Intentional Error"));
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(mockResponse);
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class))).thenReturn(mockResponse);
 
     return mockHttpClient;
   }
@@ -282,7 +282,7 @@ public class EppoClientTest {
         EppoConfigurationResponse.success(200, null, EMPTY_CONFIG);
     CompletableFuture<EppoConfigurationResponse> emptyFuture =
         CompletableFuture.completedFuture(emptyConfigResponse);
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(emptyFuture);
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class))).thenReturn(emptyFuture);
 
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
@@ -293,7 +293,7 @@ public class EppoClientTest {
     // Initialize and no exception should be thrown.
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
 
-    verify(mockHttpClient, times(1)).get(any(EppoConfigurationRequest.class));
+    verify(mockHttpClient, times(1)).execute(any(EppoConfigurationRequest.class));
     assertFalse(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
 
     // Now, return the boolean flag config (bool_flag = true)
@@ -301,7 +301,7 @@ public class EppoClientTest {
         EppoConfigurationResponse.success(200, null, BOOL_FLAG_CONFIG);
     CompletableFuture<EppoConfigurationResponse> boolFlagFuture =
         CompletableFuture.completedFuture(boolFlagConfigResponse);
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(boolFlagFuture);
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class))).thenReturn(boolFlagFuture);
 
     // Trigger a reload of the client
     if (loadAsync) {
@@ -325,7 +325,7 @@ public class EppoClientTest {
         EppoConfigurationResponse.success(200, null, EMPTY_CONFIG);
     CompletableFuture<EppoConfigurationResponse> emptyFuture =
         CompletableFuture.completedFuture(emptyConfigResponse);
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(emptyFuture);
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class))).thenReturn(emptyFuture);
 
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
@@ -337,7 +337,7 @@ public class EppoClientTest {
     // Initialize and no exception should be thrown.
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
 
-    verify(mockHttpClient, times(1)).get(any(EppoConfigurationRequest.class));
+    verify(mockHttpClient, times(1)).execute(any(EppoConfigurationRequest.class));
     assertEquals(1, received.size());
 
     // Now, return the boolean flag config so that the config has changed.
@@ -345,7 +345,7 @@ public class EppoClientTest {
         EppoConfigurationResponse.success(200, null, BOOL_FLAG_CONFIG);
     CompletableFuture<EppoConfigurationResponse> boolFlagFuture =
         CompletableFuture.completedFuture(boolFlagConfigResponse);
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(boolFlagFuture);
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class))).thenReturn(boolFlagFuture);
 
     // Trigger a reload of the client
     eppoClient.loadConfiguration();
@@ -372,7 +372,7 @@ public class EppoClientTest {
         EppoConfigurationResponse.success(200, null, BOOL_FLAG_CONFIG);
 
     // First call returns empty config (initialization), subsequent calls return bool flag config
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class)))
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class)))
         .thenAnswer(
             invocation -> {
               // Check if this is a polling call (not the first one)
@@ -409,7 +409,7 @@ public class EppoClientTest {
         });
 
     // Empty config on initialization
-    verify(mockHttpClient, times(1)).get(any(EppoConfigurationRequest.class));
+    verify(mockHttpClient, times(1)).execute(any(EppoConfigurationRequest.class));
     assertFalse(eppoClient.getBooleanAssignment("bool_flag", "subject1", false));
 
     // Wait for the client to send the "fetch"
@@ -686,7 +686,7 @@ public class EppoClientTest {
     // Mock execute to return an invalid JSON response
     EppoConfigurationResponse invalidResponse =
         EppoConfigurationResponse.success(200, null, "{}".getBytes());
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class)))
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(invalidResponse));
 
     initClient(
@@ -716,7 +716,7 @@ public class EppoClientTest {
     CompletableFuture<EppoConfigurationResponse> httpResponse =
         CompletableFuture.completedFuture(invalidResponse);
 
-    when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(httpResponse);
+    when(mockHttpClient.execute(any(EppoConfigurationRequest.class))).thenReturn(httpResponse);
 
     initClient(
         TEST_HOST,
