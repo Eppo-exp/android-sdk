@@ -80,7 +80,8 @@ public class EppoClientTest {
       TEST_HOST_BASE + (TEST_BRANCH != null ? "/b/" + TEST_BRANCH : "");
 
   private static final String INVALID_HOST = "https://thisisabaddomainforthistest.com";
-  private static final byte[] EMPTY_CONFIG = "{\"flags\":{}}".getBytes();
+  private static final byte[] EMPTY_CONFIG =
+      ("{\"flags\":{},\"banditReferences\":{},\"format\":\"CLIENT\"}").getBytes();
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
   @Mock AssignmentLogger mockAssignmentLogger;
   @Mock EppoConfigurationClient mockHttpClient;
@@ -1060,6 +1061,7 @@ public class EppoClientTest {
       ("{\n"
               + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
               + "  \"format\": \"CLIENT\",\n"
+              + "  \"banditReferences\": {},\n"
               + "  \"environment\": {\n"
               + "    \"name\": \"Test\"\n"
               + "  },\n"
