@@ -15,7 +15,8 @@ import java.util.Map;
 import org.json.JSONException;
 
 public class AssignmentTestCaseDeserializer extends StdDeserializer<AssignmentTestCase> {
-  private final EppoValueDeserializerHelper eppoValueDeserializer = new EppoValueDeserializerHelper();
+  private final EppoValueDeserializerHelper eppoValueDeserializer =
+      new EppoValueDeserializerHelper();
 
   public AssignmentTestCaseDeserializer() {
     super(AssignmentTestCase.class);

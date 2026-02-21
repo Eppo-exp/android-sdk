@@ -31,8 +31,7 @@ public class JacksonConfigurationParser implements ConfigurationParser<JsonNode>
     this.objectMapper = objectMapper;
   }
 
-  @NonNull
-  @Override
+  @NonNull @Override
   public FlagConfigResponse parseFlagConfig(@NonNull byte[] flagConfigJson)
       throws ConfigurationParseException {
     try {
@@ -42,8 +41,7 @@ public class JacksonConfigurationParser implements ConfigurationParser<JsonNode>
     }
   }
 
-  @NonNull
-  @Override
+  @NonNull @Override
   public BanditParametersResponse parseBanditParams(@NonNull byte[] banditParamsJson)
       throws ConfigurationParseException {
     try {
@@ -53,8 +51,7 @@ public class JacksonConfigurationParser implements ConfigurationParser<JsonNode>
     }
   }
 
-  @NonNull
-  @Override
+  @NonNull @Override
   public JsonNode parseJsonValue(@NonNull String jsonValue) throws ConfigurationParseException {
     try {
       return objectMapper.readTree(jsonValue);

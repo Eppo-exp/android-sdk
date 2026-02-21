@@ -13,15 +13,11 @@ import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
-import cloud.eppo.api.Attributes;
 import cloud.eppo.api.Configuration;
-import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
-import cloud.eppo.api.dto.FlagConfigResponse;
 import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.parser.ConfigurationParser;
-import cloud.eppo.api.dto.VariationType;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -270,7 +266,9 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
       return this;
     }
 
-    /** Registers a callback for when a new configuration is applied to the `EppoClient` instance. */
+    /**
+     * Registers a callback for when a new configuration is applied to the `EppoClient` instance.
+     */
     public Builder onConfigurationChange(Consumer<Configuration> configChangeCallback) {
       this.configChangeCallback = configChangeCallback;
       return this;

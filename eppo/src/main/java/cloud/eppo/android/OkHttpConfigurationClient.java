@@ -48,8 +48,7 @@ public class OkHttpConfigurationClient implements EppoConfigurationClient {
         .build();
   }
 
-  @NonNull
-  @Override
+  @NonNull @Override
   public CompletableFuture<EppoConfigurationResponse> get(
       @NonNull EppoConfigurationRequest request) {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();

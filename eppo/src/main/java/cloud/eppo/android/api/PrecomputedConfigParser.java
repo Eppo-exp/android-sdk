@@ -20,8 +20,7 @@ public interface PrecomputedConfigParser<JSONFlagType> {
    * @return Parsed precomputed configuration
    * @throws PrecomputedParseException if parsing fails
    */
-  @NonNull
-  PrecomputedConfigurationResponse parse(@NonNull byte[] responseBytes)
+  @NonNull PrecomputedConfigurationResponse parse(@NonNull byte[] responseBytes)
       throws PrecomputedParseException;
 
   /**
@@ -32,6 +31,5 @@ public interface PrecomputedConfigParser<JSONFlagType> {
    * @return Parsed JSON value of the generic type
    * @throws PrecomputedParseException if parsing fails
    */
-  @NonNull
-  JSONFlagType parseJsonValue(@NonNull String base64EncodedValue) throws PrecomputedParseException;
+  @NonNull JSONFlagType parseJsonValue(@NonNull String base64EncodedValue) throws PrecomputedParseException;
 }
