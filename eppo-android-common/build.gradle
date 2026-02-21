@@ -10,31 +10,27 @@ group = "cloud.eppo"
 version = "4.12.1"
 
 android {
-    buildFeatures.buildConfig true
+    buildFeatures.buildConfig false
     compileSdk 34
 
     defaultConfig {
-        namespace "cloud.eppo.android"
+        // Use a different namespace to avoid conflicts with the framework module
+        // The code still uses cloud.eppo.android packages, but the Android namespace is different
+        namespace "cloud.eppo.android.common"
         minSdk 26
         targetSdk 34
-
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles "consumer-rules.pro"
     }
 
     buildTypes {
-        def EPPO_VERSION = "EPPO_VERSION"
-
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            buildConfigField "String", EPPO_VERSION, "\"${project.properties.get("version")}\""
             matchingFallbacks = ['release']
         }
 
         debug {
             minifyEnabled false
-            buildConfigField "String", EPPO_VERSION, "\"${project.properties.get("version")}\""
             matchingFallbacks = ['debug']
         }
     }
@@ -52,40 +48,14 @@ android {
     }
 }
 
-ext {}
-ext.versions = [
-    "junit": "4.13.2",
-    "mockito": "5.14.2",
-    "roboelectric": "4.12+",
-    "androidx_junit": "1.2.1",
-    "androidx_test_core": "1.6.1",
-    "androidx_runner": "1.6.2",
-    "androidx_core": "1.13.1",
-    "gson": "2.9.1",
-    "okhttp": "4.12.0",
-    "commonsio": "2.17.0",
-    "semver": "0.10.2"
-]
-
 dependencies {
-    api 'cloud.eppo:sdk-common-jvm:3.13.1'
+    // API dependency on framework (for compilation)
+    api project(':eppo')
 
-    implementation 'org.slf4j:slf4j-api:2.0.17'
-
-    implementation "androidx.core:core:${versions.androidx_core}"
-    implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
-    implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.19.1"
-
-    testImplementation "junit:junit:${versions.junit}"
-    testImplementation "commons-io:commons-io:${versions.commonsio}"
-    testImplementation "org.mockito:mockito-android:${versions.mockito}"
-    testImplementation "org.robolectric:robolectric:${versions.roboelectric}"
-    androidTestImplementation "org.mockito:mockito-android:${versions.mockito}"
-    androidTestImplementation "androidx.test.ext:junit:${versions.androidx_junit}"
-    androidTestImplementation "androidx.test:core:${versions.androidx_test_core}"
-    androidTestImplementation "androidx.test:runner:${versions.androidx_runner}"
-    androidTestImplementation "commons-io:commons-io:${versions.commonsio}"
+    // These will be added in PR4 when we add default implementations
+    // implementation 'cloud.eppo:eppo-sdk-common:4.0.0-SNAPSHOT'
+    // implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    // implementation "com.fasterxml.jackson.core:jackson-databind:2.19.1"
 }
 
 spotless {
@@ -123,14 +93,15 @@ tasks.withType(Sign) {
     }
 }
 
+// For backward compatibility, keep same artifact ID
 mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
     signAllPublications()
-    coordinates("cloud.eppo", "android-sdk-framework", project.version)
+    coordinates("cloud.eppo", "android-sdk", project.version)
 
     pom {
-        name = 'Eppo Android Framework'
-        description = 'Eppo Android SDK Framework - requires HTTP and parser implementations'
+        name = 'Eppo Android'
+        description = 'Eppo Android SDK - batteries-included with OkHttp and Jackson'
         url = 'https://github.com/Eppo-exp/android-sdk'
         licenses {
             license {
