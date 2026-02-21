@@ -167,11 +167,11 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
     }
 
     /**
-     * @deprecated Use {@link #apiBaseUrl(String)} instead. Host parameter is no longer used.
+     * @deprecated Use {@link #apiBaseUrl(String)} instead.
      */
     @Deprecated
     public Builder host(@Nullable String host) {
-      // Ignored - host is no longer used in v4
+      this.apiBaseUrl = host;
       return this;
     }
 
