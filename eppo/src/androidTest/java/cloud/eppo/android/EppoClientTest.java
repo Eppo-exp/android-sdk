@@ -116,6 +116,9 @@ public class EppoClientTest {
 
     if (httpClientOverride != null) {
       builder.configurationClient(httpClientOverride);
+    } else if (host != null && host.startsWith(TEST_HOST_BASE)) {
+      // Use TestUrlAdapterClient for test server URLs to work around v4 URL path differences
+      builder.configurationClient(new TestUrlAdapterClient());
     }
 
     CompletableFuture<Void> futureClient =
