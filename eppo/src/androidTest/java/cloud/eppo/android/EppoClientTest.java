@@ -222,10 +222,11 @@ public class EppoClientTest {
     Log.i(TAG, "TestUrlAdapterClient instance created");
 
     // Create a mock request with the test host as base URL
+    // The TestUrlAdapterClient will convert "/flag-config/v1/config" to "/flag-config"
     EppoConfigurationRequest request =
         new EppoConfigurationRequest(
             TEST_HOST, // baseUrl
-            "/flag-config/v1/config", // resourcePath (should be ignored)
+            "/flag-config/v1/config", // resourcePath (will be adapted to /flag-config)
             java.util.Collections.singletonMap("apiKey", DUMMY_API_KEY),
             null); // lastVersionId
 

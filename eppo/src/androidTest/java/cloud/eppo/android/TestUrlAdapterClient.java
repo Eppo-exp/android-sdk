@@ -22,9 +22,9 @@ import okhttp3.ResponseBody;
  * <p>The v4 SDK constructs URLs as: {baseUrl}{resourcePath}?{queryParams} For example:
  * https://test-server/b/main/flag-config/v1/config?apiKey=xxx
  *
- * <p>The existing test server expects: https://test-server/b/main?apiKey=xxx
+ * <p>The existing test server expects: https://test-server/b/main/flag-config?apiKey=xxx
  *
- * <p>This adapter ignores the resourcePath and fetches directly from baseUrl.
+ * <p>This adapter converts the v4 resourcePath "/flag-config/v1/config" to just "/flag-config".
  */
 public class TestUrlAdapterClient implements EppoConfigurationClient {
   private static final String TAG = "EppoSDK.TestUrlAdapter";
@@ -61,11 +61,23 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
       android.util.Log.i(TAG, "execute() QueryParams: " + request.getQueryParams());
       android.util.Log.i(TAG, "execute() Method: " + request.getMethod());
 
-      // Use ONLY baseUrl, ignoring resourcePath (the v4 SDK appends /flag-config/v1/config)
-      // The test server serves config directly at the base URL
-      HttpUrl parsedUrl = HttpUrl.parse(request.getBaseUrl());
+      // Convert v4 SDK paths to test server paths:
+      // - "/flag-config/v1/config" -> "/flag-config"
+      // - "/flag-config/v1/bandits" -> keep as-is (or could map similarly)
+      String resourcePath = request.getResourcePath();
+      String adaptedPath = "";
+      if (resourcePath != null) {
+        if (resourcePath.contains("/flag-config/v1/config")) {
+          adaptedPath = "/flag-config";
+        } else if (resourcePath.contains("/bandits")) {
+          adaptedPath = "/bandits"; // or whatever the test server expects
+        }
+      }
+      android.util.Log.i(TAG, "Adapted resourcePath: " + resourcePath + " -> " + adaptedPath);
+
+      HttpUrl parsedUrl = HttpUrl.parse(request.getBaseUrl() + adaptedPath);
       if (parsedUrl == null) {
-        String error = "Failed to parse baseUrl: " + request.getBaseUrl();
+        String error = "Failed to parse URL: " + request.getBaseUrl() + adaptedPath;
         android.util.Log.e(TAG, error);
         future.completeExceptionally(new RuntimeException(error));
         return future;
