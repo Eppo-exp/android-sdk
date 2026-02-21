@@ -115,10 +115,14 @@ public class EppoClientTest {
             .assignmentCache(assignmentCache);
 
     if (httpClientOverride != null) {
+      Log.i(TAG, "Using provided httpClientOverride");
       builder.configurationClient(httpClientOverride);
     } else if (host != null && host.startsWith(TEST_HOST_BASE)) {
       // Use TestUrlAdapterClient for test server URLs to work around v4 URL path differences
+      Log.i(TAG, "Using TestUrlAdapterClient for host: " + host);
       builder.configurationClient(new TestUrlAdapterClient());
+    } else {
+      Log.i(TAG, "Using default OkHttpConfigurationClient for host: " + host);
     }
 
     CompletableFuture<Void> futureClient =
