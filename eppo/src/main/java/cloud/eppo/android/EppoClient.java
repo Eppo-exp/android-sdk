@@ -322,11 +322,19 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
       String sdkName = obfuscateConfig ? "android" : "android-debug";
       String sdkVersion = BuildConfig.EPPO_VERSION;
 
+      Log.i(TAG, "====== buildAndInitAsync() starting ======");
+      Log.i(TAG, "apiKey: " + apiKey);
+      Log.i(TAG, "apiBaseUrl: " + apiBaseUrl);
+      Log.i(TAG, "offlineMode: " + offlineMode);
+      Log.i(TAG, "configurationClient provided: " + (configurationClient != null));
+
       // Create default implementations if not provided
       ConfigurationParser<JsonNode> parser =
           configurationParser != null ? configurationParser : new JacksonConfigurationParser();
       EppoConfigurationClient httpClient =
           configurationClient != null ? configurationClient : new OkHttpConfigurationClient();
+
+      Log.i(TAG, "Using httpClient: " + httpClient.getClass().getName());
 
       // Get caching from config store
       if (configStore == null) {
@@ -379,20 +387,33 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
 
       AtomicInteger failCount = new AtomicInteger(0);
 
+      Log.i(TAG, "About to start configuration loading, offlineMode=" + offlineMode);
+
       if (!offlineMode) {
 
         // Not offline mode. Kick off a fetch.
+        Log.i(TAG, "Calling loadConfigurationAsync()...");
         instance
             .loadConfigurationAsync()
             .handle(
                 (success, ex) -> {
+                  Log.i(
+                      TAG,
+                      "loadConfigurationAsync handle callback: success="
+                          + success
+                          + ", ex="
+                          + (ex != null ? ex.getMessage() : "null"));
                   if (ex == null) {
+                    Log.i(TAG, "Completing ret future successfully");
                     ret.complete(instance);
                   } else if (failCount.incrementAndGet() == 2
                       || instance.getInitialConfigFuture() == null) {
+                    Log.i(TAG, "Completing ret future exceptionally");
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
+                  } else {
+                    Log.i(TAG, "Not completing yet, failCount=" + failCount.get());
                   }
                   return null;
                 });
