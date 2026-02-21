@@ -15,6 +15,7 @@ import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.IAssignmentCache;
+import cloud.eppo.api.dto.FlagConfigResponse;
 import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.parser.ConfigurationParser;
@@ -156,6 +157,10 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
     @Nullable private ConfigurationParser<JsonNode> configurationParser;
     @Nullable private EppoConfigurationClient configurationClient;
 
+    // Raw bytes for initial configuration (parsed at build time)
+    @Nullable private byte[] initialConfigurationBytes;
+    @Nullable private CompletableFuture<byte[]> initialConfigurationBytesFuture;
+
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
       this.apiKey = apiKey;
@@ -216,9 +221,8 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
      * <p>Note: In v4, the bytes will be parsed using the ConfigurationParser.
      */
     public Builder initialConfiguration(byte[] initialFlagConfigResponse) {
-      // Store bytes to be parsed later when we have the parser
-      // We need to defer parsing until build time when we have the parser
-      this.initialConfiguration = null; // Will be set in buildAndInitAsync
+      // Store bytes to be parsed at build time when we have the parser
+      this.initialConfigurationBytes = initialFlagConfigResponse;
       return this;
     }
 
@@ -228,8 +232,8 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
      * <p>Note: In v4, the bytes will be parsed using the ConfigurationParser.
      */
     public Builder initialConfiguration(CompletableFuture<byte[]> initialFlagConfigResponse) {
-      // Store to be parsed later
-      this.initialConfiguration = null; // Will be set in buildAndInitAsync
+      // Store future to be parsed at build time when we have the parser
+      this.initialConfigurationBytesFuture = initialFlagConfigResponse;
       return this;
     }
 
@@ -329,6 +333,21 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
         // Cache at a per-API key level (useful for development)
         String cacheFileNameSuffix = safeCacheKey(apiKey);
         configStore = new ConfigurationStore(application, cacheFileNameSuffix, parser);
+      }
+
+      // Parse initial configuration bytes if provided
+      if (initialConfigurationBytes != null) {
+        initialConfiguration = parseInitialConfiguration(parser, initialConfigurationBytes);
+      } else if (initialConfigurationBytesFuture != null) {
+        // For future-based bytes, chain the parsing
+        final ConfigurationParser<JsonNode> finalParser = parser;
+        initialConfiguration =
+            initialConfigurationBytesFuture.thenApply(
+                bytes -> {
+                  CompletableFuture<Configuration> parsedFuture =
+                      parseInitialConfiguration(finalParser, bytes);
+                  return parsedFuture.join();
+                });
       }
 
       // If the initial config was not set, use the ConfigurationStore's cache as the initial
@@ -439,6 +458,26 @@ public class EppoClient extends BaseEppoClient<JsonNode> {
         }
       }
       return instance;
+    }
+
+    /**
+     * Parses raw configuration bytes into a Configuration using the provided parser.
+     *
+     * @param parser The configuration parser to use
+     * @param bytes The raw configuration bytes
+     * @return A CompletableFuture containing the parsed Configuration
+     */
+    private CompletableFuture<Configuration> parseInitialConfiguration(
+        ConfigurationParser<JsonNode> parser, byte[] bytes) {
+      try {
+        FlagConfigResponse flagConfig = parser.parseFlagConfig(bytes);
+        Configuration config = Configuration.builder(flagConfig).build();
+        return CompletableFuture.completedFuture(config);
+      } catch (Exception e) {
+        CompletableFuture<Configuration> failed = new CompletableFuture<>();
+        failed.completeExceptionally(e);
+        return failed;
+      }
     }
   }
 
