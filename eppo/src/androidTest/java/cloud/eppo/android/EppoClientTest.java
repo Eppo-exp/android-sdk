@@ -133,19 +133,21 @@ public class EppoClientTest {
       Log.i(TAG, "Using default OkHttpConfigurationClient for host: " + host);
     }
 
+    Log.i(TAG, "====== About to call buildAndInitAsync ======");
     CompletableFuture<Void> futureClient =
         builder
             .buildAndInitAsync()
             .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."))
             .exceptionally(
                 error -> {
-                  Log.e(TAG, "Test client async buildAndInit error" + error.getMessage(), error);
+                  Log.e(TAG, "Test client async buildAndInit error: " + error.getMessage(), error);
                   if (throwOnCallbackError) {
                     throw new RuntimeException(
                         "Unable to initialize: " + error.getMessage(), error);
                   }
                   return null;
                 });
+    Log.i(TAG, "====== buildAndInitAsync() returned, waiting for completion ======");
 
     // Wait for initialization to succeed or fail, up to 10 seconds, before continuing
     try {
@@ -160,6 +162,11 @@ public class EppoClientTest {
   @Before
   public void cleanUp() {
     MockitoAnnotations.openMocks(this);
+    // Log to confirm test setup
+    Log.i(TAG, "====== @Before cleanUp() running ======");
+    Log.i(TAG, "TEST_HOST = " + TEST_HOST);
+    Log.i(TAG, "TEST_HOST_BASE = " + TEST_HOST_BASE);
+    Log.i(TAG, "TEST_BRANCH = " + TEST_BRANCH);
     // Clear any caches
     String[] apiKeys = {DUMMY_API_KEY, DUMMY_OTHER_API_KEY};
     for (String apiKey : apiKeys) {
@@ -172,6 +179,38 @@ public class EppoClientTest {
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(ApplicationProvider.getApplicationContext(), cacheFileNameSuffix);
     cacheFile.delete();
+  }
+
+  @Test
+  public void testAAAConnectivity() throws Exception {
+    // This test runs first alphabetically to verify network connectivity
+    Log.i(TAG, "====== testAAAConnectivity START ======");
+    Log.i(TAG, "TEST_HOST = " + TEST_HOST);
+
+    // Create a simple OkHttp client to test connectivity
+    okhttp3.OkHttpClient simpleClient =
+        new okhttp3.OkHttpClient.Builder()
+            .connectTimeout(10, TimeUnit.SECONDS)
+            .readTimeout(10, TimeUnit.SECONDS)
+            .build();
+
+    okhttp3.Request request = new okhttp3.Request.Builder().url(TEST_HOST).get().build();
+    Log.i(TAG, "Making direct HTTP request to: " + TEST_HOST);
+
+    try (okhttp3.Response response = simpleClient.newCall(request).execute()) {
+      Log.i(TAG, "Response code: " + response.code());
+      Log.i(TAG, "Response successful: " + response.isSuccessful());
+      if (response.body() != null) {
+        String body = response.body().string();
+        Log.i(TAG, "Response body length: " + body.length());
+        Log.i(TAG, "Response body preview: " + body.substring(0, Math.min(200, body.length())));
+      }
+    } catch (Exception e) {
+      Log.e(TAG, "Direct HTTP request failed: " + e.getMessage(), e);
+      throw e;
+    }
+
+    Log.i(TAG, "====== testAAAConnectivity END ======");
   }
 
   @Test
