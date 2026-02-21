@@ -214,6 +214,40 @@ public class EppoClientTest {
   }
 
   @Test
+  public void testAABTestUrlAdapterClient() throws Exception {
+    // Test that TestUrlAdapterClient works correctly with async execution
+    Log.i(TAG, "====== testAABTestUrlAdapterClient START ======");
+
+    TestUrlAdapterClient client = new TestUrlAdapterClient();
+    Log.i(TAG, "TestUrlAdapterClient instance created");
+
+    // Create a mock request with the test host as base URL
+    EppoConfigurationRequest request =
+        new EppoConfigurationRequest(
+            TEST_HOST, // baseUrl
+            "/flag-config/v1/config", // resourcePath (should be ignored)
+            java.util.Collections.singletonMap("apiKey", DUMMY_API_KEY),
+            null); // lastVersionId
+
+    Log.i(TAG, "Calling execute() on TestUrlAdapterClient...");
+    java.util.concurrent.CompletableFuture<EppoConfigurationResponse> future =
+        client.execute(request);
+
+    Log.i(TAG, "Waiting for response future...");
+    EppoConfigurationResponse response = future.get(15, TimeUnit.SECONDS);
+
+    Log.i(TAG, "Response received!");
+    Log.i(TAG, "Status code: " + response.getStatusCode());
+    Log.i(TAG, "Is successful: " + response.isSuccessful());
+    if (response.getBody() != null) {
+      Log.i(TAG, "Body length: " + response.getBody().length);
+    }
+
+    assertTrue("Response should be successful", response.isSuccessful());
+    Log.i(TAG, "====== testAABTestUrlAdapterClient END ======");
+  }
+
+  @Test
   public void testUnobfuscatedAssignments() {
     initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY, false, null, false);
     runTestCases();
