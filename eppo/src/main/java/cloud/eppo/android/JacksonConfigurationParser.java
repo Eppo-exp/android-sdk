@@ -11,7 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * Jackson implementation of {@link ConfigurationParser}.
  *
- * <p>Parses flag configuration and bandit parameters using Jackson ObjectMapper.
+ * <p>Parses flag configuration and bandit parameters using Jackson ObjectMapper. Uses the Default
+ * implementations of DTO interfaces which are Jackson-compatible.
  */
 public class JacksonConfigurationParser implements ConfigurationParser<JsonNode> {
 
@@ -19,7 +20,11 @@ public class JacksonConfigurationParser implements ConfigurationParser<JsonNode>
 
   /** Creates a new parser with a default ObjectMapper. */
   public JacksonConfigurationParser() {
-    this.objectMapper = new ObjectMapper();
+    this.objectMapper = createDefaultObjectMapper();
+  }
+
+  private static ObjectMapper createDefaultObjectMapper() {
+    return new ObjectMapper();
   }
 
   /**
