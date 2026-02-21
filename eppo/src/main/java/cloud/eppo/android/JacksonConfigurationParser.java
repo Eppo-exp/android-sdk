@@ -1,11 +1,11 @@
 package cloud.eppo.android;
 
 import androidx.annotation.NonNull;
+import cloud.eppo.android.dto.adapters.EppoModule;
 import cloud.eppo.api.dto.BanditParametersResponse;
 import cloud.eppo.api.dto.FlagConfigResponse;
 import cloud.eppo.parser.ConfigurationParseException;
 import cloud.eppo.parser.ConfigurationParser;
-import cloud.eppo.android.dto.adapters.EppoModule;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
