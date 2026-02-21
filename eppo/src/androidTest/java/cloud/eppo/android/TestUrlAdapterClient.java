@@ -27,12 +27,13 @@ import okhttp3.ResponseBody;
  * <p>This adapter ignores the resourcePath and fetches directly from baseUrl.
  */
 public class TestUrlAdapterClient implements EppoConfigurationClient {
+  private static final String TAG = "EppoSDK.TestUrlAdapter";
   private static final String ETAG_HEADER = "ETag";
 
   private final OkHttpClient client;
 
   public TestUrlAdapterClient() {
-    android.util.Log.i("TestUrlAdapterClient", "TestUrlAdapterClient constructed");
+    android.util.Log.i(TAG, "TestUrlAdapterClient constructed");
     this.client =
         new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -48,7 +49,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
     try {
       // Log for debugging
       android.util.Log.i(
-          "TestUrlAdapterClient",
+          TAG,
           "execute() called - BaseUrl: "
               + request.getBaseUrl()
               + ", ResourcePath: "
@@ -59,7 +60,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
       HttpUrl parsedUrl = HttpUrl.parse(request.getBaseUrl());
       if (parsedUrl == null) {
         String error = "Failed to parse baseUrl: " + request.getBaseUrl();
-        android.util.Log.e("TestUrlAdapterClient", error);
+        android.util.Log.e(TAG, error);
         future.completeExceptionally(new RuntimeException(error));
         return future;
       }
@@ -84,12 +85,12 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
                 public void onResponse(@NonNull Call call, @NonNull Response response) {
                   try {
                     android.util.Log.d(
-                        "TestUrlAdapterClient",
+                        TAG,
                         "Response code: " + response.code() + ", URL: " + call.request().url());
                     EppoConfigurationResponse configResponse = handleResponse(response);
                     future.complete(configResponse);
                   } catch (Exception e) {
-                    android.util.Log.e("TestUrlAdapterClient", "Error handling response", e);
+                    android.util.Log.e(TAG, "Error handling response", e);
                     future.completeExceptionally(e);
                   } finally {
                     response.close();
@@ -105,7 +106,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
                 }
               });
     } catch (Exception e) {
-      android.util.Log.e("TestUrlAdapterClient", "Exception in execute(): " + e.getMessage(), e);
+      android.util.Log.e(TAG, "Exception in execute(): " + e.getMessage(), e);
       future.completeExceptionally(e);
     }
 
