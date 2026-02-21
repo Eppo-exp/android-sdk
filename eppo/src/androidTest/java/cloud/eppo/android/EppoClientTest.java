@@ -20,7 +20,6 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
-import cloud.eppo.BaseEppoClient;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
@@ -46,7 +45,6 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -103,9 +101,7 @@ public class EppoClientTest {
       clearCacheFile(apiKey);
     }
 
-    setBaseClientHttpClientOverrideField(httpClientOverride);
-
-    CompletableFuture<Void> futureClient =
+    EppoClient.Builder builder =
         new EppoClient.Builder(apiKey, ApplicationProvider.getApplicationContext())
             .isGracefulMode(isGracefulMode)
             .host(host)
@@ -114,7 +110,14 @@ public class EppoClientTest {
             .forceReinitialize(true)
             .offlineMode(offlineMode)
             .configStore(configurationStoreOverride)
-            .assignmentCache(assignmentCache)
+            .assignmentCache(assignmentCache);
+
+    if (httpClientOverride != null) {
+      builder.configurationClient(httpClientOverride);
+    }
+
+    CompletableFuture<Void> futureClient =
+        builder
             .buildAndInitAsync()
             .thenAccept(client -> Log.i(TAG, "Test client async buildAndInit completed."))
             .exceptionally(
@@ -145,7 +148,6 @@ public class EppoClientTest {
     for (String apiKey : apiKeys) {
       clearCacheFile(apiKey);
     }
-    setBaseClientHttpClientOverrideField(null);
   }
 
   private void clearCacheFile(String apiKey) {
@@ -248,12 +250,12 @@ public class EppoClientTest {
   public void testGracefulInitializationFailure() throws ExecutionException, InterruptedException {
     // Set up bad HTTP response
     EppoConfigurationClient http = mockHttpError();
-    setBaseClientHttpClientOverrideField(http);
 
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
-            .isGracefulMode(true);
+            .isGracefulMode(true)
+            .configurationClient(http);
 
     // Initialize and no exception should be thrown.
     clientBuilder.buildAndInitAsync().get();
@@ -281,12 +283,11 @@ public class EppoClientTest {
         CompletableFuture.completedFuture(emptyConfigResponse);
     when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(emptyFuture);
 
-    setBaseClientHttpClientOverrideField(mockHttpClient);
-
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
-            .isGracefulMode(false);
+            .isGracefulMode(false)
+            .configurationClient(mockHttpClient);
 
     // Initialize and no exception should be thrown.
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
@@ -325,13 +326,12 @@ public class EppoClientTest {
         CompletableFuture.completedFuture(emptyConfigResponse);
     when(mockHttpClient.get(any(EppoConfigurationRequest.class))).thenReturn(emptyFuture);
 
-    setBaseClientHttpClientOverrideField(mockHttpClient);
-
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
             .onConfigurationChange(received::add)
-            .isGracefulMode(false);
+            .isGracefulMode(false)
+            .configurationClient(mockHttpClient);
 
     // Initialize and no exception should be thrown.
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
@@ -391,8 +391,6 @@ public class EppoClientTest {
               return CompletableFuture.completedFuture(boolFlagConfigResponse);
             });
 
-    setBaseClientHttpClientOverrideField(mockHttpClient);
-
     long pollingIntervalMs = 50;
 
     EppoClient.Builder clientBuilder =
@@ -400,7 +398,8 @@ public class EppoClientTest {
             .forceReinitialize(true)
             .pollingEnabled(true)
             .pollingIntervalMs(pollingIntervalMs)
-            .isGracefulMode(false);
+            .isGracefulMode(false)
+            .configurationClient(mockHttpClient);
 
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
     eppoClient.onConfigurationChange(
@@ -430,12 +429,11 @@ public class EppoClientTest {
   public void testClientMakesDefaultAssignmentsAfterFailingToInitialize()
       throws ExecutionException, InterruptedException {
     // Set up bad HTTP response
-    setBaseClientHttpClientOverrideField(mockHttpError());
-
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
-            .isGracefulMode(true);
+            .isGracefulMode(true)
+            .configurationClient(mockHttpError());
 
     // Initialize and no exception should be thrown.
     EppoClient eppoClient = clientBuilder.buildAndInitAsync().get();
@@ -446,12 +444,11 @@ public class EppoClientTest {
   @Test
   public void testClientMakesDefaultAssignmentsAfterFailingToInitializeNonGracefulMode() {
     // Set up bad HTTP response
-    setBaseClientHttpClientOverrideField(mockHttpError());
-
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
-            .isGracefulMode(false);
+            .isGracefulMode(false)
+            .configurationClient(mockHttpError());
 
     // Initialize, expect the exception and then verify that the client can still complete an
     // assignment.
@@ -471,12 +468,11 @@ public class EppoClientTest {
   @Test
   public void testNonGracefulInitializationFailure() {
     // Set up bad HTTP response
-    setBaseClientHttpClientOverrideField(mockHttpError());
-
     EppoClient.Builder clientBuilder =
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
-            .isGracefulMode(false);
+            .isGracefulMode(false)
+            .configurationClient(mockHttpError());
 
     // Initialize and expect an exception.
     assertThrows(Exception.class, () -> clientBuilder.buildAndInitAsync().get());
@@ -1058,23 +1054,6 @@ public class EppoClientTest {
     SimpleModule module = new SimpleModule();
     module.addDeserializer(AssignmentTestCase.class, new AssignmentTestCaseDeserializer());
     return module;
-  }
-
-  private static void setBaseClientHttpClientOverrideField(EppoConfigurationClient httpClient) {
-    setBaseClientOverrideField("httpClientOverride", httpClient);
-  }
-
-  /** Uses reflection to set a static override field used for tests (e.g., httpClientOverride) */
-  @SuppressWarnings("SameParameterValue")
-  public static <T> void setBaseClientOverrideField(String fieldName, T override) {
-    try {
-      Field httpClientOverrideField = BaseEppoClient.class.getDeclaredField(fieldName);
-      httpClientOverrideField.setAccessible(true);
-      httpClientOverrideField.set(null, override);
-      httpClientOverrideField.setAccessible(false);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private static final byte[] BOOL_FLAG_CONFIG =
