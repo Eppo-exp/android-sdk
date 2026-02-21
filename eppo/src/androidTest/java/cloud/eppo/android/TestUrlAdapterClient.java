@@ -44,6 +44,11 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
       @NonNull EppoConfigurationRequest request) {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
 
+    // Log for debugging
+    android.util.Log.d(
+        "TestUrlAdapterClient",
+        "BaseUrl: " + request.getBaseUrl() + ", ResourcePath: " + request.getResourcePath());
+
     // Use ONLY baseUrl, ignoring resourcePath (the v4 SDK appends /flag-config/v1/config)
     // The test server serves config directly at the base URL
     HttpUrl.Builder urlBuilder = HttpUrl.parse(request.getBaseUrl()).newBuilder();
@@ -62,9 +67,13 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
               @Override
               public void onResponse(@NonNull Call call, @NonNull Response response) {
                 try {
+                  android.util.Log.d(
+                      "TestUrlAdapterClient",
+                      "Response code: " + response.code() + ", URL: " + call.request().url());
                   EppoConfigurationResponse configResponse = handleResponse(response);
                   future.complete(configResponse);
                 } catch (Exception e) {
+                  android.util.Log.e("TestUrlAdapterClient", "Error handling response", e);
                   future.completeExceptionally(e);
                 } finally {
                   response.close();
@@ -73,6 +82,8 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
 
               @Override
               public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                android.util.Log.e(
+                    "TestUrlAdapterClient", "HTTP request failed: " + e.getMessage(), e);
                 future.completeExceptionally(
                     new RuntimeException("HTTP request failed: " + e.getMessage(), e));
               }
