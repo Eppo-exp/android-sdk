@@ -1,9 +1,19 @@
 # Migration Notes: Android SDK v4 Upgrade
 
 ## Current Status
-- **Phase:** Implementation in Progress - Blocked on v4 API Complexity
+- **Phase:** Test Fixes in Progress
 - **Branch:** `feature/v4-core-upgrade/pr3-sdk-v4-upgrade`
-- **Last Updated:** 2026-02-20
+- **Last Updated:** 2026-02-21
+
+### Recent CI Fixes:
+1. ✅ Applied spotless formatting
+2. ✅ Migrated tests from reflection to builder-based HTTP client injection
+3. ✅ Updated test config JSON format (added banditReferences, format fields)
+4. ✅ Added required fields (createdAt, environment) to EMPTY_CONFIG
+5. 🔄 Waiting for CI to pass
+
+### Known Issue - Test Data Files:
+The `sdk-test-data` repository's JSON files (flags-v1.json, flags-v1-obfuscated.json) need `banditReferences` field for v4 parser. These files are downloaded during CI and the fix needs to happen upstream.
 
 ## Completed Work
 
