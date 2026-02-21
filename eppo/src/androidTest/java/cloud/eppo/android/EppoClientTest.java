@@ -24,7 +24,9 @@ import androidx.annotation.Nullable;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.platform.app.InstrumentationRegistry;
 import cloud.eppo.BaseEppoClient;
-import cloud.eppo.EppoHttpClient;
+import cloud.eppo.http.EppoConfigurationClient;
+import cloud.eppo.http.EppoConfigurationRequest;
+import cloud.eppo.http.EppoConfigurationResponse;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.helpers.AssignmentTestCase;
 import cloud.eppo.android.helpers.AssignmentTestCaseDeserializer;
@@ -36,9 +38,9 @@ import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
 import cloud.eppo.logging.Assignment;
 import cloud.eppo.logging.AssignmentLogger;
-import cloud.eppo.ufc.dto.FlagConfig;
-import cloud.eppo.ufc.dto.FlagConfigResponse;
-import cloud.eppo.ufc.dto.VariationType;
+import cloud.eppo.api.dto.FlagConfig;
+import cloud.eppo.api.dto.FlagConfigResponse;
+import cloud.eppo.api.dto.VariationType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -85,7 +87,7 @@ public class EppoClientTest {
   private static final byte[] EMPTY_CONFIG = "{\"flags\":{}}".getBytes();
   private final ObjectMapper mapper = new ObjectMapper().registerModule(module());
   @Mock AssignmentLogger mockAssignmentLogger;
-  @Mock EppoHttpClient mockHttpClient;
+  @Mock EppoConfigurationClient mockHttpClient;
 
   private void initClient(
       String host,
@@ -93,7 +95,7 @@ public class EppoClientTest {
       boolean shouldDeleteCacheFiles,
       boolean isGracefulMode,
       boolean obfuscateConfig,
-      @Nullable EppoHttpClient httpClientOverride,
+      @Nullable EppoConfigurationClient httpClientOverride,
       @Nullable ConfigurationStore configurationStoreOverride,
       String apiKey,
       boolean offlineMode,
@@ -271,9 +273,9 @@ public class EppoClientTest {
                 "subject1", "experiment1", new Attributes(), mapper.readTree("{}")));
   }
 
-  private static EppoHttpClient mockHttpError() {
-    // Create a mock instance of EppoHttpClient
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+  private static EppoConfigurationClient mockHttpError() {
+    // Create a mock instance of EppoConfigurationClient
+    EppoConfigurationClient mockHttpClient = mock(EppoConfigurationClient.class);
 
     // Mock sync get
     when(mockHttpClient.get(anyString())).thenThrow(new RuntimeException("Intentional Error"));
@@ -289,7 +291,7 @@ public class EppoClientTest {
   @Test
   public void testGracefulInitializationFailure() throws ExecutionException, InterruptedException {
     // Set up bad HTTP response
-    EppoHttpClient http = mockHttpError();
+    EppoConfigurationClient http = mockHttpError();
     setBaseClientHttpClientOverrideField(http);
 
     EppoClient.Builder clientBuilder =
@@ -314,7 +316,7 @@ public class EppoClientTest {
   private void testLoadConfigurationHelper(boolean loadAsync)
       throws ExecutionException, InterruptedException {
     // Set up a changing response from the "server"
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+    EppoConfigurationClient mockHttpClient = mock(EppoConfigurationClient.class);
 
     // Mock sync get to return empty
     when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
@@ -359,7 +361,7 @@ public class EppoClientTest {
     List<Configuration> received = new ArrayList<>();
 
     // Set up a changing response from the "server"
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+    EppoConfigurationClient mockHttpClient = mock(EppoConfigurationClient.class);
 
     // Mock sync get to return empty
     when(mockHttpClient.get(anyString())).thenReturn(EMPTY_CONFIG);
@@ -398,7 +400,7 @@ public class EppoClientTest {
 
   @Test
   public void testPollingClient() throws ExecutionException, InterruptedException {
-    EppoHttpClient mockHttpClient = mock(EppoHttpClient.class);
+    EppoConfigurationClient mockHttpClient = mock(EppoConfigurationClient.class);
 
     CountDownLatch pollLatch = new CountDownLatch(1);
     CountDownLatch configActivatedLatch = new CountDownLatch(1);
@@ -742,7 +744,7 @@ public class EppoClientTest {
   @Test
   public void testInvalidConfigJSONAsync() {
 
-    // Create a mock instance of EppoHttpClient
+    // Create a mock instance of EppoConfigurationClient
     CompletableFuture<byte[]> httpResponse = CompletableFuture.completedFuture("{}".getBytes());
 
     when(mockHttpClient.getAsync(anyString())).thenReturn(httpResponse);
@@ -1093,7 +1095,7 @@ public class EppoClientTest {
     return module;
   }
 
-  private static void setBaseClientHttpClientOverrideField(EppoHttpClient httpClient) {
+  private static void setBaseClientHttpClientOverrideField(EppoConfigurationClient httpClient) {
     setBaseClientOverrideField("httpClientOverride", httpClient);
   }
 

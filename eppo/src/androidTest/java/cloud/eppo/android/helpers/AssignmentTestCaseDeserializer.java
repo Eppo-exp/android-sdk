@@ -2,8 +2,7 @@ package cloud.eppo.android.helpers;
 
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.EppoValue;
-import cloud.eppo.ufc.dto.VariationType;
-import cloud.eppo.ufc.dto.adapters.EppoValueDeserializer;
+import cloud.eppo.api.dto.VariationType;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,7 +15,7 @@ import java.util.Map;
 import org.json.JSONException;
 
 public class AssignmentTestCaseDeserializer extends StdDeserializer<AssignmentTestCase> {
-  private final EppoValueDeserializer eppoValueDeserializer = new EppoValueDeserializer();
+  private final EppoValueDeserializerHelper eppoValueDeserializer = new EppoValueDeserializerHelper();
 
   public AssignmentTestCaseDeserializer() {
     super(AssignmentTestCase.class);
