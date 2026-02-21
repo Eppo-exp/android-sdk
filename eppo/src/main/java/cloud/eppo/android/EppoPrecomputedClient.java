@@ -106,7 +106,8 @@ public class EppoPrecomputedClient extends BasePrecomputedClient<JsonNode> {
           Map<String, Map<String, Object>> actionsForFlag = new HashMap<>();
           for (Map.Entry<String, Attributes> actionEntry : flagEntry.getValue().entrySet()) {
             actionsForFlag.put(
-                actionEntry.getKey(), ContextAttributesSerializer.serialize(actionEntry.getValue()));
+                actionEntry.getKey(),
+                ContextAttributesSerializer.serialize(actionEntry.getValue()));
           }
           serializedBanditActions.put(flagEntry.getKey(), actionsForFlag);
         }
@@ -434,8 +435,7 @@ public class EppoPrecomputedClient extends BasePrecomputedClient<JsonNode> {
   private static class JacksonPrecomputedConfigParser implements PrecomputedConfigParser<JsonNode> {
     private final ObjectMapper mapper = new ObjectMapper();
 
-    @NonNull
-    @Override
+    @NonNull @Override
     public PrecomputedConfigurationResponse parse(@NonNull byte[] responseBytes)
         throws PrecomputedParseException {
       try {
@@ -445,8 +445,7 @@ public class EppoPrecomputedClient extends BasePrecomputedClient<JsonNode> {
       }
     }
 
-    @NonNull
-    @Override
+    @NonNull @Override
     public JsonNode parseJsonValue(@NonNull String base64EncodedValue)
         throws PrecomputedParseException {
       try {
