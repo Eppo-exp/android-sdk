@@ -114,13 +114,21 @@ public class EppoClientTest {
             .configStore(configurationStoreOverride)
             .assignmentCache(assignmentCache);
 
+    Log.i(TAG, "====== initClient START ======");
+    Log.i(TAG, "initClient: host=" + host);
+    Log.i(TAG, "initClient: httpClientOverride=" + httpClientOverride);
+    Log.i(TAG, "initClient: TEST_HOST_BASE=" + TEST_HOST_BASE);
+
     if (httpClientOverride != null) {
       Log.i(TAG, "Using provided httpClientOverride");
       builder.configurationClient(httpClientOverride);
     } else if (host != null && host.startsWith(TEST_HOST_BASE)) {
       // Use TestUrlAdapterClient for test server URLs to work around v4 URL path differences
-      Log.i(TAG, "Using TestUrlAdapterClient for host: " + host);
-      builder.configurationClient(new TestUrlAdapterClient());
+      Log.i(TAG, "CREATING TestUrlAdapterClient for host: " + host);
+      TestUrlAdapterClient testClient = new TestUrlAdapterClient();
+      Log.i(TAG, "TestUrlAdapterClient created: " + testClient);
+      builder.configurationClient(testClient);
+      Log.i(TAG, "TestUrlAdapterClient set on builder");
     } else {
       Log.i(TAG, "Using default OkHttpConfigurationClient for host: " + host);
     }

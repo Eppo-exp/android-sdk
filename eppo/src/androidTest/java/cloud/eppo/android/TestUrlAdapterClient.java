@@ -33,17 +33,21 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
   private final OkHttpClient client;
 
   public TestUrlAdapterClient() {
-    android.util.Log.i(TAG, "TestUrlAdapterClient constructed");
+    android.util.Log.i(TAG, "TestUrlAdapterClient CONSTRUCTOR CALLED - instance created");
+    android.util.Log.i(
+        TAG, "Stack trace: " + android.util.Log.getStackTraceString(new Exception()));
     this.client =
         new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(10, TimeUnit.SECONDS)
             .build();
+    android.util.Log.i(TAG, "TestUrlAdapterClient constructor completed");
   }
 
   @NonNull @Override
   public CompletableFuture<EppoConfigurationResponse> execute(
       @NonNull EppoConfigurationRequest request) {
+    android.util.Log.i(TAG, "====== EXECUTE() METHOD CALLED ======");
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
 
     try {
@@ -54,6 +58,8 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
               + request.getBaseUrl()
               + ", ResourcePath: "
               + request.getResourcePath());
+      android.util.Log.i(TAG, "execute() QueryParams: " + request.getQueryParams());
+      android.util.Log.i(TAG, "execute() Method: " + request.getMethod());
 
       // Use ONLY baseUrl, ignoring resourcePath (the v4 SDK appends /flag-config/v1/config)
       // The test server serves config directly at the base URL
@@ -73,7 +79,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
       }
 
       HttpUrl finalUrl = urlBuilder.build();
-      android.util.Log.i("TestUrlAdapterClient", "Making request to: " + finalUrl);
+      android.util.Log.i(TAG, "Making request to: " + finalUrl);
 
       Request httpRequest = new Request.Builder().url(finalUrl).get().build();
 
@@ -99,8 +105,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
 
                 @Override
                 public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                  android.util.Log.e(
-                      "TestUrlAdapterClient", "HTTP request failed: " + e.getMessage(), e);
+                  android.util.Log.e(TAG, "HTTP request failed: " + e.getMessage(), e);
                   future.completeExceptionally(
                       new RuntimeException("HTTP request failed: " + e.getMessage(), e));
                 }
