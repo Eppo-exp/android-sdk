@@ -10,10 +10,34 @@
 2. ✅ Migrated tests from reflection to builder-based HTTP client injection
 3. ✅ Updated test config JSON format (added banditReferences, format fields)
 4. ✅ Added required fields (createdAt, environment) to EMPTY_CONFIG
-5. 🔄 Waiting for CI to pass
+5. ❌ CI still failing - see blocking issues below
 
-### Known Issue - Test Data Files:
-The `sdk-test-data` repository's JSON files (flags-v1.json, flags-v1-obfuscated.json) need `banditReferences` field for v4 parser. These files are downloaded during CI and the fix needs to happen upstream.
+### Blocking Issues:
+
+#### 1. Test Data Files (Upstream Dependency)
+The `sdk-test-data` repository's JSON files (flags-v1.json, flags-v1-obfuscated.json) need
+`banditReferences` field for v4 parser. These files are downloaded during CI and the fix
+needs to happen in the upstream `sdk-test-data` repository.
+
+**Affected tests:** `testObfuscatedOfflineInit`, `testUnobfuscatedOfflineInit`
+
+#### 2. Mock HTTP Client Method Mismatch
+The published `eppo-sdk-framework:0.1.0-SNAPSHOT` has a different `EppoConfigurationClient`
+interface than expected. Tests mock the `get()` method, but the SDK internally may call
+a different method (possibly `execute()`), causing the mock to not intercept requests.
+
+**Root cause:** The common SDK v4 has:
+- `execute()` as the primary method
+- `get()` as a deprecated default method that delegates to `execute()`
+
+When Mockito mocks `get()`, and the SDK calls `execute()` directly, the mock doesn't work.
+
+**Solution needed:** Either:
+- Update the common SDK to publish with consistent interface
+- Or change how tests mock the HTTP client (mock both methods, or use spy instead)
+
+**Affected tests:** `testLoadConfiguration`, `testLoadConfigurationAsync`, `testPollingClient`,
+and any test that uses mock HTTP responses
 
 ## Completed Work
 
