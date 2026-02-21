@@ -11,8 +11,10 @@ import java.util.concurrent.TimeUnit;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.HttpUrl;
+import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -49,7 +51,7 @@ public class OkHttpConfigurationClient implements EppoConfigurationClient {
   }
 
   @NonNull @Override
-  public CompletableFuture<EppoConfigurationResponse> get(
+  public CompletableFuture<EppoConfigurationResponse> execute(
       @NonNull EppoConfigurationRequest request) {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
     Request httpRequest = buildRequest(request);
@@ -96,8 +98,16 @@ public class OkHttpConfigurationClient implements EppoConfigurationClient {
       requestBuilder.header(IF_NONE_MATCH_HEADER, lastVersionId);
     }
 
-    // GET request (the interface only supports GET)
-    requestBuilder.get();
+    // Handle GET or POST based on request method
+    if (request.getMethod() == EppoConfigurationRequest.HttpMethod.POST) {
+      byte[] body = request.getBody();
+      String contentType = request.getContentType();
+      MediaType mediaType = contentType != null ? MediaType.parse(contentType) : null;
+      RequestBody requestBody = RequestBody.create(body != null ? body : new byte[0], mediaType);
+      requestBuilder.post(requestBody);
+    } else {
+      requestBuilder.get();
+    }
 
     return requestBuilder.build();
   }

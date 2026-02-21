@@ -40,7 +40,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
   }
 
   @NonNull @Override
-  public CompletableFuture<EppoConfigurationResponse> get(
+  public CompletableFuture<EppoConfigurationResponse> execute(
       @NonNull EppoConfigurationRequest request) {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
 
