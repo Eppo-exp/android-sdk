@@ -32,6 +32,7 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
   private final OkHttpClient client;
 
   public TestUrlAdapterClient() {
+    android.util.Log.i("TestUrlAdapterClient", "TestUrlAdapterClient constructed");
     this.client =
         new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
@@ -44,50 +45,69 @@ public class TestUrlAdapterClient implements EppoConfigurationClient {
       @NonNull EppoConfigurationRequest request) {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
 
-    // Log for debugging
-    android.util.Log.d(
-        "TestUrlAdapterClient",
-        "BaseUrl: " + request.getBaseUrl() + ", ResourcePath: " + request.getResourcePath());
+    try {
+      // Log for debugging
+      android.util.Log.i(
+          "TestUrlAdapterClient",
+          "execute() called - BaseUrl: "
+              + request.getBaseUrl()
+              + ", ResourcePath: "
+              + request.getResourcePath());
 
-    // Use ONLY baseUrl, ignoring resourcePath (the v4 SDK appends /flag-config/v1/config)
-    // The test server serves config directly at the base URL
-    HttpUrl.Builder urlBuilder = HttpUrl.parse(request.getBaseUrl()).newBuilder();
+      // Use ONLY baseUrl, ignoring resourcePath (the v4 SDK appends /flag-config/v1/config)
+      // The test server serves config directly at the base URL
+      HttpUrl parsedUrl = HttpUrl.parse(request.getBaseUrl());
+      if (parsedUrl == null) {
+        String error = "Failed to parse baseUrl: " + request.getBaseUrl();
+        android.util.Log.e("TestUrlAdapterClient", error);
+        future.completeExceptionally(new RuntimeException(error));
+        return future;
+      }
 
-    // Add query parameters
-    for (Map.Entry<String, String> param : request.getQueryParams().entrySet()) {
-      urlBuilder.addQueryParameter(param.getKey(), param.getValue());
-    }
+      HttpUrl.Builder urlBuilder = parsedUrl.newBuilder();
 
-    Request httpRequest = new Request.Builder().url(urlBuilder.build()).get().build();
+      // Add query parameters
+      for (Map.Entry<String, String> param : request.getQueryParams().entrySet()) {
+        urlBuilder.addQueryParameter(param.getKey(), param.getValue());
+      }
 
-    client
-        .newCall(httpRequest)
-        .enqueue(
-            new Callback() {
-              @Override
-              public void onResponse(@NonNull Call call, @NonNull Response response) {
-                try {
-                  android.util.Log.d(
-                      "TestUrlAdapterClient",
-                      "Response code: " + response.code() + ", URL: " + call.request().url());
-                  EppoConfigurationResponse configResponse = handleResponse(response);
-                  future.complete(configResponse);
-                } catch (Exception e) {
-                  android.util.Log.e("TestUrlAdapterClient", "Error handling response", e);
-                  future.completeExceptionally(e);
-                } finally {
-                  response.close();
+      HttpUrl finalUrl = urlBuilder.build();
+      android.util.Log.i("TestUrlAdapterClient", "Making request to: " + finalUrl);
+
+      Request httpRequest = new Request.Builder().url(finalUrl).get().build();
+
+      client
+          .newCall(httpRequest)
+          .enqueue(
+              new Callback() {
+                @Override
+                public void onResponse(@NonNull Call call, @NonNull Response response) {
+                  try {
+                    android.util.Log.d(
+                        "TestUrlAdapterClient",
+                        "Response code: " + response.code() + ", URL: " + call.request().url());
+                    EppoConfigurationResponse configResponse = handleResponse(response);
+                    future.complete(configResponse);
+                  } catch (Exception e) {
+                    android.util.Log.e("TestUrlAdapterClient", "Error handling response", e);
+                    future.completeExceptionally(e);
+                  } finally {
+                    response.close();
+                  }
                 }
-              }
 
-              @Override
-              public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                android.util.Log.e(
-                    "TestUrlAdapterClient", "HTTP request failed: " + e.getMessage(), e);
-                future.completeExceptionally(
-                    new RuntimeException("HTTP request failed: " + e.getMessage(), e));
-              }
-            });
+                @Override
+                public void onFailure(@NonNull Call call, @NonNull IOException e) {
+                  android.util.Log.e(
+                      "TestUrlAdapterClient", "HTTP request failed: " + e.getMessage(), e);
+                  future.completeExceptionally(
+                      new RuntimeException("HTTP request failed: " + e.getMessage(), e));
+                }
+              });
+    } catch (Exception e) {
+      android.util.Log.e("TestUrlAdapterClient", "Exception in execute(): " + e.getMessage(), e);
+      future.completeExceptionally(e);
+    }
 
     return future;
   }
