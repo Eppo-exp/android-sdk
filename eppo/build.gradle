@@ -71,6 +71,7 @@ dependencies {
     api 'cloud.eppo:sdk-common-jvm:3.13.1'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
+    implementation 'uk.uuid.slf4j:slf4j-android:2.0.17-0'
 
     implementation "androidx.core:core:${versions.androidx_core}"
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
