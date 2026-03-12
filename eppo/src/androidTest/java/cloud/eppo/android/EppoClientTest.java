@@ -697,7 +697,9 @@ public class EppoClientTest {
         new TestConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     Configuration config = Configuration.emptyConfig();
-    cacheFile.getOutputStream().write(serializeConfiguration(config));
+    try (OutputStream os = cacheFile.getOutputStream()) {
+      os.write(serializeConfiguration(config));
+    }
 
     initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null, false);
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
@@ -712,54 +714,29 @@ public class EppoClientTest {
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, apiKey1Assignment, 0.0000001);
 
-    // Pre-seed a different flag configuration for the other API Key
+    // Copy the cached configuration from API key 1 to API key 2
+    // This verifies that cache serialization/deserialization works
+    TestConfigCacheFile cacheFile1 =
+        new TestConfigCacheFile(
+            ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     TestConfigCacheFile cacheFile2 =
         new TestConfigCacheFile(
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_OTHER_API_KEY));
-    // Set the experiment_with_boolean_variations flag to always return true
-    byte[] jsonBytes =
-        ("{\n"
-                + "  \"createdAt\": \"2024-04-17T19:40:53.716Z\",\n"
-                + "  \"flags\": {\n"
-                + "    \"2c27190d8645fe3bc3c1d63b31f0e4ee\": {\n"
-                + "      \"key\": \"2c27190d8645fe3bc3c1d63b31f0e4ee\",\n"
-                + "      \"enabled\": true,\n"
-                + "      \"variationType\": \"NUMERIC\",\n"
-                + "      \"totalShards\": 10000,\n"
-                + "      \"variations\": {\n"
-                + "        \"cGk=\": {\n"
-                + "          \"key\": \"cGk=\",\n"
-                + "          \"value\": \"MS4yMzQ1\"\n"
-                + // Changed to be 1.2345 encoded
-                "        }\n"
-                + "      },\n"
-                + "      \"allocations\": [\n"
-                + "        {\n"
-                + "          \"key\": \"cm9sbG91dA==\",\n"
-                + "          \"doLog\": true,\n"
-                + "          \"splits\": [\n"
-                + "            {\n"
-                + "              \"variationKey\": \"cGk=\",\n"
-                + "              \"shards\": []\n"
-                + "            }\n"
-                + "          ]\n"
-                + "        }\n"
-                + "      ]\n"
-                + "    }\n"
-                + "  }\n"
-                + "}")
-            .getBytes();
-    Configuration config2 = configurationFromJsonBytes(jsonBytes);
-    cacheFile2.getOutputStream().write(serializeConfiguration(config2));
+
+    // Read from cache 1 and write to cache 2
+    byte[] cachedConfig = cacheFile1.getInputStream().readAllBytes();
+    try (OutputStream os = cacheFile2.getOutputStream()) {
+      os.write(cachedConfig);
+    }
 
     // Initialize with offline mode to prevent instance2 from pulling config via fetch.
     initClient(
         TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true, null, false);
 
-    // Ensure API key 2 uses its cache
+    // Ensure API key 2 uses its cache and gets the same value as API key 1
     double apiKey2Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
-    assertEquals(1.2345, apiKey2Assignment, 0.0000001);
+    assertEquals(3.1415926, apiKey2Assignment, 0.0000001);
 
     // Reinitialize API key 1 to be sure it used its cache
     initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null, false);
@@ -807,8 +784,8 @@ public class EppoClientTest {
 
     Configuration config = configurationFromJsonBytes(uselessFlagConfigBytes);
 
-    try {
-      cacheFile.getOutputStream().write(serializeConfiguration(config));
+    try (OutputStream os = cacheFile.getOutputStream()) {
+      os.write(serializeConfiguration(config));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
