@@ -15,7 +15,9 @@ public class TestConfigCacheFile extends BaseCacheFile {
   }
 
   public static String cacheFileName(String suffix) {
-    // Match the naming convention used by FileBackedConfigStore
-    return "eppo-sdk-flags-" + Configuration.class.getName() + "-" + suffix + ".bin";
+    // Match the naming convention used by ConfigCacheFile with Java serialization codec
+    // ConfigurationCodec.Default uses content type "application/x-java-serialized-object"
+    // which maps to ".ser" extension in ConfigCacheFile
+    return "eppo-sdk-flags-" + suffix + ".ser";
   }
 }
