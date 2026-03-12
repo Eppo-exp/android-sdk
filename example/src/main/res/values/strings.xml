@@ -3,4 +3,5 @@
     <string name="start_assignment_activity">Launch</string>
     <string name="start_offline_assignment_activity">Launch Offline Mode</string>
     <string name="clear_cache">Clear Cache</string>
+    <string name="start_gson_assigner_activity">Launch (Custom GSON Client + Header Injection)</string>
 </resources>

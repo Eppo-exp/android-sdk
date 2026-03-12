@@ -1,6 +1,6 @@
 package cloud.eppo.android.helpers;
 
-import cloud.eppo.ufc.dto.VariationType;
+import cloud.eppo.api.dto.VariationType;
 import java.util.List;
 
 public class AssignmentTestCase {
