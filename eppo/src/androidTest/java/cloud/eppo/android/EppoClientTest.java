@@ -725,7 +725,10 @@ public class EppoClientTest {
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_OTHER_API_KEY));
 
     // Read from cache 1 and write to cache 2
-    byte[] cachedConfig = cacheFile1.getInputStream().readAllBytes();
+    byte[] cachedConfig;
+    try (InputStream is = cacheFile1.getInputStream()) {
+      cachedConfig = IOUtils.toByteArray(is);
+    }
     try (OutputStream os = cacheFile2.getOutputStream()) {
       os.write(cachedConfig);
     }
