@@ -1,0 +1,78 @@
+package cloud.eppo.android.framework.storage;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+
+import android.app.Application;
+import cloud.eppo.api.Configuration;
+import java.util.concurrent.TimeUnit;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+
+/** Unit tests for {@link FileBackedConfigStore}. */
+@RunWith(RobolectricTestRunner.class)
+public class FileBackedConfigStoreTest {
+
+  private Application application;
+  private ConfigurationCodec<Configuration> codec;
+  private String cacheFileSuffix;
+
+  @Before
+  public void setUp() {
+    application = RuntimeEnvironment.getApplication();
+    codec = new ConfigurationCodec.Default<>(Configuration.class);
+    cacheFileSuffix = "test-" + System.currentTimeMillis();
+  }
+
+  @Test
+  public void construct_withValidArgs_succeeds() {
+    FileBackedConfigStore store = new FileBackedConfigStore(application, cacheFileSuffix, codec);
+
+    assertNotNull(store);
+  }
+
+  @Test
+  public void getConfiguration_beforeAnySave_returnsEmptyConfig() {
+    FileBackedConfigStore store = new FileBackedConfigStore(application, cacheFileSuffix, codec);
+
+    Configuration config = store.getConfiguration();
+
+    assertNotNull(config);
+    assertEquals(Configuration.emptyConfig(), config);
+  }
+
+  @Test
+  public void saveConfiguration_thenGetConfiguration_returnsSavedConfig() throws Exception {
+    FileBackedConfigStore store = new FileBackedConfigStore(application, cacheFileSuffix, codec);
+    Configuration toSave = Configuration.emptyConfig();
+
+    store.saveConfiguration(toSave).get(5, TimeUnit.SECONDS);
+
+    assertEquals(toSave, store.getConfiguration());
+  }
+
+  @Test
+  public void loadFromStorage_whenNothingSaved_returnsNull() throws Exception {
+    FileBackedConfigStore store = new FileBackedConfigStore(application, cacheFileSuffix, codec);
+
+    Configuration loaded = store.loadFromStorage().get(5, TimeUnit.SECONDS);
+
+    assertNull(loaded);
+  }
+
+  @Test
+  public void saveConfiguration_thenLoadFromStorage_returnsSameConfig() throws Exception {
+    FileBackedConfigStore store = new FileBackedConfigStore(application, cacheFileSuffix, codec);
+    Configuration toSave = Configuration.emptyConfig();
+
+    store.saveConfiguration(toSave).get(5, TimeUnit.SECONDS);
+    Configuration loaded = store.loadFromStorage().get(5, TimeUnit.SECONDS);
+
+    assertNotNull(loaded);
+    assertEquals(toSave, loaded);
+  }
+}
