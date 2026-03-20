@@ -12,6 +12,8 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import cloud.eppo.android.framework.AndroidBaseClient;
+import cloud.eppo.android.framework.storage.FileBackedConfigStore;
+import cloud.eppo.android.framework.util.Utils;
 import cloud.eppo.api.AllocationDetails;
 import cloud.eppo.api.AssignmentDetails;
 import cloud.eppo.api.Attributes;
@@ -61,11 +63,18 @@ public class CustomClientActivity extends AppCompatActivity {
     experiment.setText(INITIAL_FLAG_KEY);
     subject.setText(INITIAL_SUBJECT_ID);
 
-    appendToLog("Initializing with GsonConfigurationParser + HeaderInjectingEppoClient…");
+    appendToLog(
+        "Initializing with GsonConfigurationParser + GsonConfigurationCodec + HeaderInjectingEppoClient…");
 
     Map<String, String> customHeaders = new LinkedHashMap<>();
     customHeaders.put("X-App-Name", "EppoExampleApp");
     customHeaders.put("X-App-Version", BuildConfig.VERSION_NAME);
+
+    // Swap in the GSON-based cache codec so the on-disk cache is human-readable JSON
+    // rather than Java's binary serialization format.
+    FileBackedConfigStore gsonStore =
+        new FileBackedConfigStore(
+            getApplication(), Utils.safeCacheKey(API_KEY), new GsonConfigurationCodec());
 
     new AndroidBaseClient.Builder<>(
             API_KEY,
@@ -74,6 +83,7 @@ public class CustomClientActivity extends AppCompatActivity {
             new HeaderInjectingEppoClient(customHeaders))
         .forceReinitialize(true)
         .isGracefulMode(false)
+        .configStore(gsonStore)
         .assignmentLogger(
             assignment ->
                 Log.d(
@@ -90,7 +100,7 @@ public class CustomClientActivity extends AppCompatActivity {
               runOnUiThread(
                   () ->
                       appendToLog(
-                          "Ready — custom GSON parser + header-injecting HTTP client.\n"
+                          "Ready — GSON parser + GSON cache codec + header-injecting HTTP client.\n"
                               + "Injected headers: "
                               + customHeaders));
             })

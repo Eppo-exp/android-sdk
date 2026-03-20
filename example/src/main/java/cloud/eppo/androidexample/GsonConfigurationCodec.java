@@ -1,6 +1,7 @@
-package cloud.eppo.android.framework.storage;
+package cloud.eppo.androidexample;
 
 import android.util.Log;
+import cloud.eppo.android.framework.storage.ConfigurationCodec;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.dto.Allocation;
@@ -47,21 +48,12 @@ import org.jetbrains.annotations.Nullable;
 /**
  * A GSON-based {@link ConfigurationCodec} for {@link Configuration}.
  *
- * <p>Serializes to UTF-8 JSON rather than Java's binary serialization format. This makes cached
- * configurations human-readable and immune to {@code serialVersionUID} drift between SDK versions.
+ * <p>Serializes to UTF-8 JSON rather than Java's binary serialization format. Cached configurations
+ * are human-readable and immune to {@code serialVersionUID} drift between SDK versions. This is
+ * useful for development and debugging in the example app.
  *
  * <p>Because {@link Configuration} does not expose its internal maps, this codec uses reflection to
- * read the {@code flags}, {@code banditReferences}, and {@code bandits} fields. These field names
- * are stable; the class declares {@code serialVersionUID = 1L} to signal serialization
- * compatibility.
- *
- * <p>Usage:
- *
- * <pre>{@code
- * CachingConfigurationStore<Configuration> store = new FileBackedConfigStore<>(
- *     context,
- *     new GsonConfigurationCodec());
- * }</pre>
+ * read the {@code flags}, {@code banditReferences}, and {@code bandits} fields.
  */
 public class GsonConfigurationCodec implements ConfigurationCodec<Configuration> {
 
@@ -76,7 +68,6 @@ public class GsonConfigurationCodec implements ConfigurationCodec<Configuration>
             return fmt;
           });
 
-  // Reflection access to Configuration's private state
   private static final Field FLAGS_FIELD;
   private static final Field BANDIT_REFS_FIELD;
   private static final Field BANDITS_FIELD;
@@ -295,7 +286,6 @@ public class GsonConfigurationCodec implements ConfigurationCodec<Configuration>
       JsonArray variations = new JsonArray();
       for (BanditFlagVariation fv : ref.getFlagVariations()) {
         JsonObject fvObj = new JsonObject();
-        // "key" matches the field name expected by GsonConfigurationParser
         fvObj.addProperty("key", fv.getBanditKey());
         fvObj.addProperty("flagKey", fv.getFlagKey());
         fvObj.addProperty("allocationKey", fv.getAllocationKey());

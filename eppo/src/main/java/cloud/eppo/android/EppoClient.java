@@ -370,13 +370,12 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
                 (success, ex) -> {
                   if (ex == null && success) {
                     ret.complete(instance);
-                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
+                  } else if (offlineMode || ex != null || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   } else {
-                    Log.d(TAG, "Initial config was not used.");
-                    failCount.incrementAndGet();
+                    Log.d(TAG, "Initial config was not used; waiting for fetch.");
                   }
                   return null;
                 });

@@ -336,13 +336,12 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
                 (success, ex) -> {
                   if (ex == null && Boolean.TRUE.equals(success)) {
                     ret.complete(newInstance);
-                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
+                  } else if (offlineMode || ex != null || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   } else {
-                    Log.i(TAG, "Initial config was not used.");
-                    failCount.incrementAndGet();
+                    Log.i(TAG, "Initial config was not used; waiting for fetch.");
                   }
                   return null;
                 });
