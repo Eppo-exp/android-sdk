@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "cloud.eppo"
-version = "0.1.0"
+version = "0.1.0-SNAPSHOT"
 
 android {
     namespace "cloud.eppo.android.framework"
