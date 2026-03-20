@@ -11,7 +11,7 @@ import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
-import cloud.eppo.android.framework.AndroidBaseClient;
+import cloud.eppo.android.framework.BaseAndroidEppoClient;
 import cloud.eppo.android.framework.storage.CachingConfigurationStore;
 import cloud.eppo.android.framework.storage.ConfigurationCodec;
 import cloud.eppo.android.framework.storage.FileBackedConfigStore;
@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class EppoClient extends AndroidBaseClient<JsonNode> {
+public class EppoClient extends BaseAndroidEppoClient<JsonNode> {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
@@ -370,7 +370,7 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
                 (success, ex) -> {
                   if (ex == null && Boolean.TRUE.equals(success)) {
                     ret.complete(instance);
-                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
+                  } else if (offlineMode || ex != null || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
