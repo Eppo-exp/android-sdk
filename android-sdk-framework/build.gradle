@@ -23,6 +23,8 @@ android {
 
     buildTypes {
         def FRAMEWORK_VERSION = "FRAMEWORK_VERSION"
+        // EPPO_VERSION is used as the sdkVersion reported to Eppo. It matches FRAMEWORK_VERSION
+        // because the framework and eppo modules are versioned together.
         def EPPO_VERSION = "EPPO_VERSION"
         release {
             minifyEnabled false

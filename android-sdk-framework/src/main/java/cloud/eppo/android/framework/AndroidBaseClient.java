@@ -326,6 +326,9 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
           effectiveJitter = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
 
+        // Store interval/jitter on the instance so resumePolling() can restart with the same values.
+        newInstance.pollingIntervalMs = pollingIntervalMs;
+        newInstance.pollingJitterMs = effectiveJitter;
         newInstance.startPolling(pollingIntervalMs, effectiveJitter);
       }
 

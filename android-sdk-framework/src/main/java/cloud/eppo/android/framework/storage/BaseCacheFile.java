@@ -56,10 +56,8 @@ public class BaseCacheFile {
   /** Useful for mocking caches in automated tests. */
   public void setContents(String contents) {
     delete();
-    try {
-      BufferedWriter writer = getWriter();
+    try (BufferedWriter writer = getWriter()) {
       writer.write(contents);
-      writer.close();
     } catch (IOException ex) {
       throw new RuntimeException(ex);
     }

@@ -37,7 +37,9 @@ public final class ConfigCacheFile extends BaseCacheFile {
    * Creates a cache file with filename "eppo-sdk-flags-{configType}-{suffix}.{ext}". Used when the
    * logical suffix is split into config type and suffix (e.g. for FileBackedConfigStore).
    *
-   * @deprecated Use {@link #ConfigCacheFile(Application, String, String)} instead.
+   * @deprecated Use {@link #ConfigCacheFile(Application, String, String)} instead. These
+   *     package-private constructors exist only to support migration of the eppo module from v3 to
+   *     v4; they will be removed once that migration is complete.
    */
   ConfigCacheFile(
       @NotNull Application application,
@@ -51,7 +53,9 @@ public final class ConfigCacheFile extends BaseCacheFile {
    * Creates a cache file with the given full file name (no prefix). Used when the caller supplies
    * the complete filename (e.g. baseName + "." + extension).
    *
-   * @deprecated Use {@link #ConfigCacheFile(Application, String, String)} instead.
+   * @deprecated Use {@link #ConfigCacheFile(Application, String, String)} instead. These
+   *     package-private constructors exist only to support migration of the eppo module from v3 to
+   *     v4; they will be removed once that migration is complete.
    */
   ConfigCacheFile(@NotNull Application application, @NotNull String fullFileName) {
     super(application, fullFileName);

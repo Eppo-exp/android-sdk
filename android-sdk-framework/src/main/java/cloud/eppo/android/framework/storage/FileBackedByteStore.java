@@ -1,12 +1,18 @@
 package cloud.eppo.android.framework.storage;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * {@link ByteStore} implementation that reads and writes a single file via {@link BaseCacheFile}.
  */
 public final class FileBackedByteStore implements ByteStore {
+
+  // Dedicated single-thread executor avoids saturating ForkJoinPool.commonPool() with blocking I/O
+  // on low-core-count Android devices.
+  private static final Executor IO_EXECUTOR = Executors.newSingleThreadExecutor();
 
   private final BaseCacheFile cacheFile;
 
@@ -29,7 +35,8 @@ public final class FileBackedByteStore implements ByteStore {
           } catch (Exception e) {
             throw new RuntimeException("Failed to read from cache file", e);
           }
-        });
+        },
+        IO_EXECUTOR);
   }
 
   @Override
@@ -44,7 +51,8 @@ public final class FileBackedByteStore implements ByteStore {
           } catch (Exception e) {
             throw new RuntimeException("Failed to write to cache file", e);
           }
-        });
+        },
+        IO_EXECUTOR);
   }
 
   private static byte[] readAllBytes(java.io.InputStream in) throws java.io.IOException {
