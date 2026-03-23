@@ -1,6 +1,5 @@
 package cloud.eppo.android;
 
-import android.util.Log;
 import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.http.EppoConfigurationRequest;
 import cloud.eppo.http.EppoConfigurationResponse;
@@ -30,7 +29,6 @@ import org.slf4j.LoggerFactory;
  * methods.
  */
 public class OkHttpEppoClient implements EppoConfigurationClient {
-  private static final String TAG = "OkHttpEppoClient";
   private static final Logger log = LoggerFactory.getLogger(OkHttpEppoClient.class);
   private static final String ETAG_HEADER = "ETag";
   private static final String IF_NONE_MATCH_HEADER = "If-None-Match";
@@ -67,7 +65,7 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
     Request httpRequest = buildRequest(request);
 
-    Log.d(TAG, "Executing HTTP request to: " + redactUrl(httpRequest.url()));
+    log.debug("Executing HTTP request to: {}", redactUrl(httpRequest.url()));
 
     client
         .newCall(httpRequest)
@@ -75,13 +73,13 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
             new Callback() {
               @Override
               public void onResponse(@NotNull Call call, @NotNull Response response) {
-                Log.d(TAG, "Received HTTP response: " + response.code());
+                log.debug("Received HTTP response: {}", response.code());
                 try {
                   EppoConfigurationResponse configResponse = handleResponse(response);
-                  Log.d(TAG, "Successfully handled response");
+                  log.debug("Successfully handled response");
                   future.complete(configResponse);
                 } catch (Exception e) {
-                  Log.e(TAG, "Error handling response", e);
+                  log.error("Error handling response", e);
                   future.completeExceptionally(e);
                 } finally {
                   response.close();
@@ -90,7 +88,6 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
 
               @Override
               public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                Log.e(TAG, "HTTP request failed: " + e.getMessage(), e);
                 log.error("HTTP request failed: {}", e.getMessage(), e);
                 future.completeExceptionally(
                     new RuntimeException(
@@ -141,10 +138,9 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
     int statusCode = response.code();
     String versionId = response.header(ETAG_HEADER);
 
-    Log.d(TAG, "Handling response - status: " + statusCode + ", etag: " + versionId);
+    log.debug("Handling response - status: {}, etag: {}", statusCode, versionId);
 
     if (statusCode == HttpURLConnection.HTTP_NOT_MODIFIED) {
-      Log.d(TAG, "Configuration not modified (304)");
       log.debug("Configuration not modified (304)");
       return EppoConfigurationResponse.notModified(versionId);
     }
@@ -152,7 +148,6 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
     if (response.isSuccessful()) {
       ResponseBody body = response.body();
       byte[] bodyBytes = body != null ? body.bytes() : new byte[0];
-      Log.d(TAG, "Configuration fetched successfully, " + bodyBytes.length + " bytes");
       log.debug("Configuration fetched successfully, {} bytes", bodyBytes.length);
       return EppoConfigurationResponse.success(statusCode, versionId, bodyBytes);
     }
@@ -160,7 +155,6 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
     // Error response
     ResponseBody body = response.body();
     byte[] errorBytes = body != null ? body.bytes() : null;
-    Log.w(TAG, "Configuration fetch failed with status " + statusCode);
     log.warn("Configuration fetch failed with status {}", statusCode);
     return EppoConfigurationResponse.error(statusCode, errorBytes);
   }

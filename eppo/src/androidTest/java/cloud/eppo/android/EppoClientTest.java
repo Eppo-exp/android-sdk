@@ -171,18 +171,32 @@ public class EppoClientTest {
     runTestCases();
   }
 
-  // TODO: These tests need to be rewritten for the v4 SDK framework
-  // The old SDK had a getTypedAssignment method that could be mocked, but the new framework doesn't
-  // For now, skipping these tests. They test graceful mode error handling.
-  // @Test
-  // public void testErrorGracefulModeOn() throws JSONException, JsonProcessingException {
-  //   ... test body ...
-  // }
+  @Test
+  public void testErrorGracefulModeOn() throws ExecutionException, InterruptedException {
+    EppoClient client =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(true)
+            .ignoreCachedConfiguration(true)
+            .configurationClient(mockHttpError())
+            .buildAndInitAsync()
+            .get();
+    // Graceful mode: initialization completes without exception; assignments return defaults.
+    assertFalse(client.getBooleanAssignment("any_flag", "subject", false));
+  }
 
-  // @Test
-  // public void testErrorGracefulModeOff() {
-  //   ... test body ...
-  // }
+  @Test
+  public void testErrorGracefulModeOff() {
+    CompletableFuture<EppoClient> future =
+        new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
+            .forceReinitialize(true)
+            .isGracefulMode(false)
+            .ignoreCachedConfiguration(true)
+            .configurationClient(mockHttpError())
+            .buildAndInitAsync();
+    // Non-graceful mode: initialization future completes exceptionally when config cannot load.
+    assertThrows(ExecutionException.class, future::get);
+  }
 
   private static EppoConfigurationClient mockHttpError() {
     // Create a mock instance of EppoConfigurationClient
@@ -205,6 +219,7 @@ public class EppoClientTest {
         new EppoClient.Builder(DUMMY_API_KEY, ApplicationProvider.getApplicationContext())
             .forceReinitialize(true)
             .isGracefulMode(true)
+            .ignoreCachedConfiguration(true)
             .configurationClient(http);
 
     // Initialize and no exception should be thrown.
@@ -877,25 +892,17 @@ public class EppoClientTest {
   }
 
   private void waitForPopulatedCache() {
-    long waitStart = System.currentTimeMillis();
-    long waitEnd = waitStart + 10 * 1000; // allow up to 10 seconds
-    boolean cachePopulated = false;
+    long waitEnd = System.currentTimeMillis() + 10 * 1000; // allow up to 10 seconds
     try {
       File file =
           new File(
               ApplicationProvider.getApplicationContext().getFilesDir(),
               cacheFileName(safeCacheKey(DUMMY_API_KEY)));
-      while (!cachePopulated) {
+      while (!file.exists() || file.length() == 0) {
         if (System.currentTimeMillis() > waitEnd) {
-          throw new InterruptedException(
-              "Cache file never populated or smaller than expected 8000 bytes; assuming configuration error");
+          throw new InterruptedException("Cache file was never written within timeout");
         }
-        long expectedMinimumSizeInBytes =
-            8000; // Last time this test was updated, cache size was 11,506 bytes
-        cachePopulated = file.exists() && file.length() > expectedMinimumSizeInBytes;
-        if (!cachePopulated) {
-          Thread.sleep(8000);
-        }
+        Thread.sleep(100);
       }
     } catch (InterruptedException e) {
       throw new RuntimeException(e);

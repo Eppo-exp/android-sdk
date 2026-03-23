@@ -20,16 +20,13 @@ public class EppoValueSerializer extends StdSerializer<EppoValue> {
       throws IOException {
     if (src.isBoolean()) {
       jgen.writeBoolean(src.booleanValue());
-    }
-    if (src.isNumeric()) {
+    } else if (src.isNumeric()) {
       jgen.writeNumber(src.doubleValue());
-    }
-    if (src.isString()) {
-      jgen.writeString(src.stringValue());
-    }
-    if (src.isStringArray()) {
+    } else if (src.isStringArray()) {
       String[] arr = src.stringArrayValue().toArray(new String[0]);
       jgen.writeArray(arr, 0, arr.length);
+    } else if (src.isString()) {
+      jgen.writeString(src.stringValue());
     } else {
       jgen.writeNull();
     }

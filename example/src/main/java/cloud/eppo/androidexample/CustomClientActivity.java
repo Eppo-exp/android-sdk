@@ -12,8 +12,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import cloud.eppo.android.framework.AndroidBaseClient;
+import cloud.eppo.android.framework.storage.ConfigurationCodec;
 import cloud.eppo.android.framework.storage.FileBackedConfigStore;
 import cloud.eppo.android.framework.util.Utils;
+import cloud.eppo.api.Configuration;
 import cloud.eppo.api.AllocationDetails;
 import cloud.eppo.api.AssignmentDetails;
 import cloud.eppo.api.Attributes;
@@ -35,8 +37,8 @@ import java.util.Map;
  *
  * <ul>
  *   <li>{@link GsonConfigurationParser} — GSON-based parser instead of the default Jackson one
- *   <li>{@link HeaderInjectingEppoClient} — OkHttp-based HTTP client that attaches custom headers
- *       to every configuration request
+ *   <li>{@link HeaderInjectingEppoClient} — custom HTTP client that attaches headers to every
+ *       configuration request
  * </ul>
  */
 public class CustomClientActivity extends AppCompatActivity {
@@ -64,17 +66,17 @@ public class CustomClientActivity extends AppCompatActivity {
     subject.setText(INITIAL_SUBJECT_ID);
 
     appendToLog(
-        "Initializing with GsonConfigurationParser + GsonConfigurationCodec + HeaderInjectingEppoClient…");
+        "Initializing with GsonConfigurationParser + HeaderInjectingEppoClient…");
 
     Map<String, String> customHeaders = new LinkedHashMap<>();
     customHeaders.put("X-App-Name", "EppoExampleApp");
     customHeaders.put("X-App-Version", BuildConfig.VERSION_NAME);
 
-    // Swap in the GSON-based cache codec so the on-disk cache is human-readable JSON
-    // rather than Java's binary serialization format.
-    FileBackedConfigStore gsonStore =
+    FileBackedConfigStore customStore =
         new FileBackedConfigStore(
-            getApplication(), Utils.safeCacheKey(API_KEY), new GsonConfigurationCodec());
+            getApplication(),
+            Utils.safeCacheKey(API_KEY),
+            new ConfigurationCodec.Default<>(Configuration.class));
 
     new AndroidBaseClient.Builder<>(
             API_KEY,
@@ -83,7 +85,7 @@ public class CustomClientActivity extends AppCompatActivity {
             new HeaderInjectingEppoClient(customHeaders))
         .forceReinitialize(true)
         .isGracefulMode(false)
-        .configStore(gsonStore)
+        .configStore(customStore)
         .assignmentLogger(
             assignment ->
                 Log.d(
@@ -100,7 +102,7 @@ public class CustomClientActivity extends AppCompatActivity {
               runOnUiThread(
                   () ->
                       appendToLog(
-                          "Ready — GSON parser + GSON cache codec + header-injecting HTTP client.\n"
+                          "Ready — GSON parser + header-injecting HTTP client.\n"
                               + "Injected headers: "
                               + customHeaders));
             })

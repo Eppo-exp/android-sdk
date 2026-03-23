@@ -50,10 +50,11 @@ public class BanditParametersResponseDeserializer
 
     Map<String, BanditParameters> bandits = new HashMap<>();
     banditsNode
-        .iterator()
+        .fields()
         .forEachRemaining(
-            banditNode -> {
-              String banditKey = banditNode.get("banditKey").asText();
+            entry -> {
+              String banditKey = entry.getKey();
+              JsonNode banditNode = entry.getValue();
               String updatedAtStr = banditNode.get("updatedAt").asText();
               Instant instant = Instant.parse(updatedAtStr);
               Date updatedAt = Date.from(instant);

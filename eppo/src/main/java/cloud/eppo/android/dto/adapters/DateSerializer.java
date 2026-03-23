@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Date;
 
 /**
- * This adapter for Date allows gson to serialize to UTC ISO 8601 (vs. its default of local
+ * This adapter for Date allows Jackson to serialize to UTC ISO 8601 (vs. its default of local
  * timezone)
  */
 public class DateSerializer extends StdSerializer<Date> {
