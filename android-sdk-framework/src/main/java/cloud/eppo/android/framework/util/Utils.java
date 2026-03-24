@@ -14,6 +14,9 @@ public class Utils {
   }
 
   public static String safeCacheKey(String key) {
+    if (key == null || key.isEmpty()) {
+      return "";
+    }
     // Take the first eight characters to avoid the key being sensitive information
     // Remove non-alphanumeric characters so it plays nice with filesystem
     return key.substring(0, Math.min(8, key.length())).replaceAll("\\W", "");
