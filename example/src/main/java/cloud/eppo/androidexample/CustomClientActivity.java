@@ -15,10 +15,10 @@ import cloud.eppo.android.framework.AndroidBaseClient;
 import cloud.eppo.android.framework.storage.ConfigurationCodec;
 import cloud.eppo.android.framework.storage.FileBackedConfigStore;
 import cloud.eppo.android.framework.util.Utils;
-import cloud.eppo.api.Configuration;
 import cloud.eppo.api.AllocationDetails;
 import cloud.eppo.api.AssignmentDetails;
 import cloud.eppo.api.Attributes;
+import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EvaluationDetails;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
@@ -65,8 +65,7 @@ public class CustomClientActivity extends AppCompatActivity {
     experiment.setText(INITIAL_FLAG_KEY);
     subject.setText(INITIAL_SUBJECT_ID);
 
-    appendToLog(
-        "Initializing with GsonConfigurationParser + HeaderInjectingEppoClient…");
+    appendToLog("Initializing with GsonConfigurationParser + HeaderInjectingEppoClient…");
 
     Map<String, String> customHeaders = new LinkedHashMap<>();
     customHeaders.put("X-App-Name", "EppoExampleApp");
