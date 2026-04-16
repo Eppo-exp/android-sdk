@@ -3,7 +3,6 @@ package cloud.eppo.android.framework.storage;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import android.app.Application;
 import java.nio.charset.StandardCharsets;
@@ -27,7 +26,7 @@ public class FileBackedByteStoreTest {
   @Before
   public void setUp() {
     application = RuntimeEnvironment.getApplication();
-    cacheFile = new ConfigCacheFile(application, "test-cache-file", "dat");
+    cacheFile = new ConfigCacheFile(application, "test-cache-file", "application/octet-stream");
     byteStore = new FileBackedByteStore(cacheFile);
 
     cacheFile.delete();
@@ -175,18 +174,18 @@ public class FileBackedByteStoreTest {
     byte[] data1 = "Data 1".getBytes(StandardCharsets.UTF_8);
     byte[] data2 = "Data 2".getBytes(StandardCharsets.UTF_8);
 
-    // Start two writes concurrently
+    // Submit two writes without waiting for the first to finish. IO_EXECUTOR is a single-thread
+    // executor, so writes are serialized and never interleaved — this tests that queued writes
+    // complete without error and that the last-submitted write wins (data2 is always the result).
     CompletableFuture<Void> write1 = byteStore.write(data1);
     CompletableFuture<Void> write2 = byteStore.write(data2);
 
     // Wait for both to complete
     CompletableFuture.allOf(write1, write2).get(5, TimeUnit.SECONDS);
 
-    // Read result - should be one of the two writes
+    // The executor serializes writes in submission order, so data2 always wins.
     byte[] result = byteStore.read().get(5, TimeUnit.SECONDS);
     assertNotNull("Result should not be null", result);
-    assertTrue(
-        "Result should be one of the written values",
-        java.util.Arrays.equals(data1, result) || java.util.Arrays.equals(data2, result));
+    assertArrayEquals("data2 should always win due to IO_EXECUTOR serialization", data2, result);
   }
 }

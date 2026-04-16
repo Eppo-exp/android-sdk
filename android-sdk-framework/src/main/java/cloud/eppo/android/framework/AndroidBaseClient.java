@@ -20,6 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,7 +43,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
   private long pollingIntervalMs;
   private long pollingJitterMs;
 
-  @Nullable private static AndroidBaseClient<?> instance;
+  @Nullable private static volatile AndroidBaseClient<?> instance;
 
   /**
    * Private constructor. Use Builder to construct instances.
@@ -300,6 +301,9 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
 
       final CompletableFuture<AndroidBaseClient<JsonFlagType>> ret = new CompletableFuture<>();
       AtomicInteger failCount = new AtomicInteger(0);
+      // Captures the HTTP exception so that when the initial-config future completes the
+      // combined failure path can include the original network error as the cause.
+      AtomicReference<Throwable> httpFailure = new AtomicReference<>();
 
       if (!offlineMode) {
         newInstance
@@ -308,11 +312,15 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
                 (success, ex) -> {
                   if (ex == null) {
                     ret.complete(newInstance);
-                  } else if (failCount.incrementAndGet() == 2
-                      || newInstance.getInitialConfigFuture() == null) {
-                    ret.completeExceptionally(
-                        new EppoInitializationException(
-                            "Unable to initialize client; Configuration could not be loaded", ex));
+                  } else {
+                    httpFailure.set(ex);
+                    if (failCount.incrementAndGet() == 2
+                        || newInstance.getInitialConfigFuture() == null) {
+                      ret.completeExceptionally(
+                          new EppoInitializationException(
+                              "Unable to initialize client; Configuration could not be loaded",
+                              ex));
+                    }
                   }
                   return null;
                 });
@@ -321,16 +329,16 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       // Start polling if configured
       if (pollingEnabled && pollingIntervalMs > 0) {
         Log.i(TAG, "Starting poller");
-        long effectiveJitter = pollingJitterMs;
-        if (effectiveJitter < 0) {
-          effectiveJitter = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
+        long effectiveJitterMs = pollingJitterMs;
+        if (effectiveJitterMs < 0) {
+          effectiveJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
 
         // Store interval/jitter on the instance so resumePolling() can restart with the same
         // values.
         newInstance.pollingIntervalMs = pollingIntervalMs;
-        newInstance.pollingJitterMs = effectiveJitter;
-        newInstance.startPolling(pollingIntervalMs, effectiveJitter);
+        newInstance.pollingJitterMs = effectiveJitterMs;
+        newInstance.startPolling(pollingIntervalMs, effectiveJitterMs);
       }
 
       if (newInstance.getInitialConfigFuture() != null) {
@@ -341,12 +349,16 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
                   if (ex == null && Boolean.TRUE.equals(success)) {
                     ret.complete(newInstance);
                   } else if (offlineMode || failCount.incrementAndGet() == 2) {
+                    // When both the HTTP fetch and initial config load fail, prefer the HTTP
+                    // exception as the cause since it is more actionable than a null or false
+                    // result from the initial config handler.
+                    Throwable cause = httpFailure.get() != null ? httpFailure.get() : ex;
                     ret.completeExceptionally(
                         new EppoInitializationException(
-                            "Unable to initialize client; Configuration could not be loaded", ex));
+                            "Unable to initialize client; Configuration could not be loaded",
+                            cause));
                   } else {
                     Log.i(TAG, "Initial config was not used.");
-                    failCount.incrementAndGet();
                   }
                   return null;
                 });
@@ -367,14 +379,24 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
     /**
      * Builds and initializes the EppoClient synchronously (blocking).
      *
-     * <p>This is a blocking wrapper around buildAndInitAsync().
+     * <p>This is a blocking wrapper around buildAndInitAsync(). The underlying future has no
+     * deadline: if the HTTP fetch stalls permanently (e.g. due to network unavailability with no
+     * timeout configured on the HTTP client), this call blocks indefinitely. Callers that require a
+     * bounded wait should use {@link #buildAndInitAsync()} with {@code
+     * CompletableFuture.orTimeout()} (API 31+) or a timed {@code get(long, TimeUnit)}.
      *
      * @return The initialized EppoClient
      */
     public AndroidBaseClient<JsonFlagType> buildAndInit() {
       try {
         return buildAndInitAsync().get();
-      } catch (ExecutionException | InterruptedException | CompletionException e) {
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
+        if (!isGracefulMode) {
+          throw new RuntimeException(e);
+        }
+      } catch (ExecutionException | CompletionException e) {
         // If the exception was an `EppoInitializationException`, we know for sure that
         // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
         // wrapped by `CompletableFuture` with a `CompletionException`.

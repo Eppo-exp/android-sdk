@@ -3,6 +3,7 @@ package cloud.eppo.android.framework.storage;
 import cloud.eppo.IConfigurationStore;
 import cloud.eppo.api.Configuration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -13,10 +14,17 @@ public class CachingConfigurationStore implements IConfigurationStore {
 
   private final ConfigurationCodec<Configuration> codec;
   private final ByteStore byteStore;
-  private volatile Configuration configuration = Configuration.emptyConfig();
+  private final AtomicReference<Configuration> configuration =
+      new AtomicReference<>(Configuration.emptyConfig());
 
   protected CachingConfigurationStore(
       @NotNull ConfigurationCodec<Configuration> codec, @NotNull ByteStore byteStore) {
+    if (codec == null) {
+      throw new IllegalArgumentException("codec must not be null");
+    }
+    if (byteStore == null) {
+      throw new IllegalArgumentException("byteStore must not be null");
+    }
     this.codec = codec;
     this.byteStore = byteStore;
   }
@@ -24,7 +32,7 @@ public class CachingConfigurationStore implements IConfigurationStore {
   /** Returns the current in-memory configuration. */
   @Override
   @NotNull public Configuration getConfiguration() {
-    return configuration;
+    return configuration.get();
   }
 
   /**
@@ -39,12 +47,27 @@ public class CachingConfigurationStore implements IConfigurationStore {
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
+    Configuration previousConfiguration = configuration.get();
     byte[] bytes = codec.toBytes(config);
+    configuration.set(config); // optimistic update — in-memory reflects last submitted save
     return byteStore
         .write(bytes)
-        .thenRun(
-            () -> {
-              this.configuration = config;
+        .whenComplete(
+            (v, ex) -> {
+              if (ex != null) {
+                // Revert the optimistic update, but only if no later save has superseded this
+                // one. compareAndSet atomically checks that the in-memory value is still the
+                // one we wrote; if a concurrent save has already advanced it, the revert is
+                // skipped.
+                //
+                // Edge case: if two concurrent saves both fail their IO writes, the second
+                // failure's revert may land on a value that was itself never persisted (the
+                // first save's value). This is acceptable — the in-memory state may diverge
+                // from disk, but the next successful save will reconcile them. Saves are
+                // serialized through a single-thread IO_EXECUTOR, so true concurrent IO
+                // failures are unlikely in practice.
+                configuration.compareAndSet(config, previousConfiguration);
+              }
             });
   }
 

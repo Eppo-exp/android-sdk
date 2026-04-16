@@ -11,8 +11,15 @@ import org.jetbrains.annotations.NotNull;
 public final class FileBackedByteStore implements ByteStore {
 
   // Dedicated single-thread executor avoids saturating ForkJoinPool.commonPool() with blocking I/O
-  // on low-core-count Android devices.
-  private static final Executor IO_EXECUTOR = Executors.newSingleThreadExecutor();
+  // on low-core-count Android devices. Daemon thread so the executor does not block JVM/process
+  // exit in test environments (e.g. Robolectric).
+  private static final Executor IO_EXECUTOR =
+      Executors.newSingleThreadExecutor(
+          r -> {
+            Thread t = new Thread(r, "eppo-io");
+            t.setDaemon(true);
+            return t;
+          });
 
   private final BaseCacheFile cacheFile;
 

@@ -17,13 +17,9 @@ public class FileBackedConfigStore extends CachingConfigurationStore {
       @NotNull Application application,
       @NotNull String cacheFileSuffix,
       @NotNull ConfigurationCodec<Configuration> codec) {
-    super(codec, createByteStore(application, cacheFileSuffix, codec));
-  }
-
-  private static ByteStore createByteStore(
-      Application application, String cacheFileSuffix, ConfigurationCodec<Configuration> codec) {
-    ConfigCacheFile cacheFile =
-        new ConfigCacheFile(application, cacheFileSuffix, codec.getContentType());
-    return new FileBackedByteStore(cacheFile);
+    super(
+        codec,
+        new FileBackedByteStore(
+            new ConfigCacheFile(application, cacheFileSuffix, codec.getContentType())));
   }
 }

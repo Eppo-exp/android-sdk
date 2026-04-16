@@ -41,6 +41,7 @@ public final class ConfigCacheFile extends BaseCacheFile {
    *     package-private constructors exist only to support migration of the eppo module from v3 to
    *     v4; they will be removed once that migration is complete.
    */
+  @Deprecated
   ConfigCacheFile(
       @NotNull Application application,
       @NotNull String configType,
@@ -57,6 +58,7 @@ public final class ConfigCacheFile extends BaseCacheFile {
    *     package-private constructors exist only to support migration of the eppo module from v3 to
    *     v4; they will be removed once that migration is complete.
    */
+  @Deprecated
   ConfigCacheFile(@NotNull Application application, @NotNull String fullFileName) {
     super(application, fullFileName);
   }

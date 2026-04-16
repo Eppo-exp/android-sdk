@@ -51,8 +51,8 @@ android {
 dependencies {
     api 'cloud.eppo:eppo-sdk-framework:0.1.0-SNAPSHOT'
 
-    api 'com.google.code.gson:gson:2.10.1'
-    api 'org.slf4j:slf4j-android:1.7.36'
+    implementation 'org.slf4j:slf4j-android:1.7.36'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
     compileOnly 'org.jetbrains:annotations:24.0.0'
 
     testImplementation 'cloud.eppo:sdk-common-jvm:4.0.0-SNAPSHOT'

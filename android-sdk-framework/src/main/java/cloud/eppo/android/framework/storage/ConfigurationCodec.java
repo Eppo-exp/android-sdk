@@ -60,6 +60,9 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
      * @param configClass the class of the configuration type
      */
     public Default(@NotNull Class<T> configClass) {
+      if (configClass == null) {
+        throw new IllegalArgumentException("configClass must not be null");
+      }
       this.configClass = configClass;
     }
 

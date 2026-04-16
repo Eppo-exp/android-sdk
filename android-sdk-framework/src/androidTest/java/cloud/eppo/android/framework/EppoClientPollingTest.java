@@ -2,15 +2,24 @@ package cloud.eppo.android.framework;
 
 import static cloud.eppo.android.framework.util.Utils.logTag;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import android.util.Log;
 import androidx.test.core.app.ApplicationProvider;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.http.EppoConfigurationClient;
+import cloud.eppo.http.EppoConfigurationRequest;
+import cloud.eppo.http.EppoConfigurationResponse;
 import cloud.eppo.parser.ConfigurationParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -19,9 +28,8 @@ import org.mockito.MockitoAnnotations;
 /**
  * Tests for EppoClient polling pause/resume functionality.
  *
- * <p>These tests use offline mode to avoid needing to mock complex configuration loading behavior.
- * They focus on verifying that pausePolling() and resumePolling() can be called safely in various
- * sequences.
+ * <p>These tests focus on verifying that pausePolling() and resumePolling() can be called safely in
+ * various sequences, and that polling actually stops and resumes as expected.
  */
 public class EppoClientPollingTest {
   private static final String TAG = logTag(EppoClientPollingTest.class);
@@ -30,103 +38,117 @@ public class EppoClientPollingTest {
   @Mock private ConfigurationParser<JsonNode> mockConfigParser;
   @Mock private EppoConfigurationClient mockConfigClient;
 
+  // Tracks the last built client so tearDown can stop its polling timer.
+  private AndroidBaseClient<JsonNode> lastClient;
+
   @Before
   public void setUp() {
     MockitoAnnotations.openMocks(this);
   }
 
-  /**
-   * Builds a client in offline mode with polling enabled.
-   *
-   * @param pollingIntervalMs Polling interval in milliseconds
-   * @return Initialized EppoClient
-   */
-  private AndroidBaseClient<JsonNode> buildOfflineClientWithPolling(long pollingIntervalMs)
-      throws ExecutionException, InterruptedException {
-    // Use an empty configuration for offline mode
-    CompletableFuture<Configuration> initialConfig =
-        CompletableFuture.completedFuture(Configuration.emptyConfig());
-
-    return new AndroidBaseClient.Builder<>(
-            DUMMY_API_KEY,
-            ApplicationProvider.getApplicationContext(),
-            mockConfigParser,
-            mockConfigClient)
-        .forceReinitialize(true)
-        .offlineMode(true)
-        .initialConfiguration(initialConfig)
-        .pollingEnabled(true)
-        .pollingIntervalMs(pollingIntervalMs)
-        .isGracefulMode(true) // Enable graceful mode to handle initialization issues
-        .buildAndInitAsync()
-        .get();
+  @After
+  public void tearDown() {
+    if (lastClient != null) {
+      lastClient.pausePolling();
+      lastClient = null;
+    }
   }
 
   /**
-   * Builds a client in offline mode without polling enabled.
+   * Builds a client in offline mode with optional polling enabled.
    *
-   * @return Initialized EppoClient
+   * @param pollingEnabled whether to enable polling
+   * @param pollingIntervalMs polling interval in milliseconds (ignored when pollingEnabled=false)
+   * @return initialized EppoClient
    */
-  private AndroidBaseClient<JsonNode> buildOfflineClientWithoutPolling()
+  private AndroidBaseClient<JsonNode> buildOfflineClient(
+      boolean pollingEnabled, long pollingIntervalMs)
       throws ExecutionException, InterruptedException {
     CompletableFuture<Configuration> initialConfig =
         CompletableFuture.completedFuture(Configuration.emptyConfig());
 
-    return new AndroidBaseClient.Builder<>(
-            DUMMY_API_KEY,
-            ApplicationProvider.getApplicationContext(),
-            mockConfigParser,
-            mockConfigClient)
-        .forceReinitialize(true)
-        .offlineMode(true)
-        .initialConfiguration(initialConfig)
-        .pollingEnabled(false)
-        .isGracefulMode(true) // Enable graceful mode to handle initialization issues
-        .buildAndInitAsync()
-        .get();
+    AndroidBaseClient.Builder<JsonNode> builder =
+        new AndroidBaseClient.Builder<>(
+                DUMMY_API_KEY,
+                ApplicationProvider.getApplicationContext(),
+                mockConfigParser,
+                mockConfigClient)
+            .forceReinitialize(true)
+            .offlineMode(true)
+            .initialConfiguration(initialConfig)
+            .pollingEnabled(pollingEnabled)
+            .isGracefulMode(true);
+
+    if (pollingEnabled) {
+      builder.pollingIntervalMs(pollingIntervalMs);
+    }
+
+    lastClient = builder.buildAndInitAsync().get();
+    return lastClient;
   }
 
   @Test
   public void testPauseAndResumePolling() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClientWithPolling(100);
-    assertNotNull("Client should be initialized", androidBaseClient);
+    // Use non-offline mode with a short interval so we can observe actual polling calls.
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
 
-    // Test pause
-    androidBaseClient.pausePolling();
-    Log.d(TAG, "Polling paused");
+    CompletableFuture<Configuration> initialConfig =
+        CompletableFuture.completedFuture(Configuration.emptyConfig());
 
-    // Wait a bit to ensure no crashes
-    Thread.sleep(50);
+    lastClient =
+        new AndroidBaseClient.Builder<>(
+                DUMMY_API_KEY,
+                ApplicationProvider.getApplicationContext(),
+                mockConfigParser,
+                mockConfigClient)
+            .forceReinitialize(true)
+            .initialConfiguration(initialConfig)
+            .pollingEnabled(true)
+            .pollingIntervalMs(50)
+            .isGracefulMode(true)
+            .buildAndInitAsync()
+            .get();
 
-    // Test resume
-    androidBaseClient.resumePolling();
-    Log.d(TAG, "Polling resumed");
+    assertNotNull("Client should be initialized", lastClient);
 
-    // Wait a bit to ensure no crashes
-    Thread.sleep(50);
+    // Wait for at least one polling cycle to fire (50ms interval, wait 150ms).
+    Thread.sleep(150);
+    verify(mockConfigClient, atLeastOnce()).execute(any(EppoConfigurationRequest.class));
 
-    // Final pause for cleanup
-    androidBaseClient.pausePolling();
+    // Pause: stopPolling() calls cancel(false), which does not interrupt a task already running
+    // on the executor thread. At most one in-flight invocation can complete after pausePolling()
+    // returns, so we tolerate atMost(1) rather than never().
+    lastClient.pausePolling();
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+    Thread.sleep(200); // wait 4 intervals — polling must be stopped
+    verify(mockConfigClient, atMost(1)).execute(any(EppoConfigurationRequest.class));
+
+    // Resume: polling fires again within one interval.
+    lastClient.resumePolling();
+    Thread.sleep(150);
+    verify(mockConfigClient, atLeastOnce()).execute(any(EppoConfigurationRequest.class));
+
+    lastClient.pausePolling();
   }
 
   @Test
   public void testResumePollingWithoutStarting() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClientWithoutPolling();
+    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClient(false, 0);
     assertNotNull("Client should be initialized", androidBaseClient);
 
-    // Try to resume polling (should log warning and not crash per EppoClient.java:436-441)
+    // resumePolling() logs a warning when polling interval was not set and does not start polling.
     androidBaseClient.resumePolling();
     Log.d(TAG, "Resume called without starting - should log warning");
 
-    // Wait a bit to ensure no crashes
     Thread.sleep(50);
-
-    // Should not crash or throw exception
   }
 
   @Test
   public void testMultiplePauseResumeCycles() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClientWithPolling(100);
+    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
     assertNotNull("Client should be initialized", androidBaseClient);
 
     // First cycle
@@ -145,14 +167,6 @@ public class EppoClientPollingTest {
     Log.d(TAG, "Second resume");
     Thread.sleep(50);
 
-    // Third cycle
-    androidBaseClient.pausePolling();
-    Log.d(TAG, "Third pause");
-    Thread.sleep(50);
-    androidBaseClient.resumePolling();
-    Log.d(TAG, "Third resume");
-    Thread.sleep(50);
-
     // Final cleanup
     androidBaseClient.pausePolling();
   }
@@ -160,7 +174,7 @@ public class EppoClientPollingTest {
   @Test
   public void testPauseResumeSequenceDoesNotCrash()
       throws ExecutionException, InterruptedException {
-    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClientWithPolling(50);
+    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClient(true, 50);
 
     // Various sequences that should all work without crashing
     androidBaseClient.pausePolling();
@@ -182,13 +196,13 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPollingNotEnabledAndResume() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClientWithoutPolling();
+    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClient(false, 0);
 
     // Pause should be safe even if not polling
     androidBaseClient.pausePolling();
     Thread.sleep(50);
 
-    // Resume should log warning per EppoClient.java:436-441
+    // resumePolling() logs a warning when polling interval was not set and does not start polling.
     androidBaseClient.resumePolling();
     Thread.sleep(50);
 
@@ -200,7 +214,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPauseAfterInitDoesNotCrash() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClientWithPolling(100);
+    AndroidBaseClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
 
     // Immediately pause after initialization
     androidBaseClient.pausePolling();
