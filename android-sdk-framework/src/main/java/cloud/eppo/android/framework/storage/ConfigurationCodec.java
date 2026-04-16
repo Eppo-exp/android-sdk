@@ -4,7 +4,6 @@ import cloud.eppo.api.SerializableEppoConfiguration;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputFilter;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import org.jetbrains.annotations.NotNull;
@@ -88,27 +87,13 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
         throw new IllegalArgumentException("Bytes must not be null");
       }
       try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
-        // Restrict deserialization to the Eppo SDK and standard JDK types to prevent
-        // gadget-chain attacks. ObjectInputFilter is available from API 26 (minSdk 26).
-        // The allowlist covers the full transitive type graph of Configuration: cloud.eppo.**
-        // (all SDK packages), java.util collections and their dollar-named inner classes
-        // (listed before java.util.* due to first-match-wins semantics), and java.lang
-        // primitives/wrappers. All other classes are rejected.
-        ois.setObjectInputFilter(
-            // Dollar-named inner classes must be listed before java.util.* because
-            // ObjectInputFilter uses first-match-wins — java.util.* only covers top-level
-            // class names (no $ or sub-packages), so inner classes like
-            // Collections$UnmodifiableMap or HashMap$Node would otherwise hit the !* deny-all.
-            ObjectInputFilter.Config.createFilter(
-                "cloud.eppo.**"
-                    + ";java.util.Arrays$*"              // Arrays.asList() instances
-                    + ";java.util.Collections$*"         // unmodifiable/empty/singleton wrappers
-                    + ";java.util.ImmutableCollections$*" // List.of / Set.of / Map.of (API 24+)
-                    + ";java.util.HashMap$*"             // HashMap internal nodes
-                    + ";java.util.LinkedHashMap$*"       // LinkedHashMap internal nodes
-                    + ";java.util.*"
-                    + ";java.lang.*"
-                    + ";!*"));
+        // java.io.ObjectInputFilter (Java 9+) is not part of Android's SDK even at API 26, so
+        // a pattern-based allowlist cannot be applied at compile time. The deserialization risk
+        // is low here: the cache file lives in the app's private internal storage (inaccessible
+        // to other apps on a non-rooted device) and the bytes are produced by the SDK's own
+        // ObjectOutputStream write path — not transmitted directly from any server. The type
+        // check below prevents the wrong type from being returned to callers; note that it does
+        // not prevent gadget-chain execution, which occurs inside readObject() before the check.
         Object obj = ois.readObject();
         if (!configClass.isInstance(obj)) {
           throw new RuntimeException(
