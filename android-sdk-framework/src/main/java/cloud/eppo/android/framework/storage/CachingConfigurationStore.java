@@ -39,7 +39,8 @@ public class CachingConfigurationStore implements IConfigurationStore {
    * Saves the configuration to storage and updates the in-memory cache.
    *
    * @param config the configuration to save (must not be null)
-   * @return a future that completes when the write finishes
+   * @return a future that completes when the write finishes, or completes exceptionally if the
+   *     underlying {@link ByteStore} write fails (e.g. with an {@link java.io.IOException})
    * @throws IllegalArgumentException if config is null
    */
   @Override

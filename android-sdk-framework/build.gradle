@@ -87,9 +87,10 @@ spotless {
 signing {
     if (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) {
         useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
+        sign publishing.publications
+    } else {
+        required = false
     }
-
-    sign publishing.publications
 }
 
 tasks.withType(Sign) {
@@ -119,7 +120,7 @@ mavenPublishing {
         developers {
             developer {
                 name = 'Eppo'
-                email = 'https://www.geteppo.com'
+                email = 'sdk@geteppo.com'
             }
         }
         scm {
@@ -146,6 +147,10 @@ task checkVersion {
 }
 
 tasks.named('publish').configure {
+    dependsOn checkVersion
+}
+
+tasks.withType(PublishToMavenLocal).configureEach {
     dependsOn checkVersion
 }
 

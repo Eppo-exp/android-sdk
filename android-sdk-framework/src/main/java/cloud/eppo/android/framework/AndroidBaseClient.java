@@ -17,7 +17,6 @@ import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.parser.ConfigurationParser;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -291,7 +290,11 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
               configurationParser,
               configurationClient);
 
-      // Set as singleton
+      // Set as singleton early so that getInstance() works immediately after buildAndInitAsync()
+      // returns (e.g. in graceful mode where callers may call getInstance() before the returned
+      // future completes). In graceful mode this is intentional: the client returns safe defaults
+      // until configuration is loaded. Callers that need a fully initialized client must await the
+      // CompletableFuture returned by buildAndInitAsync() before calling getInstance().
       instance = newInstance;
 
       // Register config change callback if provided
@@ -386,6 +389,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      * CompletableFuture.orTimeout()} (API 31+) or a timed {@code get(long, TimeUnit)}.
      *
      * @return The initialized EppoClient
+     * @throws RuntimeException if initialization fails and {@code isGracefulMode} is false
      */
     public AndroidBaseClient<JsonFlagType> buildAndInit() {
       try {
@@ -396,20 +400,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         if (!isGracefulMode) {
           throw new RuntimeException(e);
         }
-      } catch (ExecutionException | CompletionException e) {
-        // If the exception was an `EppoInitializationException`, we know for sure that
-        // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
-        // wrapped by `CompletableFuture` with a `CompletionException`.
-        if (e instanceof CompletionException) {
-          Throwable cause = e.getCause();
-          if (cause instanceof RuntimeException
-              && cause.getCause() instanceof EppoInitializationException) {
-            @SuppressWarnings("unchecked")
-            AndroidBaseClient<JsonFlagType> typedInstance =
-                (AndroidBaseClient<JsonFlagType>) instance;
-            return typedInstance;
-          }
-        }
+      } catch (ExecutionException e) {
         Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
         if (!isGracefulMode) {
           throw new RuntimeException(e);
