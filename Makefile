@@ -54,7 +54,7 @@ test: test-data
 
 check-maven-credentials-and-publish:
 	# $(INFO)Checking required gradle configuration(END)
-		@for required_property in "OSSRH_USERNAME" "OSSRH_PASSWORD"; do \
+		@for required_property in "mavenCentralUsername" "mavenCentralPassword"; do \
 				cat ~/.gradle/gradle.properties | grep -q $$required_property; \
 				if [ $$? != 0 ]; then \
 						echo "$(ERROR)ERROR: ~/.gradle/gradle.properties file is missing property: $$required_property$(END)"; \
@@ -63,7 +63,7 @@ check-maven-credentials-and-publish:
 		done
 
 		# $(INFO)Publishing release(END)
-		./gradlew :eppo:publishReleasePublicationToMavenRepository
+		./gradlew :eppo:publish -Prelease
 
 .PHONY: publish-release
 publish-release: test check-maven-credentials-and-publish
