@@ -12,10 +12,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class CachingConfigurationStore implements IConfigurationStore {
 
+  // Sentinel used by seedCache() to detect that no real configuration has been set yet.
+  // Captured once so that seedCache()'s compareAndSet uses reference equality against the same
+  // instance stored in the AtomicReference at construction time.
+  private static final Configuration EMPTY_SENTINEL = Configuration.emptyConfig();
+
   private final ConfigurationCodec<Configuration> codec;
   private final ByteStore byteStore;
   private final AtomicReference<Configuration> configuration =
-      new AtomicReference<>(Configuration.emptyConfig());
+      new AtomicReference<>(EMPTY_SENTINEL);
 
   protected CachingConfigurationStore(
       @NotNull ConfigurationCodec<Configuration> codec, @NotNull ByteStore byteStore) {
@@ -70,6 +75,21 @@ public class CachingConfigurationStore implements IConfigurationStore {
                 configuration.compareAndSet(config, previousConfiguration);
               }
             });
+  }
+
+  /**
+   * Seeds the in-memory cache with {@code config} without writing to disk.
+   *
+   * <p>Uses {@code compareAndSet} so that a concurrent {@link #saveConfiguration} call always wins.
+   * If the in-memory value has already been updated by a save, this is a no-op.
+   *
+   * @param config the configuration to seed (must not be null)
+   */
+  void seedCache(@NotNull Configuration config) {
+    if (config == null) {
+      throw new IllegalArgumentException("config must not be null");
+    }
+    configuration.compareAndSet(EMPTY_SENTINEL, config);
   }
 
   /**

@@ -51,7 +51,8 @@ android {
 dependencies {
     api 'cloud.eppo:eppo-sdk-framework:0.1.0-SNAPSHOT'
 
-    implementation 'org.slf4j:slf4j-android:1.7.36'
+    implementation 'org.slf4j:slf4j-api:1.7.36'
+    runtimeOnly 'org.slf4j:slf4j-android:1.7.36'
     testImplementation 'com.google.code.gson:gson:2.10.1'
     compileOnly 'org.jetbrains:annotations:24.0.0'
 
@@ -131,7 +132,27 @@ mavenPublishing {
     }
 }
 
+task checkNoSnapshotApiDeps {
+    doLast {
+        // Only enforce on release builds. Snapshot builds are expected to depend on SNAPSHOT
+        // upstream artifacts; enforcing here would block legitimate snapshot publish flows.
+        if (!project.hasProperty('release')) return
+        def apiConfig = configurations.findByName('api')
+        if (apiConfig != null) {
+            apiConfig.dependencies.each { dep ->
+                if (dep.version?.endsWith('SNAPSHOT')) {
+                    throw new GradleException(
+                        "api dependency '${dep.group}:${dep.name}:${dep.version}' is a SNAPSHOT. " +
+                        "SNAPSHOT api dependencies leak to consumers. Use implementation scope instead."
+                    )
+                }
+            }
+        }
+    }
+}
+
 task checkVersion {
+    dependsOn checkNoSnapshotApiDeps
     doLast {
         if (!project.hasProperty('release') && !project.hasProperty('snapshot')) {
             throw new GradleException("You must specify either -Prelease or -Psnapshot")

@@ -32,8 +32,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <JsonFlagType> The JSON type used for JSON flag values (e.g., JsonNode, JsonElement)
  */
-public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType> {
-  private static final String TAG = logTag(AndroidBaseClient.class);
+public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType> {
+  private static final String TAG = logTag(BaseAndroidClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
@@ -42,7 +42,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
   private long pollingIntervalMs;
   private long pollingJitterMs;
 
-  @Nullable private static volatile AndroidBaseClient<?> instance;
+  @Nullable private static volatile BaseAndroidClient<?> instance;
 
   /**
    * Private constructor. Use Builder to construct instances.
@@ -60,7 +60,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
    * @param configurationParser Parser for configuration JSON
    * @param configurationClient HTTP client for configuration fetching
    */
-  protected AndroidBaseClient(
+  protected BaseAndroidClient(
       String apiKey,
       String sdkName,
       String sdkVersion,
@@ -99,11 +99,11 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
    * @param <T> The JSON type parameter
    */
   @SuppressWarnings("unchecked")
-  public static <T> AndroidBaseClient<T> getInstance() throws NotInitializedException {
+  public static <T> BaseAndroidClient<T> getInstance() throws NotInitializedException {
     if (instance == null) {
       throw new NotInitializedException();
     }
-    return (AndroidBaseClient<T>) instance;
+    return (BaseAndroidClient<T>) instance;
   }
 
   /**
@@ -245,12 +245,12 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      *
      * @return CompletableFuture that completes with the initialized EppoClient
      */
-    public CompletableFuture<AndroidBaseClient<JsonFlagType>> buildAndInitAsync() {
+    public CompletableFuture<BaseAndroidClient<JsonFlagType>> buildAndInitAsync() {
       // Singleton handling
       if (instance != null && !forceReinitialize) {
         Log.w(TAG, "Eppo Client instance already initialized");
         @SuppressWarnings("unchecked")
-        AndroidBaseClient<JsonFlagType> typedInstance = (AndroidBaseClient<JsonFlagType>) instance;
+        BaseAndroidClient<JsonFlagType> typedInstance = (BaseAndroidClient<JsonFlagType>) instance;
         return CompletableFuture.completedFuture(typedInstance);
       } else if (instance != null) {
         // Stop polling if reinitializing
@@ -270,13 +270,32 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       }
 
       // Use the persisted cache as the initial configuration if none was explicitly provided.
+      // Also seed the in-memory cache so getConfiguration() returns the cached value immediately
+      // rather than emptyConfig() while the network fetch is in-flight.
       if (initialConfiguration == null && !ignoreCachedConfiguration) {
-        initialConfiguration = configStore.loadFromStorage();
+        final CachingConfigurationStore finalConfigStore = configStore;
+        initialConfiguration =
+            configStore
+                .loadFromStorage()
+                .thenApply(
+                    config -> {
+                      if (config != null) {
+                        finalConfigStore.seedCache(config);
+                      }
+                      return config;
+                    })
+                .exceptionally(
+                    ex -> {
+                      // Storage failure is non-fatal: proceed without a cached configuration.
+                      // Losing the cause here would make offline-mode failures opaque, so log it.
+                      Log.w(TAG, "Failed to load config from storage; starting without cache", ex);
+                      return null;
+                    });
       }
 
       // Construct the client
-      AndroidBaseClient<JsonFlagType> newInstance =
-          new AndroidBaseClient<>(
+      BaseAndroidClient<JsonFlagType> newInstance =
+          new BaseAndroidClient<>(
               apiKey,
               sdkName,
               sdkVersion,
@@ -302,7 +321,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         newInstance.onConfigurationChange(configChangeCallback);
       }
 
-      final CompletableFuture<AndroidBaseClient<JsonFlagType>> ret = new CompletableFuture<>();
+      final CompletableFuture<BaseAndroidClient<JsonFlagType>> ret = new CompletableFuture<>();
       AtomicInteger failCount = new AtomicInteger(0);
       // Captures the HTTP exception so that when the initial-config future completes the
       // combined failure path can include the original network error as the cause.
@@ -391,7 +410,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      * @return The initialized EppoClient
      * @throws RuntimeException if initialization fails and {@code isGracefulMode} is false
      */
-    public AndroidBaseClient<JsonFlagType> buildAndInit() {
+    public BaseAndroidClient<JsonFlagType> buildAndInit() {
       try {
         return buildAndInitAsync().get();
       } catch (InterruptedException e) {
@@ -407,7 +426,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         }
       }
       @SuppressWarnings("unchecked")
-      AndroidBaseClient<JsonFlagType> typedInstance = (AndroidBaseClient<JsonFlagType>) instance;
+      BaseAndroidClient<JsonFlagType> typedInstance = (BaseAndroidClient<JsonFlagType>) instance;
       return typedInstance;
     }
   }
