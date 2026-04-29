@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Eppo Kotlin Example</string>
+    <string name="status_loading">Loading…</string>
+    <string name="status_ready">Client ready</string>
+    <string name="status_not_initialized">Client not initialized yet</string>
+    <string name="assignment_result">Assignment: %s</string>
+</resources>

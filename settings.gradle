@@ -20,3 +20,4 @@ rootProject.name = "Eppo SDK"
 include ':example'
 include ':eppo'
 include ':android-sdk-framework'
+include ':kotlin-example'
