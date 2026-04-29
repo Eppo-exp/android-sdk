@@ -85,7 +85,7 @@ public class CachingConfigurationStore implements IConfigurationStore {
    *
    * @param config the configuration to seed (must not be null)
    */
-  void seedCache(@NotNull Configuration config) {
+  public void seedCache(@NotNull Configuration config) {
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
