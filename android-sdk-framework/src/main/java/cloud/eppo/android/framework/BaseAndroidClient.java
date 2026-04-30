@@ -273,17 +273,9 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       // Also seed the in-memory cache so getConfiguration() returns the cached value immediately
       // rather than emptyConfig() while the network fetch is in-flight.
       if (initialConfiguration == null && !ignoreCachedConfiguration) {
-        final CachingConfigurationStore finalConfigStore = configStore;
         initialConfiguration =
             configStore
-                .loadFromStorage()
-                .thenApply(
-                    config -> {
-                      if (config != null) {
-                        finalConfigStore.seedCache(config);
-                      }
-                      return config;
-                    })
+                .loadAndSeedFromStorage()
                 .exceptionally(
                     ex -> {
                       // Storage failure is non-fatal: proceed without a cached configuration.

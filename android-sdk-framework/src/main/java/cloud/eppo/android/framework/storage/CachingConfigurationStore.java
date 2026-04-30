@@ -85,7 +85,7 @@ public class CachingConfigurationStore implements IConfigurationStore {
    *
    * @param config the configuration to seed (must not be null)
    */
-  public void seedCache(@NotNull Configuration config) {
+  void seedCache(@NotNull Configuration config) {
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
@@ -107,6 +107,28 @@ public class CachingConfigurationStore implements IConfigurationStore {
                 return null;
               }
               return codec.fromBytes(bytes);
+            });
+  }
+
+  /**
+   * Loads the configuration from storage and seeds the in-memory cache if a non-null configuration
+   * is found.
+   *
+   * <p>Combines {@link #loadFromStorage()} and {@link #seedCache(Configuration)} so callers do not
+   * need to reach into the storage package to call the package-private {@code seedCache} method
+   * directly.
+   *
+   * @return a future that completes with the loaded configuration, or null if storage is empty or
+   *     missing
+   */
+  @NotNull public CompletableFuture<Configuration> loadAndSeedFromStorage() {
+    return loadFromStorage()
+        .thenApply(
+            config -> {
+              if (config != null) {
+                seedCache(config);
+              }
+              return config;
             });
   }
 }
