@@ -18,6 +18,12 @@ public class BaseCacheFile {
   private final File cacheFile;
 
   protected BaseCacheFile(Application application, String fileName) {
+    if (application == null) {
+      throw new IllegalArgumentException("application must not be null");
+    }
+    if (fileName == null) {
+      throw new IllegalArgumentException("fileName must not be null");
+    }
     File filesDir = application.getFilesDir();
     cacheFile = new File(filesDir, fileName);
   }
