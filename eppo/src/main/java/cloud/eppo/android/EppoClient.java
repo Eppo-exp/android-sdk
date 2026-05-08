@@ -384,6 +384,8 @@ public class EppoClient extends BaseAndroidEppoClient<JsonNode> {
                   }
                   return null;
                 });
+      } else if (offlineMode) {
+        ret.complete(instance);
       }
       return ret.exceptionally(
           e -> {

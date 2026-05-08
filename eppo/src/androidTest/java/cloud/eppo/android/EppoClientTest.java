@@ -462,8 +462,10 @@ public class EppoClientTest {
     AssetManager assets = ApplicationProvider.getApplicationContext().getAssets();
 
     // Load and parse the configuration from the asset file
-    InputStream configStream = assets.open(filepath);
-    byte[] configBytes = IOUtils.toByteArray(configStream);
+    byte[] configBytes;
+    try (InputStream configStream = assets.open(filepath)) {
+      configBytes = IOUtils.toByteArray(configStream);
+    }
 
     // Parse the JSON into a FlagConfigResponse using the Jackson parser
     JacksonConfigurationParser parser = new JacksonConfigurationParser();
