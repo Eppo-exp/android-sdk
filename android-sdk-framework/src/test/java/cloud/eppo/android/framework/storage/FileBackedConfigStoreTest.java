@@ -6,7 +6,9 @@ import static org.junit.Assert.assertNull;
 
 import android.app.Application;
 import cloud.eppo.api.Configuration;
+import java.io.File;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,6 +28,17 @@ public class FileBackedConfigStoreTest {
     application = RuntimeEnvironment.getApplication();
     codec = new ConfigurationCodec.Default<>(Configuration.class);
     cacheFileSuffix = "test-" + System.currentTimeMillis();
+  }
+
+  @After
+  public void tearDown() {
+    String prefix = "eppo-sdk-flags-" + cacheFileSuffix + ".";
+    File[] toDelete = application.getFilesDir().listFiles(f -> f.getName().startsWith(prefix));
+    if (toDelete != null) {
+      for (File f : toDelete) {
+        f.delete();
+      }
+    }
   }
 
   @Test

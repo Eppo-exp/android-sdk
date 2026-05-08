@@ -150,6 +150,18 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         @NotNull Application application,
         @NotNull ConfigurationParser<JsonFlagType> configurationParser,
         @NotNull EppoConfigurationClient configurationClient) {
+      if (apiKey == null || apiKey.isEmpty()) {
+        throw new IllegalArgumentException("apiKey must not be null or empty");
+      }
+      if (application == null) {
+        throw new IllegalArgumentException("application must not be null");
+      }
+      if (configurationParser == null) {
+        throw new IllegalArgumentException("configurationParser must not be null");
+      }
+      if (configurationClient == null) {
+        throw new IllegalArgumentException("configurationClient must not be null");
+      }
       this.apiKey = apiKey;
       this.application = application;
       this.configurationParser = configurationParser;
@@ -246,67 +258,77 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      * @return CompletableFuture that completes with the initialized EppoClient
      */
     public CompletableFuture<BaseAndroidClient<JsonFlagType>> buildAndInitAsync() {
-      // Singleton handling
-      if (instance != null && !forceReinitialize) {
-        Log.w(TAG, "Eppo Client instance already initialized");
-        @SuppressWarnings("unchecked")
-        BaseAndroidClient<JsonFlagType> typedInstance = (BaseAndroidClient<JsonFlagType>) instance;
-        return CompletableFuture.completedFuture(typedInstance);
-      } else if (instance != null) {
-        // Stop polling if reinitializing
-        instance.stopPolling();
-        Log.i(TAG, "forceReinitialize triggered - reinitializing Eppo Client");
+      // Synchronized from singleton check through instance assignment to prevent two concurrent
+      // first-time builds from each creating separate instances. In practice Android initializes
+      // on the main thread, but this guard makes the contract explicit.
+      // All operations inside this block are synchronous and fast — the async config fetch and
+      // polling setup happen after the lock is released.
+      final BaseAndroidClient<JsonFlagType> newInstance;
+      synchronized (BaseAndroidClient.class) {
+        if (instance != null && !forceReinitialize) {
+          Log.w(TAG, "Eppo Client instance already initialized");
+          @SuppressWarnings("unchecked")
+          BaseAndroidClient<JsonFlagType> typedInstance =
+              (BaseAndroidClient<JsonFlagType>) instance;
+          return CompletableFuture.completedFuture(typedInstance);
+        } else if (instance != null) {
+          // Stop polling if reinitializing
+          instance.stopPolling();
+          Log.i(TAG, "forceReinitialize triggered - reinitializing Eppo Client");
+        }
+
+        String sdkName = obfuscateConfig ? "android" : "android-debug";
+        String sdkVersion = BuildConfig.EPPO_VERSION;
+
+        if (configStore == null) {
+          configStore =
+              new FileBackedConfigStore(
+                  application,
+                  safeCacheKey(apiKey),
+                  new ConfigurationCodec.Default<>(Configuration.class));
+        }
+
+        // Use the persisted cache as the initial configuration if none was explicitly provided.
+        // Also seed the in-memory cache so getConfiguration() returns the cached value immediately
+        // rather than emptyConfig() while the network fetch is in-flight.
+        if (initialConfiguration == null && !ignoreCachedConfiguration) {
+          initialConfiguration =
+              configStore
+                  .loadAndSeedFromStorage()
+                  .exceptionally(
+                      ex -> {
+                        // Storage failure is non-fatal: proceed without a cached config.
+                        // Losing the cause here would make offline-mode failures opaque, so log.
+                        Log.w(
+                            TAG, "Failed to load config from storage; starting without cache", ex);
+                        return null;
+                      });
+        }
+
+        // Construct the client
+        newInstance =
+            new BaseAndroidClient<>(
+                apiKey,
+                sdkName,
+                sdkVersion,
+                apiBaseUrl,
+                assignmentLogger,
+                configStore,
+                isGracefulMode,
+                obfuscateConfig,
+                initialConfiguration,
+                assignmentCache,
+                configurationParser,
+                configurationClient);
+
+        // Set as singleton early so that getInstance() works immediately after
+        // buildAndInitAsync() returns (e.g. in graceful mode where callers may call
+        // getInstance() before the returned future completes). In graceful mode this is
+        // intentional: the client returns safe defaults until configuration is loaded. Callers
+        // that need a fully initialized client must await the CompletableFuture returned by
+        // buildAndInitAsync() before calling getInstance().
+        instance = newInstance;
       }
-
-      String sdkName = obfuscateConfig ? "android" : "android-debug";
-      String sdkVersion = BuildConfig.EPPO_VERSION;
-
-      if (configStore == null) {
-        configStore =
-            new FileBackedConfigStore(
-                application,
-                safeCacheKey(apiKey),
-                new ConfigurationCodec.Default<>(Configuration.class));
-      }
-
-      // Use the persisted cache as the initial configuration if none was explicitly provided.
-      // Also seed the in-memory cache so getConfiguration() returns the cached value immediately
-      // rather than emptyConfig() while the network fetch is in-flight.
-      if (initialConfiguration == null && !ignoreCachedConfiguration) {
-        initialConfiguration =
-            configStore
-                .loadAndSeedFromStorage()
-                .exceptionally(
-                    ex -> {
-                      // Storage failure is non-fatal: proceed without a cached configuration.
-                      // Losing the cause here would make offline-mode failures opaque, so log it.
-                      Log.w(TAG, "Failed to load config from storage; starting without cache", ex);
-                      return null;
-                    });
-      }
-
-      // Construct the client
-      BaseAndroidClient<JsonFlagType> newInstance =
-          new BaseAndroidClient<>(
-              apiKey,
-              sdkName,
-              sdkVersion,
-              apiBaseUrl,
-              assignmentLogger,
-              configStore,
-              isGracefulMode,
-              obfuscateConfig,
-              initialConfiguration,
-              assignmentCache,
-              configurationParser,
-              configurationClient);
-
-      // Set as singleton early so that getInstance() works immediately after buildAndInitAsync()
-      // returns (e.g. in graceful mode where callers may call getInstance() before the returned
-      // future completes). In graceful mode this is intentional: the client returns safe defaults
-      // until configuration is loaded. Callers that need a fully initialized client must await the
-      // CompletableFuture returned by buildAndInitAsync() before calling getInstance().
-      instance = newInstance;
 
       // Register config change callback if provided
       if (configChangeCallback != null) {
