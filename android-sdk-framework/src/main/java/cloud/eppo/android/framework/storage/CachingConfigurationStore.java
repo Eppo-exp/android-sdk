@@ -122,8 +122,12 @@ public class CachingConfigurationStore implements IConfigurationStore {
    *     missing
    */
   @NotNull public CompletableFuture<Configuration> loadAndSeedFromStorage() {
+    // thenApplyAsync (common pool) breaks out of the single-thread IO_EXECUTOR so that
+    // downstream continuations (e.g. ConfigurationRequestor.setInitialConfiguration, which
+    // calls saveConfiguration → byteStore.write on IO_EXECUTOR) do not deadlock by running
+    // on the same thread that is blocked waiting for them.
     return loadFromStorage()
-        .thenApply(
+        .thenApplyAsync(
             config -> {
               if (config != null) {
                 seedCache(config);
