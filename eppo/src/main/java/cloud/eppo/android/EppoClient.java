@@ -34,7 +34,7 @@ public class EppoClient extends BaseEppoClient {
 
   private long pollingIntervalMs, pollingJitterMs;
 
-  @Nullable private static EppoClient instance;
+  @Nullable private static volatile EppoClient instance;
 
   private EppoClient(
       String apiKey,
