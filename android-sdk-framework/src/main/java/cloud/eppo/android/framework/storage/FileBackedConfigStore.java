@@ -26,8 +26,7 @@ public class FileBackedConfigStore extends CachingConfigurationStore implements 
   }
 
   private FileBackedConfigStore(
-      @NotNull ConfigurationCodec<Configuration> codec,
-      @NotNull FileBackedByteStore byteStore) {
+      @NotNull ConfigurationCodec<Configuration> codec, @NotNull FileBackedByteStore byteStore) {
     super(codec, byteStore);
     this.byteStore = byteStore;
   }

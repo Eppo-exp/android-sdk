@@ -129,7 +129,8 @@ public class BaseAndroidEppoClient<JsonFlagType> extends BaseEppoClient<JsonFlag
     // Set during buildAndInitAsync() once the instance is constructed, before any async work
     // begins.
     // Used by buildAndInit() as a last-resort fallback so it never returns null in graceful mode.
-    // Safety: if the BaseAndroidEppoClient constructor itself throws, buildAndInitAsync() propagates
+    // Safety: if the BaseAndroidEppoClient constructor itself throws, buildAndInitAsync()
+    // propagates
     // a RuntimeException synchronously (before returning a Future), so buildAndInit()'s
     // ExecutionException catch is never reached and builtInstance being null is not a concern.
     @Nullable private BaseAndroidEppoClient<JsonFlagType> builtInstance;
