@@ -21,9 +21,11 @@ public class Utils {
       return "";
     }
     // Take the first eight characters to avoid the key being sensitive information.
-    // Remove non-alphanumeric characters so it plays nice with filesystem paths.
-    // \W is equivalent to [^a-zA-Z0-9_] — underscores are kept, which is fine for filenames.
-    // Note: if the first 8 characters are all non-word the result is an empty string,
+    // Eppo API keys are formatted as "<8-char-random-prefix>.<rest>", so the first 8 characters
+    // are the unique identifier portion and the period separator is not included.
+    // \W strips non-word characters (equivalent to [^a-zA-Z0-9_]); underscores are preserved,
+    // which is fine for filenames. Note: "non-alphanumeric" would imply underscores are removed —
+    // they are not. If the first 8 characters are all non-word the result is an empty string,
     // which produces the filename "eppo-sdk-flags-.bin". Eppo-issued API keys always start
     // with alphanumeric characters, so this edge case is not expected in production.
     return key.substring(0, Math.min(8, key.length())).replaceAll("\\W", "");

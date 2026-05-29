@@ -835,7 +835,7 @@
           "doLog": true
         },
         {
-          "key": "medum-size",
+          "key": "medium-size",
           "rules": [
             {
               "conditions": [

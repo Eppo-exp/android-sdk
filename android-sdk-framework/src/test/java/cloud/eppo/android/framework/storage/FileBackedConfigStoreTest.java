@@ -27,7 +27,7 @@ public class FileBackedConfigStoreTest {
   public void setUp() {
     application = RuntimeEnvironment.getApplication();
     codec = new ConfigurationCodec.Default<>(Configuration.class);
-    cacheFileSuffix = "test-" + System.currentTimeMillis();
+    cacheFileSuffix = "test-" + java.util.UUID.randomUUID().toString().substring(0, 8);
   }
 
   @After
