@@ -123,7 +123,8 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
     private long pollingJitterMs = -1;
     @Nullable private IAssignmentCache assignmentCache;
     @Nullable private Consumer<Configuration> configChangeCallback;
-    // Set during buildAndInitAsync() once the instance is constructed, before any async work begins.
+    // Set during buildAndInitAsync() once the instance is constructed, before any async work
+    // begins.
     // Used by buildAndInit() as a last-resort fallback so it never returns null in graceful mode.
     // Safety: if the BaseAndroidClient constructor itself throws, buildAndInitAsync() propagates a
     // RuntimeException synchronously (before returning a Future), so buildAndInit()'s
