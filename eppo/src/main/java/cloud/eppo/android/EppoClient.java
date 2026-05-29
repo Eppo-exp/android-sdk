@@ -352,17 +352,18 @@ public class EppoClient extends BaseEppoClient {
             .getInitialConfigFuture()
             .handle(
                 (success, ex) -> {
-                  if (ex == null && success) {
+                  if (ex == null && Boolean.TRUE.equals(success)) {
                     ret.complete(instance);
                   } else if (offlineMode || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   } else {
-                    // Initial config was not used (cache miss or parse failure); HTTP fetch is
-                    // still in flight. Do not increment failCount here — the HTTP handler
-                    // already increments it on failure and will complete ret when both paths
-                    // have resolved.
+                    // Initial config was not used (cache miss or parse failure). failCount was
+                    // already incremented to 1 by the else-if condition check above (side
+                    // effect of `failCount.incrementAndGet() == 2` evaluating false). When the
+                    // HTTP fetch also fails its handler will increment failCount to 2 and
+                    // complete ret exceptionally. No additional increment is needed here.
                     Log.d(TAG, "Initial config was not used.");
                   }
                   return null;
