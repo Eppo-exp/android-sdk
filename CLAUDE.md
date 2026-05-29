@@ -14,7 +14,7 @@ eppo-sdk-framework (external, platform-neutral flag evaluation)
 | Module | Version | Artifact | Role |
 |---|---|---|---|
 | `:eppo` | 4.12.1 | `cloud.eppo:android-sdk` | Public `EppoClient` / `EppoPrecomputedClient`, Moshi parser, default implementations |
-| `:android-sdk-framework` | 0.1.0-SNAPSHOT | `cloud.eppo:android-sdk-framework` | `BaseAndroidClient<T>`, `ByteStore`, `ConfigurationCodec`, `CachingConfigurationStore` |
+| `:android-sdk-framework` | 0.1.0-SNAPSHOT | `cloud.eppo:android-sdk-framework` | `BaseAndroidEppoClient<T>`, `ByteStore`, `ConfigurationCodec`, `CachingConfigurationStore` |
 | `eppo-sdk-framework` | 0.1.0-SNAPSHOT | external | `BaseEppoClient`, `IConfigurationStore`, `EppoConfigurationClient`, `ConfigurationParser<T>` |
 | `sdk-common-jvm` | 4.0.0-SNAPSHOT | external | `OkHttpEppoClient`, `JacksonConfigurationParser`, `Configuration`, data models |
 

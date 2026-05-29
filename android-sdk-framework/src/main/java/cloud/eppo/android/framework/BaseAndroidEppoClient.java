@@ -31,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <JsonFlagType> The JSON type used for JSON flag values (e.g., JsonNode, JsonElement)
  */
-public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType> {
-  private static final String TAG = logTag(BaseAndroidClient.class);
+public class BaseAndroidEppoClient<JsonFlagType> extends BaseEppoClient<JsonFlagType> {
+  private static final String TAG = logTag(BaseAndroidEppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
@@ -62,7 +62,7 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
    * @param configurationParser Parser for configuration JSON
    * @param configurationClient HTTP client for configuration fetching
    */
-  protected BaseAndroidClient(
+  protected BaseAndroidEppoClient(
       String apiKey,
       String sdkName,
       String sdkVersion,
@@ -123,13 +123,16 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
     private long pollingJitterMs = -1;
     @Nullable private IAssignmentCache assignmentCache;
     @Nullable private Consumer<Configuration> configChangeCallback;
+    // Tracks the FileBackedConfigStore created by the builder so it can be closed on reinitialize.
+    // Only set when the builder creates the default store (not when the caller provides one).
+    @Nullable private FileBackedConfigStore ownedConfigStore;
     // Set during buildAndInitAsync() once the instance is constructed, before any async work
     // begins.
     // Used by buildAndInit() as a last-resort fallback so it never returns null in graceful mode.
-    // Safety: if the BaseAndroidClient constructor itself throws, buildAndInitAsync() propagates a
-    // RuntimeException synchronously (before returning a Future), so buildAndInit()'s
+    // Safety: if the BaseAndroidEppoClient constructor itself throws, buildAndInitAsync() propagates
+    // a RuntimeException synchronously (before returning a Future), so buildAndInit()'s
     // ExecutionException catch is never reached and builtInstance being null is not a concern.
-    @Nullable private BaseAndroidClient<JsonFlagType> builtInstance;
+    @Nullable private BaseAndroidEppoClient<JsonFlagType> builtInstance;
 
     /**
      * Creates a new Builder with required parameters.
@@ -251,16 +254,31 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      *
      * @return CompletableFuture that completes with the initialized EppoClient
      */
-    public CompletableFuture<BaseAndroidClient<JsonFlagType>> buildAndInitAsync() {
+    public CompletableFuture<BaseAndroidEppoClient<JsonFlagType>> buildAndInitAsync() {
       String sdkName = obfuscateConfig ? "android" : "android-debug";
       String sdkVersion = BuildConfig.EPPO_VERSION;
 
+      // Close any previously owned store when force-reinitializing, to release the background
+      // IO executor. Only the store created by this Builder is closed; caller-provided stores
+      // are the caller's responsibility.
+      if (forceReinitialize && ownedConfigStore != null) {
+        try {
+          ownedConfigStore.close();
+        } catch (java.io.IOException e) {
+          Log.w(TAG, "Failed to close previous FileBackedConfigStore on reinitialize", e);
+        }
+        ownedConfigStore = null;
+        configStore = null;
+      }
+
       if (configStore == null) {
-        configStore =
+        FileBackedConfigStore newStore =
             new FileBackedConfigStore(
                 application,
                 safeCacheKey(apiKey),
                 new ConfigurationCodec.Default<>(Configuration.class));
+        ownedConfigStore = newStore;
+        configStore = newStore;
       }
 
       // Use the persisted cache as the initial configuration if none was explicitly provided.
@@ -280,8 +298,8 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       }
 
       // Construct the client
-      final BaseAndroidClient<JsonFlagType> newInstance =
-          new BaseAndroidClient<>(
+      final BaseAndroidEppoClient<JsonFlagType> newInstance =
+          new BaseAndroidEppoClient<>(
               apiKey,
               sdkName,
               sdkVersion,
@@ -302,7 +320,7 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         newInstance.onConfigurationChange(configChangeCallback);
       }
 
-      final CompletableFuture<BaseAndroidClient<JsonFlagType>> ret = new CompletableFuture<>();
+      final CompletableFuture<BaseAndroidEppoClient<JsonFlagType>> ret = new CompletableFuture<>();
       AtomicInteger failCount = new AtomicInteger(0);
       // Captures the HTTP exception so that when the initial-config future completes the
       // combined failure path can include the original network error as the cause.
@@ -391,7 +409,7 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      * @return The initialized EppoClient
      * @throws RuntimeException if initialization fails and {@code isGracefulMode} is false
      */
-    public BaseAndroidClient<JsonFlagType> buildAndInit() {
+    public BaseAndroidEppoClient<JsonFlagType> buildAndInit() {
       try {
         return buildAndInitAsync().get();
       } catch (InterruptedException e) {

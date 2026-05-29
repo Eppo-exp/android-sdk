@@ -39,7 +39,7 @@ public class EppoClientPollingTest {
   @Mock private EppoConfigurationClient mockConfigClient;
 
   // Tracks the last built client so tearDown can stop its polling timer.
-  private BaseAndroidClient<JsonNode> lastClient;
+  private BaseAndroidEppoClient<JsonNode> lastClient;
 
   @Before
   public void setUp() {
@@ -61,14 +61,14 @@ public class EppoClientPollingTest {
    * @param pollingIntervalMs polling interval in milliseconds (ignored when pollingEnabled=false)
    * @return initialized EppoClient
    */
-  private BaseAndroidClient<JsonNode> buildOfflineClient(
+  private BaseAndroidEppoClient<JsonNode> buildOfflineClient(
       boolean pollingEnabled, long pollingIntervalMs)
       throws ExecutionException, InterruptedException {
     CompletableFuture<Configuration> initialConfig =
         CompletableFuture.completedFuture(Configuration.emptyConfig());
 
-    BaseAndroidClient.Builder<JsonNode> builder =
-        new BaseAndroidClient.Builder<>(
+    BaseAndroidEppoClient.Builder<JsonNode> builder =
+        new BaseAndroidEppoClient.Builder<>(
                 DUMMY_API_KEY,
                 ApplicationProvider.getApplicationContext(),
                 mockConfigParser,
@@ -97,7 +97,7 @@ public class EppoClientPollingTest {
         CompletableFuture.completedFuture(Configuration.emptyConfig());
 
     lastClient =
-        new BaseAndroidClient.Builder<>(
+        new BaseAndroidEppoClient.Builder<>(
                 DUMMY_API_KEY,
                 ApplicationProvider.getApplicationContext(),
                 mockConfigParser,
@@ -136,7 +136,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testResumePollingWithoutStarting() throws ExecutionException, InterruptedException {
-    BaseAndroidClient<JsonNode> androidBaseClient = buildOfflineClient(false, 0);
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(false, 0);
     assertNotNull("Client should be initialized", androidBaseClient);
 
     // resumePolling() logs a warning when polling interval was not set and does not start polling.
@@ -148,7 +148,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testMultiplePauseResumeCycles() throws ExecutionException, InterruptedException {
-    BaseAndroidClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
     assertNotNull("Client should be initialized", androidBaseClient);
 
     // First cycle
@@ -174,7 +174,7 @@ public class EppoClientPollingTest {
   @Test
   public void testPauseResumeSequenceDoesNotCrash()
       throws ExecutionException, InterruptedException {
-    BaseAndroidClient<JsonNode> androidBaseClient = buildOfflineClient(true, 50);
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 50);
 
     // Various sequences that should all work without crashing
     androidBaseClient.pausePolling();
@@ -196,7 +196,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPollingNotEnabledAndResume() throws ExecutionException, InterruptedException {
-    BaseAndroidClient<JsonNode> androidBaseClient = buildOfflineClient(false, 0);
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(false, 0);
 
     // Pause should be safe even if not polling
     androidBaseClient.pausePolling();
@@ -214,7 +214,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPauseAfterInitDoesNotCrash() throws ExecutionException, InterruptedException {
-    BaseAndroidClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
 
     // Immediately pause after initialization
     androidBaseClient.pausePolling();
