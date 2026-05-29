@@ -359,8 +359,11 @@ public class EppoClient extends BaseEppoClient {
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   } else {
+                    // Initial config was not used (cache miss or parse failure); HTTP fetch is
+                    // still in flight. Do not increment failCount here — the HTTP handler
+                    // already increments it on failure and will complete ret when both paths
+                    // have resolved.
                     Log.d(TAG, "Initial config was not used.");
-                    failCount.incrementAndGet();
                   }
                   return null;
                 });
