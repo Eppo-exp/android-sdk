@@ -63,7 +63,13 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
   @Override
   public CompletableFuture<EppoConfigurationResponse> execute(EppoConfigurationRequest request) {
     CompletableFuture<EppoConfigurationResponse> future = new CompletableFuture<>();
-    Request httpRequest = buildRequest(request);
+    Request httpRequest;
+    try {
+      httpRequest = buildRequest(request);
+    } catch (IllegalArgumentException e) {
+      future.completeExceptionally(e);
+      return future;
+    }
 
     log.debug("Executing HTTP request to: {}", redactUrl(httpRequest.url()));
 
@@ -99,8 +105,12 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
   }
 
   private Request buildRequest(EppoConfigurationRequest request) {
-    HttpUrl.Builder urlBuilder =
-        HttpUrl.parse(request.getBaseUrl() + request.getResourcePath()).newBuilder();
+    String rawUrl = request.getBaseUrl() + request.getResourcePath();
+    HttpUrl parsed = HttpUrl.parse(rawUrl);
+    if (parsed == null) {
+      throw new IllegalArgumentException("Invalid URL: " + rawUrl);
+    }
+    HttpUrl.Builder urlBuilder = parsed.newBuilder();
 
     for (Map.Entry<String, String> param : request.getQueryParams().entrySet()) {
       urlBuilder.addQueryParameter(param.getKey(), param.getValue());
@@ -123,6 +133,9 @@ public class OkHttpEppoClient implements EppoConfigurationClient {
           contentType = DEFAULT_CONTENT_TYPE;
         }
         MediaType mediaType = MediaType.parse(contentType);
+        if (mediaType == null) {
+          throw new IllegalArgumentException("Invalid media type: " + contentType);
+        }
         requestBuilder.post(RequestBody.create(body != null ? body : new byte[0], mediaType));
         break;
       case GET:

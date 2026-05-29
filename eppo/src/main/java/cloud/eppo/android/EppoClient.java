@@ -297,9 +297,17 @@ public class EppoClient extends BaseAndroidEppoClient<JsonNode> {
       }
 
       // If the initial config was not set, use the ConfigurationStore's cache as the initial
-      // config.
+      // config. loadAndSeedFromStorage() also seeds the in-memory cache so getConfiguration()
+      // returns the cached value immediately while the network fetch is in-flight.
       if (initialConfiguration == null && !ignoreCachedConfiguration) {
-        initialConfiguration = configStore.loadFromStorage();
+        initialConfiguration =
+            configStore
+                .loadAndSeedFromStorage()
+                .exceptionally(
+                    ex -> {
+                      Log.w(TAG, "Failed to load config from storage; starting without cache", ex);
+                      return null;
+                    });
       }
 
       // Create batteries-included implementations (use provided overrides or defaults)
@@ -370,7 +378,7 @@ public class EppoClient extends BaseAndroidEppoClient<JsonNode> {
                 (success, ex) -> {
                   if (ex == null && Boolean.TRUE.equals(success)) {
                     ret.complete(instance);
-                  } else if (offlineMode || ex != null || failCount.incrementAndGet() == 2) {
+                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));

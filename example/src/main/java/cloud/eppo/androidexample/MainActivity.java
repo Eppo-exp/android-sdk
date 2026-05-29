@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     Button offlineButton = findViewById(R.id.button_start_offline_assigner);
     offlineButton.setOnClickListener(
         view ->
-            startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
+            startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", true)));
 
     Button gsonButton = findViewById(R.id.button_start_gson_assigner);
     Intent launchGsonAssigner = new Intent(MainActivity.this, CustomClientActivity.class);
@@ -50,13 +50,4 @@ public class MainActivity extends AppCompatActivity {
     }
   }
 
-  @Override
-  protected void onResume() {
-    super.onResume();
-
-    // for testing assignments on application/main activity start
-    //    if (!TextUtils.isEmpty(INITIAL_FLAG_KEY)) {
-    //      EppoClient.getInstance().getStringAssignment(INITIAL_FLAG_KEY, INITIAL_SUBJECT_ID, "");
-    //    }
-  }
 }

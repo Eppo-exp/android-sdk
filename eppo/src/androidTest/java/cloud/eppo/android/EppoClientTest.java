@@ -96,8 +96,7 @@ public class EppoClientTest {
       @Nullable CachingConfigurationStore configurationStoreOverride,
       String apiKey,
       boolean offlineMode,
-      IAssignmentCache assignmentCache,
-      boolean ignoreTestConfigCacheFile) {
+      IAssignmentCache assignmentCache) {
     if (shouldDeleteCacheFiles) {
       clearCacheFile(apiKey);
     }
@@ -161,13 +160,13 @@ public class EppoClientTest {
 
   @Test
   public void testUnobfuscatedAssignments() {
-    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, true, false, false, null, null, DUMMY_API_KEY, false, null);
     runTestCases();
   }
 
   @Test
   public void testAssignments() {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     runTestCases();
   }
 
@@ -508,8 +507,7 @@ public class EppoClientTest {
         null,
         DUMMY_API_KEY,
         false,
-        null,
-        false); // ensure cache is populated
+        null); // ensure cache is populated
 
     // wait for a bit since cache file is written asynchronously
     waitForPopulatedCache();
@@ -526,8 +524,7 @@ public class EppoClientTest {
         null,
         DUMMY_API_KEY,
         false,
-        null,
-        false); // invalid host to force to use cache
+        null); // invalid host to force to use cache
 
     runTestCases();
   }
@@ -658,8 +655,7 @@ public class EppoClientTest {
         null,
         DUMMY_API_KEY,
         false,
-        null,
-        false);
+        null);
 
     String result =
         EppoClient.getInstance()
@@ -685,8 +681,7 @@ public class EppoClientTest {
         null,
         DUMMY_API_KEY,
         false,
-        null,
-        false);
+        null);
 
     String result =
         EppoClient.getInstance()
@@ -702,7 +697,7 @@ public class EppoClientTest {
             ApplicationProvider.getApplicationContext(), safeCacheKey(DUMMY_API_KEY));
     cacheFile.setContents("NEEDS TO BE A VALID JSON TREE");
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null);
 
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
@@ -719,14 +714,14 @@ public class EppoClientTest {
       os.write(serializeConfiguration(config));
     }
 
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null);
     double assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, assignment, 0.0000001);
   }
 
   @Test
   public void testDifferentCacheFilesPerKey() throws IOException {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     // API Key 1 will fetch and then populate its cache with the usual test data
     double apiKey1Assignment =
         EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
@@ -752,7 +747,7 @@ public class EppoClientTest {
 
     // Initialize with offline mode to prevent instance2 from pulling config via fetch.
     initClient(
-        TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true, null, false);
+        TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true, null);
 
     // Ensure API key 2 uses its cache and gets the same value as API key 1
     double apiKey2Assignment =
@@ -760,7 +755,7 @@ public class EppoClientTest {
     assertEquals(3.1415926, apiKey2Assignment, 0.0000001);
 
     // Reinitialize API key 1 to be sure it used its cache
-    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_API_KEY, false, null);
     // API Key 1 will fetch and then populate its cache with the usual test data
     apiKey1Assignment = EppoClient.getInstance().getDoubleAssignment("numeric_flag", "alice", 0.0);
     assertEquals(3.1415926, apiKey1Assignment, 0.0000001);
@@ -879,7 +874,7 @@ public class EppoClientTest {
     CachingConfigurationStore slowStore = new CachingConfigurationStore(codec, slowByteStore) {};
 
     initClient(
-        TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false, null, false);
+        TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false, null);
 
     EppoClient client = EppoClient.getInstance();
     // Give time for async slow cache read to finish
@@ -914,7 +909,7 @@ public class EppoClientTest {
   @Test
   public void testAssignmentEventCorrectlyCreated() {
     Date testStart = new Date();
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     Attributes subjectAttributes = new Attributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
@@ -957,7 +952,7 @@ public class EppoClientTest {
 
   @Test
   public void testAssignmentEventDuplicatedWithoutCache() {
-    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null, false);
+    initClient(TEST_HOST, true, true, false, true, null, null, DUMMY_API_KEY, false, null);
     Attributes subjectAttributes = new Attributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
     subjectAttributes.put("employer", EppoValue.valueOf("Eppo"));
@@ -981,8 +976,7 @@ public class EppoClientTest {
         null,
         DUMMY_API_KEY,
         false,
-        new LRUAssignmentCache(1024),
-        false);
+        new LRUAssignmentCache(1024));
 
     Attributes subjectAttributes = new Attributes();
     subjectAttributes.put("age", EppoValue.valueOf(30));
