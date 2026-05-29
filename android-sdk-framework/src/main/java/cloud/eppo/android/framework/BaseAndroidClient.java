@@ -123,6 +123,12 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
     private long pollingJitterMs = -1;
     @Nullable private IAssignmentCache assignmentCache;
     @Nullable private Consumer<Configuration> configChangeCallback;
+    // Set during buildAndInitAsync() once the instance is constructed, before any async work begins.
+    // Used by buildAndInit() as a last-resort fallback so it never returns null in graceful mode.
+    // Safety: if the BaseAndroidClient constructor itself throws, buildAndInitAsync() propagates a
+    // RuntimeException synchronously (before returning a Future), so buildAndInit()'s
+    // ExecutionException catch is never reached and builtInstance being null is not a concern.
+    @Nullable private BaseAndroidClient<JsonFlagType> builtInstance;
 
     /**
      * Creates a new Builder with required parameters.
@@ -287,6 +293,8 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
               assignmentCache,
               configurationParser,
               configurationClient);
+      // Track the instance so buildAndInit()'s defensive catch can return it instead of null.
+      this.builtInstance = newInstance;
 
       // Register config change callback if provided
       if (configChangeCallback != null) {
@@ -393,12 +401,13 @@ public class BaseAndroidClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       } catch (ExecutionException e) {
         // In graceful mode, buildAndInitAsync()'s .exceptionally() handler converts failures
         // into the client instance, so .get() should not throw ExecutionException. This catch
-        // is a defensive fallback for non-graceful mode or unexpected .exceptionally() failures.
+        // is a defensive fallback for unexpected .exceptionally() failures. Return the partially-
+        // constructed instance (which returns defaults for all flag evaluations) rather than null.
         Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
         if (!isGracefulMode) {
           throw new RuntimeException(e);
         }
-        return null;
+        return builtInstance;
       }
     }
   }
