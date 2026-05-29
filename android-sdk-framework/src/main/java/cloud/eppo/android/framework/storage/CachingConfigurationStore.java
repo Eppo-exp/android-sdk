@@ -43,6 +43,10 @@ public class CachingConfigurationStore implements IConfigurationStore {
   /**
    * Saves the configuration to storage and updates the in-memory cache.
    *
+   * <p>The disk write is performed first. The in-memory cache is updated only after the write
+   * succeeds, ensuring that the in-memory state never reflects a configuration that failed to
+   * persist. Concurrent saves are safe: the last write to complete successfully wins in memory.
+   *
    * @param config the configuration to save (must not be null)
    * @return a future that completes when the write finishes, or completes exceptionally if the
    *     underlying {@link ByteStore} write fails (e.g. with an {@link java.io.IOException})
@@ -53,26 +57,16 @@ public class CachingConfigurationStore implements IConfigurationStore {
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
-    Configuration previousConfiguration = configuration.get();
     byte[] bytes = codec.toBytes(config);
-    configuration.set(config); // optimistic update — in-memory reflects last submitted save
     return byteStore
         .write(bytes)
         .whenComplete(
             (v, ex) -> {
-              if (ex != null) {
-                // Revert the optimistic update, but only if no later save has superseded this
-                // one. compareAndSet atomically checks that the in-memory value is still the
-                // one we wrote; if a concurrent save has already advanced it, the revert is
-                // skipped.
-                //
-                // Edge case: if two concurrent saves both fail their IO writes, the second
-                // failure's revert may land on a value that was itself never persisted (the
-                // first save's value). This is acceptable — the in-memory state may diverge
-                // from disk, but the next successful save will reconcile them. Saves are
-                // serialized through a single-thread IO_EXECUTOR, so true concurrent IO
-                // failures are unlikely in practice.
-                configuration.compareAndSet(config, previousConfiguration);
+              if (ex == null) {
+                // Only update in-memory cache after a successful disk write.
+                // Use set() rather than compareAndSet() so the most-recently-persisted
+                // configuration always wins, regardless of submission order.
+                configuration.set(config);
               }
             });
   }
