@@ -49,5 +49,4 @@ public class MainActivity extends AppCompatActivity {
       Toast.makeText(this, "Cache file did not exist", Toast.LENGTH_SHORT).show();
     }
   }
-
 }
