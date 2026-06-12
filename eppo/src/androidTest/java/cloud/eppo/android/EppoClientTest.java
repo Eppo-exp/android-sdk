@@ -646,16 +646,7 @@ public class EppoClientTest {
         .thenReturn(CompletableFuture.completedFuture(invalidResponse));
 
     initClient(
-        TEST_HOST,
-        true,
-        true,
-        false,
-        false,
-        mockHttpClient,
-        null,
-        DUMMY_API_KEY,
-        false,
-        null);
+        TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false, null);
 
     String result =
         EppoClient.getInstance()
@@ -672,16 +663,7 @@ public class EppoClientTest {
         .thenReturn(CompletableFuture.completedFuture(invalidResponse));
 
     initClient(
-        TEST_HOST,
-        true,
-        true,
-        false,
-        false,
-        mockHttpClient,
-        null,
-        DUMMY_API_KEY,
-        false,
-        null);
+        TEST_HOST, true, true, false, false, mockHttpClient, null, DUMMY_API_KEY, false, null);
 
     String result =
         EppoClient.getInstance()
@@ -746,8 +728,7 @@ public class EppoClientTest {
     }
 
     // Initialize with offline mode to prevent instance2 from pulling config via fetch.
-    initClient(
-        TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true, null);
+    initClient(TEST_HOST, true, false, false, true, null, null, DUMMY_OTHER_API_KEY, true, null);
 
     // Ensure API key 2 uses its cache and gets the same value as API key 1
     double apiKey2Assignment =
@@ -873,8 +854,7 @@ public class EppoClientTest {
     ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default<>(Configuration.class);
     CachingConfigurationStore slowStore = new CachingConfigurationStore(codec, slowByteStore) {};
 
-    initClient(
-        TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false, null);
+    initClient(TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false, null);
 
     EppoClient client = EppoClient.getInstance();
     // Give time for async slow cache read to finish
