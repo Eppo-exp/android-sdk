@@ -1,6 +1,5 @@
 package cloud.eppo.android.framework;
 
-import static cloud.eppo.android.framework.util.Utils.logTag;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
@@ -9,7 +8,6 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import android.util.Log;
 import androidx.test.core.app.ApplicationProvider;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.http.EppoConfigurationClient;
@@ -32,7 +30,6 @@ import org.mockito.MockitoAnnotations;
  * various sequences, and that polling actually stops and resumes as expected.
  */
 public class EppoClientPollingTest {
-  private static final String TAG = logTag(EppoClientPollingTest.class);
   private static final String DUMMY_API_KEY = "mock-api-key";
 
   @Mock private ConfigurationParser<JsonNode> mockConfigParser;
@@ -141,57 +138,63 @@ public class EppoClientPollingTest {
 
     // resumePolling() logs a warning when polling interval was not set and does not start polling.
     androidBaseClient.resumePolling();
-    Log.d(TAG, "Resume called without starting - should log warning");
 
     Thread.sleep(50);
   }
 
   @Test
-  public void testMultiplePauseResumeCycles() throws ExecutionException, InterruptedException {
-    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
+  public void testMultiplePauseResumeCyclesWithVerification()
+      throws ExecutionException, InterruptedException {
+    // Stub the mock so polling calls don't NPE.
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 50);
     assertNotNull("Client should be initialized", androidBaseClient);
 
-    // First cycle
+    // Let polling fire at least once.
+    Thread.sleep(150);
+    verify(mockConfigClient, atLeastOnce()).execute(any(EppoConfigurationRequest.class));
+
+    // Pause and verify polling stops.
     androidBaseClient.pausePolling();
-    Log.d(TAG, "First pause");
-    Thread.sleep(50);
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+    Thread.sleep(200);
+    verify(mockConfigClient, atMost(1)).execute(any(EppoConfigurationRequest.class));
+
+    // Double pause is safe.
+    androidBaseClient.pausePolling();
+
+    // Resume and verify polling fires again.
     androidBaseClient.resumePolling();
-    Log.d(TAG, "First resume");
-    Thread.sleep(50);
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+    Thread.sleep(150);
+    verify(mockConfigClient, atLeastOnce()).execute(any(EppoConfigurationRequest.class));
 
-    // Second cycle
-    androidBaseClient.pausePolling();
-    Log.d(TAG, "Second pause");
-    Thread.sleep(50);
-    androidBaseClient.resumePolling();
-    Log.d(TAG, "Second resume");
-    Thread.sleep(50);
-
-    // Final cleanup
-    androidBaseClient.pausePolling();
-  }
-
-  @Test
-  public void testPauseResumeSequenceDoesNotCrash()
-      throws ExecutionException, InterruptedException {
-    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 50);
-
-    // Various sequences that should all work without crashing
-    androidBaseClient.pausePolling();
-    androidBaseClient.pausePolling(); // Double pause
-    Thread.sleep(50);
-
+    // Double resume is safe.
     androidBaseClient.resumePolling();
     Thread.sleep(50);
 
-    androidBaseClient.resumePolling(); // Double resume
-    Thread.sleep(50);
+    // Second pause/resume cycle.
+    androidBaseClient.pausePolling();
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+    Thread.sleep(150);
+    verify(mockConfigClient, atMost(1)).execute(any(EppoConfigurationRequest.class));
+
+    androidBaseClient.resumePolling();
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+    Thread.sleep(150);
+    verify(mockConfigClient, atLeastOnce()).execute(any(EppoConfigurationRequest.class));
 
     androidBaseClient.pausePolling();
-    androidBaseClient.resumePolling();
-    Thread.sleep(50);
-
-    androidBaseClient.pausePolling(); // Final pause for cleanup
   }
 
   @Test
@@ -213,19 +216,28 @@ public class EppoClientPollingTest {
   }
 
   @Test
-  public void testPauseAfterInitDoesNotCrash() throws ExecutionException, InterruptedException {
-    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 100);
+  public void testPauseAfterInitStopsPolling() throws ExecutionException, InterruptedException {
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
 
-    // Immediately pause after initialization
+    BaseAndroidEppoClient<JsonNode> androidBaseClient = buildOfflineClient(true, 50);
+
+    // Immediately pause after initialization — no polls should fire.
     androidBaseClient.pausePolling();
-    Log.d(TAG, "Paused immediately after init");
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
     Thread.sleep(200);
+    verify(mockConfigClient, atMost(1)).execute(any(EppoConfigurationRequest.class));
 
-    // Resume
+    // Resume and verify polling fires.
     androidBaseClient.resumePolling();
-    Thread.sleep(200);
+    reset(mockConfigClient);
+    when(mockConfigClient.execute(any(EppoConfigurationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(EppoConfigurationResponse.error(503, null)));
+    Thread.sleep(150);
+    verify(mockConfigClient, atLeastOnce()).execute(any(EppoConfigurationRequest.class));
 
-    // Final pause
     androidBaseClient.pausePolling();
   }
 }
