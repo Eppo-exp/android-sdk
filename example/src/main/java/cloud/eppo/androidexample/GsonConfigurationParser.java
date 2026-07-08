@@ -22,7 +22,7 @@ import cloud.eppo.api.dto.TargetingCondition;
 import cloud.eppo.api.dto.TargetingRule;
 import cloud.eppo.api.dto.Variation;
 import cloud.eppo.api.dto.VariationType;
-import cloud.eppo.model.ShardRange;
+import cloud.eppo.api.dto.ShardRange;
 import cloud.eppo.parser.ConfigurationParseException;
 import cloud.eppo.parser.ConfigurationParser;
 import com.google.gson.JsonArray;
@@ -269,7 +269,7 @@ public class GsonConfigurationParser implements ConfigurationParser<JsonElement>
           JsonObject range = rangeElement.getAsJsonObject();
           int start = range.get("start").getAsInt();
           int end = range.get("end").getAsInt();
-          ranges.add(new ShardRange(start, end));
+          ranges.add(new ShardRange.Default(start, end));
         }
       }
       shards.add(new Shard.Default(salt, ranges));
