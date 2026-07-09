@@ -35,7 +35,7 @@ public class CachingConfigurationStoreTest {
 
   private ByteStore mockByteStore;
   private ConfigurationCodec<Configuration> spyCodec;
-  private CachingConfigurationStore testedStore;
+  private CachingConfigurationStore<Configuration> testedStore;
 
   /** One shared non-empty configuration used across tests (built once in setUp). */
   private Configuration sampleConfiguration;
@@ -46,12 +46,12 @@ public class CachingConfigurationStoreTest {
   @Before
   public void setUp() throws Exception {
     mockByteStore = mock(ByteStore.class);
-    spyCodec = spy(new ConfigurationCodec.Default<>(Configuration.class));
-    testedStore = new CachingConfigurationStore(spyCodec, mockByteStore);
+    spyCodec = spy(new ConfigurationCodec.Default());
+    testedStore = new CachingConfigurationStore<>(spyCodec, mockByteStore);
     // Parse flags-v1.json from test resources using sdk-common-jvm JacksonConfigurationParser.
     sampleConfiguration = loadSampleConfigurationFromResource();
     ConfigurationCodec<Configuration> realCodec =
-        new ConfigurationCodec.Default<>(Configuration.class);
+        new ConfigurationCodec.Default();
     sampleConfigurationBytes = realCodec.toBytes(sampleConfiguration);
   }
 

@@ -19,11 +19,11 @@ import org.robolectric.RobolectricTestRunner;
 @RunWith(RobolectricTestRunner.class)
 public class ConfigurationCodecTest {
 
-  private ConfigurationCodec<SerializableEppoConfiguration> codec;
+  private ConfigurationCodec<Configuration> codec;
 
   @Before
   public void setUp() {
-    codec = new ConfigurationCodec.Default<>(SerializableEppoConfiguration.class);
+    codec = new ConfigurationCodec.Default();
   }
 
   @Test
@@ -92,14 +92,13 @@ public class ConfigurationCodecTest {
     } catch (RuntimeException e) {
       assertTrue(
           "Exception should mention type mismatch",
-          e.getMessage().contains("not a SerializableEppoConfiguration"));
+          e.getMessage().contains("not a Configuration"));
     }
   }
 
   @Test
   public void roundTrip_serializeAndDeserialize_succeeds() {
-    SerializableEppoConfiguration original =
-        (SerializableEppoConfiguration) Configuration.emptyConfig();
+    Configuration original = Configuration.emptyConfig();
     byte[] bytes = codec.toBytes(original);
     assertNotNull(bytes);
     assertTrue(bytes.length > 0);

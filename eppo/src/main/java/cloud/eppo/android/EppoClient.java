@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class EppoClient extends AndroidBaseClient<JsonNode> {
+public class EppoClient extends AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
@@ -44,8 +44,8 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
       String sdkVersion,
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
-      CachingConfigurationStore configurationStore,
-      ConfigurationParser<JsonNode> configurationParser,
+      CachingConfigurationStore<Configuration> configurationStore,
+      ConfigurationParser<Configuration, Configuration.Builder, JsonNode> configurationParser,
       EppoConfigurationClient configurationClient,
       boolean isGracefulMode,
       boolean expectObfuscatedConfig,
@@ -129,7 +129,7 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
     private final String apiKey;
     @Nullable private AssignmentLogger assignmentLogger;
 
-    @Nullable private CachingConfigurationStore configStore;
+    @Nullable private CachingConfigurationStore<Configuration> configStore;
 
     private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
     private boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
@@ -151,7 +151,7 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
     @Nullable private Consumer<Configuration> configChangeCallback;
 
     // Batteries-included: Allow overriding default implementations
-    @Nullable private ConfigurationParser<JsonNode> configurationParser;
+    @Nullable private ConfigurationParser<Configuration, Configuration.Builder, JsonNode> configurationParser;
     @Nullable private EppoConfigurationClient configurationClient;
 
     public Builder(@NonNull String apiKey, @NonNull Application application) {
@@ -204,7 +204,7 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
       return this;
     }
 
-    public Builder configStore(CachingConfigurationStore configStore) {
+    public Builder configStore(CachingConfigurationStore<Configuration> configStore) {
       this.configStore = configStore;
       return this;
     }
@@ -252,7 +252,7 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
      * @param parser the configuration parser to use
      * @return this builder
      */
-    public Builder configurationParser(ConfigurationParser<JsonNode> parser) {
+    public Builder configurationParser(ConfigurationParser<Configuration, Configuration.Builder, JsonNode> parser) {
       this.configurationParser = parser;
       return this;
     }
@@ -303,7 +303,7 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
       }
 
       // Create batteries-included implementations (use provided overrides or defaults)
-      ConfigurationParser<JsonNode> parserToUse =
+      ConfigurationParser<Configuration, Configuration.Builder, JsonNode> parserToUse =
           this.configurationParser != null
               ? this.configurationParser
               : new JacksonConfigurationParser();
@@ -413,12 +413,12 @@ public class EppoClient extends AndroidBaseClient<JsonNode> {
       return instance;
     }
 
-    private CachingConfigurationStore createDefaultConfigStore() {
+    private CachingConfigurationStore<Configuration> createDefaultConfigStore() {
       ConfigurationCodec<Configuration> codec =
-          new ConfigurationCodec.Default<>(Configuration.class);
+          new ConfigurationCodec.Default();
 
       // Cache at a per-API key level (useful for development)
-      return new FileBackedConfigStore(application, safeCacheKey(apiKey), codec);
+      return new FileBackedConfigStore<>(application, safeCacheKey(apiKey), codec);
     }
   }
 

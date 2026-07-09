@@ -858,8 +858,9 @@ public class EppoClientTest {
           }
         };
 
-    ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default<>(Configuration.class);
-    CachingConfigurationStore slowStore = new CachingConfigurationStore(codec, slowByteStore) {};
+    ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default();
+    CachingConfigurationStore<Configuration> slowStore =
+        new CachingConfigurationStore<Configuration>(codec, slowByteStore) {};
 
     initClient(
         TEST_HOST, true, false, false, true, null, slowStore, DUMMY_API_KEY, false, null, false);
@@ -1081,7 +1082,7 @@ public class EppoClientTest {
    * @return serialized bytes
    */
   private byte[] serializeConfiguration(Configuration config) {
-    ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default<>(Configuration.class);
+    ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default();
     return codec.toBytes(config);
   }
 }

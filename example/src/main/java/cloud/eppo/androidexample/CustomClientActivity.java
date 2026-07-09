@@ -3,6 +3,7 @@ package cloud.eppo.androidexample;
 import static cloud.eppo.androidexample.Constants.INITIAL_FLAG_KEY;
 import static cloud.eppo.androidexample.Constants.INITIAL_SUBJECT_ID;
 
+import android.app.Application;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
@@ -12,15 +13,23 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import cloud.eppo.android.framework.AndroidBaseClient;
+import cloud.eppo.android.framework.storage.CachingConfigurationStore;
 import cloud.eppo.android.framework.storage.FileBackedConfigStore;
 import cloud.eppo.android.framework.util.Utils;
 import cloud.eppo.api.AllocationDetails;
 import cloud.eppo.api.AssignmentDetails;
 import cloud.eppo.api.Attributes;
+import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EvaluationDetails;
+import cloud.eppo.http.EppoConfigurationClient;
+import cloud.eppo.parser.ConfigurationParser;
+
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 import com.google.gson.JsonElement;
+
+import org.jetbrains.annotations.NotNull;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -48,7 +57,23 @@ public class CustomClientActivity extends AppCompatActivity {
   private TextView assignmentLog;
   private ScrollView assignmentLogScrollView;
 
-  private AndroidBaseClient<JsonElement> client;
+  private AndroidBaseClient<Configuration, Configuration.Builder, JsonElement> client;
+
+  private class GsonAndroidBaseClientBuilder extends AndroidBaseClient.Builder<
+    GsonAndroidBaseClientBuilder,
+    Configuration,
+    Configuration.Builder,
+    JsonElement
+  > {
+    public GsonAndroidBaseClientBuilder(
+      @NotNull String apiKey,
+      @NotNull Application application,
+      @NotNull ConfigurationParser<Configuration, Configuration.Builder, JsonElement> configurationParser,
+      @NotNull CachingConfigurationStore<Configuration> configStore,
+      @NotNull EppoConfigurationClient configurationClient) {
+      super(GsonAndroidBaseClientBuilder.class, apiKey, application, configurationParser, configStore, configurationClient);
+    }
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -72,18 +97,18 @@ public class CustomClientActivity extends AppCompatActivity {
 
     // Swap in the GSON-based cache codec so the on-disk cache is human-readable JSON
     // rather than Java's binary serialization format.
-    FileBackedConfigStore gsonStore =
-        new FileBackedConfigStore(
+    FileBackedConfigStore<Configuration> gsonStore =
+        new FileBackedConfigStore<>(
             getApplication(), Utils.safeCacheKey(API_KEY), new GsonConfigurationCodec());
 
-    new AndroidBaseClient.Builder<>(
+    new GsonAndroidBaseClientBuilder(
             API_KEY,
             getApplication(),
             new GsonConfigurationParser(),
+            gsonStore,
             new HeaderInjectingEppoClient(customHeaders))
         .forceReinitialize(true)
         .isGracefulMode(false)
-        .configStore(gsonStore)
         .assignmentLogger(
             assignment ->
                 Log.d(

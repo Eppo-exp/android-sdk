@@ -1,5 +1,6 @@
 package cloud.eppo.android.framework.storage;
 
+import cloud.eppo.api.Configuration;
 import cloud.eppo.api.SerializableEppoConfiguration;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,9 +14,9 @@ import org.jetbrains.annotations.NotNull;
  *
  * <p>Used for persisting configurations to storage.
  *
- * @param <T> the configuration type, must extend SerializableEppoConfiguration
+ * @param <ConfigurationType> the configuration type, must extend SerializableEppoConfiguration
  */
-public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
+public interface ConfigurationCodec<ConfigurationType extends SerializableEppoConfiguration> {
   /**
    * Serializes a configuration to bytes for storage.
    *
@@ -23,7 +24,7 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
    * @return serialized bytes (must not be null)
    * @throws RuntimeException if the configuration cannot be serialized
    */
-  byte[] toBytes(@NotNull T configuration);
+  byte[] toBytes(@NotNull ConfigurationType configuration);
 
   /**
    * Deserializes a configuration from bytes produced by {@link #toBytes}.
@@ -32,7 +33,7 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
    * @return the deserialized configuration
    * @throws RuntimeException if the bytes cannot be deserialized to a configuration
    */
-  @NotNull T fromBytes(byte[] bytes);
+  @NotNull ConfigurationType fromBytes(byte[] bytes);
 
   /**
    * Returns the MIME content type of the serialized form (e.g. {@code
@@ -42,29 +43,23 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
   @NotNull String getContentType();
 
   /**
+   * Generic equivalent to {@link Configuration#emptyConfig()}
+   * @return an empty Configuration.
+   */
+  @NotNull ConfigurationType emptyConfiguration();
+
+  /**
    * Default implementation using Java serialization.
    *
    * <p><strong>Security Note:</strong> Java serialization is used for local storage. Do not use
    * this codec to deserialize data from untrusted sources, as Java deserialization has known
    * security vulnerabilities.
    *
-   * @param <T> the configuration type, must extend SerializableEppoConfiguration
+   * @param <ConfigurationType> the configuration type, must extend SerializableEppoConfiguration
    */
-  public static class Default<T extends SerializableEppoConfiguration>
-      implements ConfigurationCodec<T> {
-    private final Class<T> configClass;
-
-    /**
-     * Creates a default codec for the specified configuration class.
-     *
-     * @param configClass the class of the configuration type
-     */
-    public Default(@NotNull Class<T> configClass) {
-      this.configClass = configClass;
-    }
-
+  public static class Default implements ConfigurationCodec<Configuration> {
     @Override
-    public byte[] toBytes(@NotNull T configuration) {
+    public byte[] toBytes(@NotNull Configuration configuration) {
       if (configuration == null) {
         throw new IllegalArgumentException("Configuration must not be null");
       }
@@ -79,20 +74,18 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
 
     @Override
     @SuppressWarnings("unchecked") // Safe cast - verified by configClass.isInstance() check
-    public @NotNull T fromBytes(byte[] bytes) {
+    public @NotNull Configuration fromBytes(byte[] bytes) {
       if (bytes == null) {
         throw new IllegalArgumentException("Bytes must not be null");
       }
       try (ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bytes))) {
         Object obj = ois.readObject();
-        if (!configClass.isInstance(obj)) {
+        if (!(obj instanceof Configuration)) {
           throw new RuntimeException(
-              "Deserialized object is not a "
-                  + configClass.getSimpleName()
-                  + ": "
+              "Deserialized object is not a Configuration:"
                   + obj.getClass().getName());
         }
-        return (T) obj;
+        return (Configuration) obj;
       } catch (IOException e) {
         throw new RuntimeException("Failed to deserialize configuration", e);
       } catch (ClassNotFoundException e) {
@@ -103,6 +96,11 @@ public interface ConfigurationCodec<T extends SerializableEppoConfiguration> {
     @Override
     public @NotNull String getContentType() {
       return "application/x-java-serialized-object";
+    }
+
+    @Override
+    public @NotNull Configuration emptyConfiguration() {
+      return Configuration.emptyConfig();
     }
   }
 }

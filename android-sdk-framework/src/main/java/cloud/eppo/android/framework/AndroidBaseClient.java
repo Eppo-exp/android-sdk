@@ -13,6 +13,7 @@ import cloud.eppo.android.framework.storage.ConfigurationCodec;
 import cloud.eppo.android.framework.storage.FileBackedConfigStore;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.IAssignmentCache;
+import cloud.eppo.api.SerializableEppoConfiguration;
 import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.parser.ConfigurationParser;
@@ -32,7 +33,18 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <JsonFlagType> The JSON type used for JSON flag values (e.g., JsonNode, JsonElement)
  */
-public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType> {
+public class AndroidBaseClient<
+  ConfigurationType extends SerializableEppoConfiguration,
+  ConfigurationBuilderType extends SerializableEppoConfiguration.AbstractBuilder<
+    ConfigurationBuilderType,
+    ConfigurationType
+  >,
+  JsonFlagType
+> extends BaseEppoClient<
+  ConfigurationType,
+  ConfigurationBuilderType,
+  JsonFlagType
+> {
   private static final String TAG = logTag(AndroidBaseClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
@@ -42,7 +54,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
   private long pollingIntervalMs;
   private long pollingJitterMs;
 
-  @Nullable private static AndroidBaseClient<?> instance;
+  @Nullable private static AndroidBaseClient<?, ?, ?> instance;
 
   /**
    * Private constructor. Use Builder to construct instances.
@@ -66,12 +78,12 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       String sdkVersion,
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
-      CachingConfigurationStore configurationStore,
+      CachingConfigurationStore<ConfigurationType> configurationStore,
       boolean isGracefulMode,
       boolean expectObfuscatedConfig,
-      @Nullable CompletableFuture<Configuration> initialConfiguration,
+      @Nullable CompletableFuture<ConfigurationType> initialConfiguration,
       @Nullable IAssignmentCache assignmentCache,
-      ConfigurationParser<JsonFlagType> configurationParser,
+      ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType> configurationParser,
       EppoConfigurationClient configurationClient) {
     super(
         apiKey,
@@ -96,14 +108,23 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
    *
    * @return The singleton instance
    * @throws NotInitializedException if the client has not been initialized
-   * @param <T> The JSON type parameter
+   * @param <ConfigurationType> The Configuration type parameter
+   * @param <ConfigurationBuilderType> The Configuration Builder type parameter
+   * @param <JsonFlagType> The JSON type parameter
    */
   @SuppressWarnings("unchecked")
-  public static <T> AndroidBaseClient<T> getInstance() throws NotInitializedException {
+  public static <
+        ConfigurationType extends SerializableEppoConfiguration,
+        ConfigurationBuilderType extends SerializableEppoConfiguration.AbstractBuilder<
+          ConfigurationBuilderType,
+          ConfigurationType
+        >,
+        JsonFlagType
+      > AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> getInstance() throws NotInitializedException {
     if (instance == null) {
       throw new NotInitializedException();
     }
-    return (AndroidBaseClient<T>) instance;
+    return (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
   }
 
   /**
@@ -114,118 +135,152 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
    *
    * @param <JsonFlagType> The JSON type used for JSON flag values
    */
-  public static class Builder<JsonFlagType> {
+  public abstract static class Builder<
+      SelfType extends Builder<
+        SelfType,
+        ConfigurationType,
+        ConfigurationBuilderType,
+        JsonFlagType
+      >,
+      ConfigurationType extends SerializableEppoConfiguration,
+      ConfigurationBuilderType extends SerializableEppoConfiguration.AbstractBuilder<
+        ConfigurationBuilderType,
+        ConfigurationType
+      >,
+      JsonFlagType
+    > {
     // Required parameters
-    private final String apiKey;
-    private final Application application;
-    private final ConfigurationParser<JsonFlagType> configurationParser;
-    private final EppoConfigurationClient configurationClient;
+    protected final Class<SelfType> selfClass;
+    protected final String apiKey;
+    protected final Application application;
+    protected final ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType> configurationParser;
+    protected final CachingConfigurationStore<ConfigurationType> configStore;
+    protected final EppoConfigurationClient configurationClient;
 
     // Optional parameters with defaults
-    @Nullable private String apiBaseUrl;
-    @Nullable private AssignmentLogger assignmentLogger;
-    @Nullable private CachingConfigurationStore configStore;
-    private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
-    private boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
-    private boolean forceReinitialize = false;
-    private boolean offlineMode = false;
-    @Nullable private CompletableFuture<Configuration> initialConfiguration;
-    private boolean ignoreCachedConfiguration = false;
-    private boolean pollingEnabled = false;
-    private long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
-    private long pollingJitterMs = -1;
-    @Nullable private IAssignmentCache assignmentCache;
-    @Nullable private Consumer<Configuration> configChangeCallback;
+    @Nullable protected String apiBaseUrl;
+    @Nullable protected AssignmentLogger assignmentLogger;
+    protected boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
+    protected boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
+    protected boolean forceReinitialize = false;
+    protected boolean offlineMode = false;
+    @Nullable protected CompletableFuture<ConfigurationType> initialConfiguration;
+    protected boolean ignoreCachedConfiguration = false;
+    protected boolean pollingEnabled = false;
+    protected long pollingIntervalMs = DEFAULT_POLLING_INTERVAL_MS;
+    protected long pollingJitterMs = -1;
+    @Nullable protected IAssignmentCache assignmentCache;
+    @Nullable protected Consumer<ConfigurationType> configChangeCallback;
 
     /**
      * Creates a new Builder with required parameters.
      *
+     * @param selfClass The class of the instance you're instantiating so that builder methods
+     *                  can return the right type. This is only for sublcasses.
      * @param apiKey API key for Eppo (required)
      * @param application Application context (required)
      * @param configurationParser Parser for configuration JSON (required)
+     * @param configStore Store for configurations (required)
      * @param configurationClient HTTP client for configuration fetching (required)
      */
-    public Builder(
+    protected Builder(
+        @NotNull Class<SelfType> selfClass,
         @NotNull String apiKey,
         @NotNull Application application,
-        @NotNull ConfigurationParser<JsonFlagType> configurationParser,
+        @NotNull ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType> configurationParser,
+        @NotNull CachingConfigurationStore<ConfigurationType> configStore,
         @NotNull EppoConfigurationClient configurationClient) {
+      if (selfClass == null) {
+        throw new IllegalArgumentException("Missing self class. Bad subclass");
+      }
+      if (apiKey == null) {
+        throw new IllegalArgumentException("Missing API Key");
+      }
+      if (application == null) {
+        throw new IllegalArgumentException("Missing Application");
+      }
+      if (configurationParser == null) {
+        throw new IllegalArgumentException("Missing ConfigurationParser");
+      }
+      if (configStore == null) {
+        throw new IllegalArgumentException("Missing CachingConfigurationStore");
+      }
+      if (configurationClient == null) {
+        throw new IllegalArgumentException("Missing EppoConfigurationClient");
+      }
+      this.selfClass = selfClass;
       this.apiKey = apiKey;
       this.application = application;
       this.configurationParser = configurationParser;
+      this.configStore = configStore;
       this.configurationClient = configurationClient;
     }
 
-    public Builder<JsonFlagType> apiBaseUrl(@Nullable String apiBaseUrl) {
+    public SelfType apiBaseUrl(@Nullable String apiBaseUrl) {
       this.apiBaseUrl = apiBaseUrl;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> assignmentLogger(@Nullable AssignmentLogger assignmentLogger) {
+    public SelfType assignmentLogger(@Nullable AssignmentLogger assignmentLogger) {
       this.assignmentLogger = assignmentLogger;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> configStore(@Nullable CachingConfigurationStore configStore) {
-      this.configStore = configStore;
-      return this;
-    }
-
-    public Builder<JsonFlagType> isGracefulMode(boolean isGracefulMode) {
+    public SelfType isGracefulMode(boolean isGracefulMode) {
       this.isGracefulMode = isGracefulMode;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> obfuscateConfig(boolean obfuscateConfig) {
+    public SelfType obfuscateConfig(boolean obfuscateConfig) {
       this.obfuscateConfig = obfuscateConfig;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> forceReinitialize(boolean forceReinitialize) {
+    public SelfType forceReinitialize(boolean forceReinitialize) {
       this.forceReinitialize = forceReinitialize;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> offlineMode(boolean offlineMode) {
+    public SelfType offlineMode(boolean offlineMode) {
       this.offlineMode = offlineMode;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> initialConfiguration(
-        @Nullable CompletableFuture<Configuration> initialConfiguration) {
+    public SelfType initialConfiguration(
+        @Nullable CompletableFuture<ConfigurationType> initialConfiguration) {
       this.initialConfiguration = initialConfiguration;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> ignoreCachedConfiguration(boolean ignoreCache) {
+    public SelfType ignoreCachedConfiguration(boolean ignoreCache) {
       this.ignoreCachedConfiguration = ignoreCache;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> pollingEnabled(boolean pollingEnabled) {
+    public SelfType pollingEnabled(boolean pollingEnabled) {
       this.pollingEnabled = pollingEnabled;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> pollingIntervalMs(long pollingIntervalMs) {
+    public SelfType pollingIntervalMs(long pollingIntervalMs) {
       this.pollingIntervalMs = pollingIntervalMs;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> pollingJitterMs(long pollingJitterMs) {
+    public SelfType pollingJitterMs(long pollingJitterMs) {
       this.pollingJitterMs = pollingJitterMs;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> assignmentCache(@Nullable IAssignmentCache assignmentCache) {
+    public SelfType assignmentCache(@Nullable IAssignmentCache assignmentCache) {
       this.assignmentCache = assignmentCache;
-      return this;
+      return selfClass.cast(this);
     }
 
-    public Builder<JsonFlagType> onConfigurationChange(
-        @Nullable Consumer<Configuration> configChangeCallback) {
+    public SelfType onConfigurationChange(
+        @Nullable Consumer<ConfigurationType> configChangeCallback) {
       this.configChangeCallback = configChangeCallback;
-      return this;
+      return selfClass.cast(this);
     }
 
     /**
@@ -245,12 +300,18 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      *
      * @return CompletableFuture that completes with the initialized EppoClient
      */
-    public CompletableFuture<AndroidBaseClient<JsonFlagType>> buildAndInitAsync() {
+    public CompletableFuture<
+          AndroidBaseClient<
+            ConfigurationType,
+            ConfigurationBuilderType,
+            JsonFlagType
+          >
+        > buildAndInitAsync() {
       // Singleton handling
       if (instance != null && !forceReinitialize) {
         Log.w(TAG, "Eppo Client instance already initialized");
         @SuppressWarnings("unchecked")
-        AndroidBaseClient<JsonFlagType> typedInstance = (AndroidBaseClient<JsonFlagType>) instance;
+        AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> typedInstance = (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
         return CompletableFuture.completedFuture(typedInstance);
       } else if (instance != null) {
         // Stop polling if reinitializing
@@ -261,21 +322,13 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
       String sdkName = obfuscateConfig ? "android" : "android-debug";
       String sdkVersion = BuildConfig.EPPO_VERSION;
 
-      if (configStore == null) {
-        configStore =
-            new FileBackedConfigStore(
-                application,
-                safeCacheKey(apiKey),
-                new ConfigurationCodec.Default<>(Configuration.class));
-      }
-
       // Use the persisted cache as the initial configuration if none was explicitly provided.
       if (initialConfiguration == null && !ignoreCachedConfiguration) {
         initialConfiguration = configStore.loadFromStorage();
       }
 
       // Construct the client
-      AndroidBaseClient<JsonFlagType> newInstance =
+      AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> newInstance =
           new AndroidBaseClient<>(
               apiKey,
               sdkName,
@@ -298,7 +351,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         newInstance.onConfigurationChange(configChangeCallback);
       }
 
-      final CompletableFuture<AndroidBaseClient<JsonFlagType>> ret = new CompletableFuture<>();
+      final CompletableFuture<AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>> ret = new CompletableFuture<>();
       AtomicInteger failCount = new AtomicInteger(0);
 
       if (!offlineMode) {
@@ -366,7 +419,11 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
      *
      * @return The initialized EppoClient
      */
-    public AndroidBaseClient<JsonFlagType> buildAndInit() {
+    public AndroidBaseClient<
+          ConfigurationType,
+          ConfigurationBuilderType,
+          JsonFlagType
+        > buildAndInit() {
       try {
         return buildAndInitAsync().get();
       } catch (ExecutionException | InterruptedException | CompletionException e) {
@@ -378,8 +435,8 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
           if (cause instanceof RuntimeException
               && cause.getCause() instanceof EppoInitializationException) {
             @SuppressWarnings("unchecked")
-            AndroidBaseClient<JsonFlagType> typedInstance =
-                (AndroidBaseClient<JsonFlagType>) instance;
+            AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> typedInstance =
+                (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
             return typedInstance;
           }
         }
@@ -389,7 +446,7 @@ public class AndroidBaseClient<JsonFlagType> extends BaseEppoClient<JsonFlagType
         }
       }
       @SuppressWarnings("unchecked")
-      AndroidBaseClient<JsonFlagType> typedInstance = (AndroidBaseClient<JsonFlagType>) instance;
+      AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> typedInstance = (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
       return typedInstance;
     }
   }
