@@ -138,6 +138,12 @@ public class AndroidBaseClient<
   public abstract static class Builder<
       SelfType extends Builder<
         SelfType,
+        AndroidBaseClientType,
+        ConfigurationType,
+        ConfigurationBuilderType,
+        JsonFlagType
+      >,
+      AndroidBaseClientType extends AndroidBaseClient<
         ConfigurationType,
         ConfigurationBuilderType,
         JsonFlagType
@@ -284,6 +290,24 @@ public class AndroidBaseClient<
     }
 
     /**
+     * For subclasses to initialize the proper type
+     * @see AndroidBaseClient constructor
+     */
+    protected abstract AndroidBaseClientType newInstance(
+      String apiKey,
+      String sdkName,
+      String sdkVersion,
+      @Nullable String apiBaseUrl,
+      @Nullable AssignmentLogger assignmentLogger,
+      CachingConfigurationStore<ConfigurationType> configurationStore,
+      boolean isGracefulMode,
+      boolean expectObfuscatedConfig,
+      @Nullable CompletableFuture<ConfigurationType> initialConfiguration,
+      @Nullable IAssignmentCache assignmentCache,
+      ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType> configurationParser,
+      EppoConfigurationClient configurationClient);
+
+    /**
      * Builds and initializes the EppoClient asynchronously.
      *
      * <p>This method performs the full initialization flow:
@@ -300,18 +324,12 @@ public class AndroidBaseClient<
      *
      * @return CompletableFuture that completes with the initialized EppoClient
      */
-    public CompletableFuture<
-          AndroidBaseClient<
-            ConfigurationType,
-            ConfigurationBuilderType,
-            JsonFlagType
-          >
-        > buildAndInitAsync() {
+    public CompletableFuture<AndroidBaseClientType> buildAndInitAsync() {
       // Singleton handling
       if (instance != null && !forceReinitialize) {
         Log.w(TAG, "Eppo Client instance already initialized");
         @SuppressWarnings("unchecked")
-        AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> typedInstance = (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
+        AndroidBaseClientType typedInstance = (AndroidBaseClientType) instance;
         return CompletableFuture.completedFuture(typedInstance);
       } else if (instance != null) {
         // Stop polling if reinitializing
@@ -328,8 +346,8 @@ public class AndroidBaseClient<
       }
 
       // Construct the client
-      AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> newInstance =
-          new AndroidBaseClient<>(
+      AndroidBaseClientType newInstance =
+          newInstance(
               apiKey,
               sdkName,
               sdkVersion,
@@ -351,7 +369,7 @@ public class AndroidBaseClient<
         newInstance.onConfigurationChange(configChangeCallback);
       }
 
-      final CompletableFuture<AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>> ret = new CompletableFuture<>();
+      final CompletableFuture<AndroidBaseClientType> ret = new CompletableFuture<>();
       AtomicInteger failCount = new AtomicInteger(0);
 
       if (!offlineMode) {
