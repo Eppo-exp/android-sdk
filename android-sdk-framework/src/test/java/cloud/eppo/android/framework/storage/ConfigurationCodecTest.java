@@ -91,8 +91,7 @@ public class ConfigurationCodecTest {
       fail("Expected RuntimeException (deserialized object is not correct type)");
     } catch (RuntimeException e) {
       assertTrue(
-          "Exception should mention type mismatch",
-          e.getMessage().contains("not a Configuration"));
+          "Exception should mention type mismatch", e.getMessage().contains("not a Configuration"));
     }
   }
 

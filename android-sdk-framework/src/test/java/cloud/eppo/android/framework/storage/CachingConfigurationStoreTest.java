@@ -50,8 +50,7 @@ public class CachingConfigurationStoreTest {
     testedStore = new CachingConfigurationStore<>(spyCodec, mockByteStore);
     // Parse flags-v1.json from test resources using sdk-common-jvm JacksonConfigurationParser.
     sampleConfiguration = loadSampleConfigurationFromResource();
-    ConfigurationCodec<Configuration> realCodec =
-        new ConfigurationCodec.Default();
+    ConfigurationCodec<Configuration> realCodec = new ConfigurationCodec.Default();
     sampleConfigurationBytes = realCodec.toBytes(sampleConfiguration);
   }
 

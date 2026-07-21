@@ -1,14 +1,11 @@
 package cloud.eppo.android.framework.storage;
 
 import android.app.Application;
-import cloud.eppo.api.Configuration;
 import cloud.eppo.api.SerializableEppoConfiguration;
-
 import org.jetbrains.annotations.NotNull;
 
-public class FileBackedConfigStore<
-  ConfigurationType extends SerializableEppoConfiguration
-> extends CachingConfigurationStore<ConfigurationType> {
+public class FileBackedConfigStore<ConfigurationType extends SerializableEppoConfiguration>
+    extends CachingConfigurationStore<ConfigurationType> {
 
   /**
    * Creates a FileBackedStore with the specified configuration.
@@ -24,10 +21,11 @@ public class FileBackedConfigStore<
     super(codec, createByteStore(application, cacheFileSuffix, codec));
   }
 
-  private static <
-        ConfigurationType extends SerializableEppoConfiguration
-      > ByteStore createByteStore(
-      Application application, String cacheFileSuffix, ConfigurationCodec<ConfigurationType> codec) {
+  private static <ConfigurationType extends SerializableEppoConfiguration>
+      ByteStore createByteStore(
+          Application application,
+          String cacheFileSuffix,
+          ConfigurationCodec<ConfigurationType> codec) {
     ConfigCacheFile cacheFile =
         new ConfigCacheFile(application, cacheFileSuffix, codec.getContentType());
     return new FileBackedByteStore(cacheFile);

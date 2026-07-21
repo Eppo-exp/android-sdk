@@ -30,14 +30,16 @@ public class FileBackedConfigStoreTest {
 
   @Test
   public void construct_withValidArgs_succeeds() {
-    FileBackedConfigStore<Configuration> store = new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
+    FileBackedConfigStore<Configuration> store =
+        new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
 
     assertNotNull(store);
   }
 
   @Test
   public void getConfiguration_beforeAnySave_returnsEmptyConfig() {
-    FileBackedConfigStore<Configuration> store = new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
+    FileBackedConfigStore<Configuration> store =
+        new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
 
     Configuration config = store.getConfiguration();
 
@@ -47,7 +49,8 @@ public class FileBackedConfigStoreTest {
 
   @Test
   public void saveConfiguration_thenGetConfiguration_returnsSavedConfig() throws Exception {
-    FileBackedConfigStore<Configuration> store = new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
+    FileBackedConfigStore<Configuration> store =
+        new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
     Configuration toSave = Configuration.emptyConfig();
 
     store.saveConfiguration(toSave).get(5, TimeUnit.SECONDS);
@@ -57,7 +60,8 @@ public class FileBackedConfigStoreTest {
 
   @Test
   public void loadFromStorage_whenNothingSaved_returnsNull() throws Exception {
-    FileBackedConfigStore<Configuration> store = new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
+    FileBackedConfigStore<Configuration> store =
+        new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
 
     Configuration loaded = store.loadFromStorage().get(5, TimeUnit.SECONDS);
 
@@ -66,7 +70,8 @@ public class FileBackedConfigStoreTest {
 
   @Test
   public void saveConfiguration_thenLoadFromStorage_returnsSameConfig() throws Exception {
-    FileBackedConfigStore<Configuration> store = new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
+    FileBackedConfigStore<Configuration> store =
+        new FileBackedConfigStore<>(application, cacheFileSuffix, codec);
     Configuration toSave = Configuration.emptyConfig();
 
     store.saveConfiguration(toSave).get(5, TimeUnit.SECONDS);

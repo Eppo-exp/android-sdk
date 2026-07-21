@@ -2,7 +2,6 @@ package cloud.eppo.android.framework.storage;
 
 import cloud.eppo.IConfigurationStore;
 import cloud.eppo.api.SerializableEppoConfiguration;
-
 import java.util.concurrent.CompletableFuture;
 import org.jetbrains.annotations.NotNull;
 
@@ -10,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
  * Abstract config store that keeps an in-memory configuration and can persist it via a {@link
  * ByteStore} and {@link ConfigurationCodec}.
  */
-public class CachingConfigurationStore<
-  ConfigurationType extends SerializableEppoConfiguration
-> implements IConfigurationStore<ConfigurationType> {
+public class CachingConfigurationStore<ConfigurationType extends SerializableEppoConfiguration>
+    implements IConfigurationStore<ConfigurationType> {
 
   private final ConfigurationCodec<ConfigurationType> codec;
   private final ByteStore byteStore;

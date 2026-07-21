@@ -1,9 +1,7 @@
 package cloud.eppo.androidexample;
 
 import android.util.Log;
-
 import androidx.annotation.NonNull;
-
 import cloud.eppo.android.framework.storage.ConfigurationCodec;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
@@ -104,8 +102,7 @@ public class GsonConfigurationCodec implements ConfigurationCodec<Configuration>
     return "application/json";
   }
 
-  @NonNull
-  @Override
+  @NonNull @Override
   @NotNull public Configuration emptyConfiguration() {
     return Configuration.emptyConfig();
   }

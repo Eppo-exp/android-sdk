@@ -3,12 +3,9 @@ package cloud.eppo.androidexample;
 import static cloud.eppo.Utils.base64Decode;
 
 import android.util.Log;
-
 import androidx.annotation.NonNull;
-
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
-import cloud.eppo.api.SerializableEppoConfiguration;
 import cloud.eppo.api.dto.Allocation;
 import cloud.eppo.api.dto.BanditCategoricalAttributeCoefficients;
 import cloud.eppo.api.dto.BanditCoefficients;
@@ -34,9 +31,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -51,6 +45,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * A GSON-based implementation of {@link ConfigurationParser}.
@@ -65,7 +60,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * to {@code ConfigurationParser<JsonNode>}). It is provided here as a reference implementation and
  * for use with framework clients that are parameterised over {@link JsonElement}.
  */
-public class GsonConfigurationParser implements ConfigurationParser<Configuration, Configuration.Builder, JsonElement> {
+public class GsonConfigurationParser
+    implements ConfigurationParser<Configuration, Configuration.Builder, JsonElement> {
   private static final String TAG = GsonConfigurationParser.class.getSimpleName();
 
   public GsonConfigurationParser() {}
@@ -114,15 +110,15 @@ public class GsonConfigurationParser implements ConfigurationParser<Configuratio
     }
   }
 
-  @NonNull
-  @Override
-  public Configuration.Builder configurationBuilder(@NotNull FlagConfigResponse flagConfigResponse) {
+  @NonNull @Override
+  public Configuration.Builder configurationBuilder(
+      @NotNull FlagConfigResponse flagConfigResponse) {
     return new Configuration.Builder(flagConfigResponse);
   }
 
-  @NonNull
-  @Override
-  public Configuration.Builder configurationBuilder(@NotNull FlagConfigResponse flagConfigResponse, boolean isConfigObfuscated) {
+  @NonNull @Override
+  public Configuration.Builder configurationBuilder(
+      @NotNull FlagConfigResponse flagConfigResponse, boolean isConfigObfuscated) {
     return new Configuration.Builder(flagConfigResponse, isConfigObfuscated);
   }
 

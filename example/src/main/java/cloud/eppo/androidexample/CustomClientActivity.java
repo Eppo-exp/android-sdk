@@ -23,19 +23,16 @@ import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EvaluationDetails;
 import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.parser.ConfigurationParser;
-
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 import com.google.gson.JsonElement;
-
-import org.jetbrains.annotations.NotNull;
-
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Demonstrates supplying custom implementations of both {@link
@@ -59,19 +56,23 @@ public class CustomClientActivity extends AppCompatActivity {
 
   private AndroidBaseClient<Configuration, Configuration.Builder, JsonElement> client;
 
-  private class GsonAndroidBaseClientBuilder extends AndroidBaseClient.Builder<
-    GsonAndroidBaseClientBuilder,
-    Configuration,
-    Configuration.Builder,
-    JsonElement
-  > {
+  private class GsonAndroidBaseClientBuilder
+      extends AndroidBaseClient.Builder<
+          GsonAndroidBaseClientBuilder, Configuration, Configuration.Builder, JsonElement> {
     public GsonAndroidBaseClientBuilder(
-      @NotNull String apiKey,
-      @NotNull Application application,
-      @NotNull ConfigurationParser<Configuration, Configuration.Builder, JsonElement> configurationParser,
-      @NotNull CachingConfigurationStore<Configuration> configStore,
-      @NotNull EppoConfigurationClient configurationClient) {
-      super(GsonAndroidBaseClientBuilder.class, apiKey, application, configurationParser, configStore, configurationClient);
+        @NotNull String apiKey,
+        @NotNull Application application,
+        @NotNull ConfigurationParser<Configuration, Configuration.Builder, JsonElement>
+                configurationParser,
+        @NotNull CachingConfigurationStore<Configuration> configStore,
+        @NotNull EppoConfigurationClient configurationClient) {
+      super(
+          GsonAndroidBaseClientBuilder.class,
+          apiKey,
+          application,
+          configurationParser,
+          configStore,
+          configurationClient);
     }
   }
 

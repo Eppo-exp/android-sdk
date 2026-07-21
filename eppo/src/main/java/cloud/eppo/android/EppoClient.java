@@ -152,6 +152,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
 
     // Batteries-included: Allow overriding default implementations
     @Nullable private ConfigurationParser<Configuration, Configuration.Builder, JsonNode> configurationParser;
+
     @Nullable private EppoConfigurationClient configurationClient;
 
     public Builder(@NonNull String apiKey, @NonNull Application application) {
@@ -252,7 +253,8 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
      * @param parser the configuration parser to use
      * @return this builder
      */
-    public Builder configurationParser(ConfigurationParser<Configuration, Configuration.Builder, JsonNode> parser) {
+    public Builder configurationParser(
+        ConfigurationParser<Configuration, Configuration.Builder, JsonNode> parser) {
       this.configurationParser = parser;
       return this;
     }
@@ -414,8 +416,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
     }
 
     private CachingConfigurationStore<Configuration> createDefaultConfigStore() {
-      ConfigurationCodec<Configuration> codec =
-          new ConfigurationCodec.Default();
+      ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default();
 
       // Cache at a per-API key level (useful for development)
       return new FileBackedConfigStore<>(application, safeCacheKey(apiKey), codec);
