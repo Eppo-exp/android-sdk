@@ -33,8 +33,7 @@ public class EppoClientPollingTest {
   private static final String TAG = logTag(EppoClientPollingTest.class);
   private static final String DUMMY_API_KEY = "mock-api-key";
 
-  @Mock
-  private ConfigurationParser<Configuration, Configuration.Builder, JsonNode> mockConfigParser;
+  @Mock private ConfigurationParser<Configuration, JsonNode> mockConfigParser;
 
   @Mock private EppoConfigurationClient mockConfigClient;
 
@@ -51,11 +50,11 @@ public class EppoClientPollingTest {
 
   private static class TestBuilder
       extends AndroidBaseClient.Builder<
-          TestBuilder, Configuration, Configuration.Builder, JsonNode> {
+          TestBuilder, AndroidBaseClient<Configuration, JsonNode>, Configuration, JsonNode> {
     protected TestBuilder(
         @NotNull String apiKey,
         @NotNull Application application,
-        @NotNull ConfigurationParser<Configuration, Configuration.Builder, JsonNode> configurationParser,
+        @NotNull ConfigurationParser<Configuration, JsonNode> configurationParser,
         @NotNull CachingConfigurationStore<Configuration> configStore,
         @NotNull EppoConfigurationClient configurationClient) {
       super(
@@ -66,6 +65,35 @@ public class EppoClientPollingTest {
           configStore,
           configurationClient);
     }
+
+    @Override
+    protected AndroidBaseClient<Configuration, JsonNode> newInstance(
+        String apiKey,
+        String sdkName,
+        String sdkVersion,
+        @org.jetbrains.annotations.Nullable String apiBaseUrl,
+        @org.jetbrains.annotations.Nullable cloud.eppo.logging.AssignmentLogger assignmentLogger,
+        CachingConfigurationStore<Configuration> configurationStore,
+        boolean isGracefulMode,
+        boolean expectObfuscatedConfig,
+        @org.jetbrains.annotations.Nullable java.util.concurrent.CompletableFuture<Configuration> initialConfiguration,
+        @org.jetbrains.annotations.Nullable cloud.eppo.api.IAssignmentCache assignmentCache,
+        cloud.eppo.parser.ConfigurationParser<Configuration, JsonNode> configurationParser,
+        cloud.eppo.http.EppoConfigurationClient configurationClient) {
+      return new AndroidBaseClient<Configuration, JsonNode>(
+          apiKey,
+          sdkName,
+          sdkVersion,
+          apiBaseUrl,
+          assignmentLogger,
+          configurationStore,
+          isGracefulMode,
+          expectObfuscatedConfig,
+          initialConfiguration,
+          assignmentCache,
+          configurationParser,
+          configurationClient) {};
+    }
   }
 
   /**
@@ -74,9 +102,8 @@ public class EppoClientPollingTest {
    * @param pollingIntervalMs Polling interval in milliseconds
    * @return Initialized EppoClient
    */
-  private AndroidBaseClient<Configuration, Configuration.Builder, JsonNode>
-      buildOfflineClientWithPolling(long pollingIntervalMs)
-          throws ExecutionException, InterruptedException {
+  private AndroidBaseClient<Configuration, JsonNode> buildOfflineClientWithPolling(
+      long pollingIntervalMs) throws ExecutionException, InterruptedException {
     // Use an empty configuration for offline mode
     CompletableFuture<Configuration> initialConfig =
         CompletableFuture.completedFuture(Configuration.emptyConfig());
@@ -102,8 +129,8 @@ public class EppoClientPollingTest {
    *
    * @return Initialized EppoClient
    */
-  private AndroidBaseClient<Configuration, Configuration.Builder, JsonNode>
-      buildOfflineClientWithoutPolling() throws ExecutionException, InterruptedException {
+  private AndroidBaseClient<Configuration, JsonNode> buildOfflineClientWithoutPolling()
+      throws ExecutionException, InterruptedException {
     CompletableFuture<Configuration> initialConfig =
         CompletableFuture.completedFuture(Configuration.emptyConfig());
 
@@ -124,7 +151,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPauseAndResumePolling() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> androidBaseClient =
+    AndroidBaseClient<Configuration, JsonNode> androidBaseClient =
         buildOfflineClientWithPolling(100);
     assertNotNull("Client should be initialized", androidBaseClient);
 
@@ -148,7 +175,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testResumePollingWithoutStarting() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> androidBaseClient =
+    AndroidBaseClient<Configuration, JsonNode> androidBaseClient =
         buildOfflineClientWithoutPolling();
     assertNotNull("Client should be initialized", androidBaseClient);
 
@@ -164,7 +191,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testMultiplePauseResumeCycles() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> androidBaseClient =
+    AndroidBaseClient<Configuration, JsonNode> androidBaseClient =
         buildOfflineClientWithPolling(100);
     assertNotNull("Client should be initialized", androidBaseClient);
 
@@ -199,7 +226,7 @@ public class EppoClientPollingTest {
   @Test
   public void testPauseResumeSequenceDoesNotCrash()
       throws ExecutionException, InterruptedException {
-    AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> androidBaseClient =
+    AndroidBaseClient<Configuration, JsonNode> androidBaseClient =
         buildOfflineClientWithPolling(50);
 
     // Various sequences that should all work without crashing
@@ -222,7 +249,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPollingNotEnabledAndResume() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> androidBaseClient =
+    AndroidBaseClient<Configuration, JsonNode> androidBaseClient =
         buildOfflineClientWithoutPolling();
 
     // Pause should be safe even if not polling
@@ -241,7 +268,7 @@ public class EppoClientPollingTest {
 
   @Test
   public void testPauseAfterInitDoesNotCrash() throws ExecutionException, InterruptedException {
-    AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> androidBaseClient =
+    AndroidBaseClient<Configuration, JsonNode> androidBaseClient =
         buildOfflineClientWithPolling(100);
 
     // Immediately pause after initialization

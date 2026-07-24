@@ -27,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class EppoClient extends AndroidBaseClient<Configuration, Configuration.Builder, JsonNode> {
+public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
@@ -45,7 +45,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       CachingConfigurationStore<Configuration> configurationStore,
-      ConfigurationParser<Configuration, Configuration.Builder, JsonNode> configurationParser,
+      ConfigurationParser<Configuration, JsonNode> configurationParser,
       EppoConfigurationClient configurationClient,
       boolean isGracefulMode,
       boolean expectObfuscatedConfig,
@@ -151,7 +151,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
     @Nullable private Consumer<Configuration> configChangeCallback;
 
     // Batteries-included: Allow overriding default implementations
-    @Nullable private ConfigurationParser<Configuration, Configuration.Builder, JsonNode> configurationParser;
+    @Nullable private ConfigurationParser<Configuration, JsonNode> configurationParser;
 
     @Nullable private EppoConfigurationClient configurationClient;
 
@@ -253,8 +253,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
      * @param parser the configuration parser to use
      * @return this builder
      */
-    public Builder configurationParser(
-        ConfigurationParser<Configuration, Configuration.Builder, JsonNode> parser) {
+    public Builder configurationParser(ConfigurationParser<Configuration, JsonNode> parser) {
       this.configurationParser = parser;
       return this;
     }
@@ -305,7 +304,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, Configuration.B
       }
 
       // Create batteries-included implementations (use provided overrides or defaults)
-      ConfigurationParser<Configuration, Configuration.Builder, JsonNode> parserToUse =
+      ConfigurationParser<Configuration, JsonNode> parserToUse =
           this.configurationParser != null
               ? this.configurationParser
               : new JacksonConfigurationParser();

@@ -1,16 +1,20 @@
 package cloud.eppo.android;
 
-import androidx.annotation.NonNull;
 import cloud.eppo.android.dto.adapters.EppoModule;
 import cloud.eppo.api.Configuration;
+import cloud.eppo.api.dto.BanditParameters;
 import cloud.eppo.api.dto.BanditParametersResponse;
+import cloud.eppo.api.dto.BanditReference;
 import cloud.eppo.api.dto.FlagConfigResponse;
 import cloud.eppo.parser.ConfigurationParseException;
 import cloud.eppo.parser.ConfigurationParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +25,7 @@ import org.slf4j.LoggerFactory;
  * format. The deserializers are hand-rolled to avoid reliance on annotations and method names,
  * which can be unreliable when ProGuard minification is in use.
  */
-public class JacksonConfigurationParser
-    implements ConfigurationParser<Configuration, Configuration.Builder, JsonNode> {
+public class JacksonConfigurationParser implements ConfigurationParser<Configuration, JsonNode> {
   private static final Logger log = LoggerFactory.getLogger(JacksonConfigurationParser.class);
 
   private final ObjectMapper objectMapper;
@@ -51,22 +54,43 @@ public class JacksonConfigurationParser
   }
 
   @Override
-  public FlagConfigResponse parseFlagConfig(byte[] flagConfigJson)
-      throws ConfigurationParseException {
+  public Configuration buildConfig(
+      byte[] flagConfigBytes,
+      @Nullable String flagsSnapshotId,
+      @Nullable Configuration previousConfig) {
     try {
-      log.debug("Parsing flag configuration, {} bytes", flagConfigJson.length);
-      return objectMapper.readValue(flagConfigJson, FlagConfigResponse.class);
+      FlagConfigResponse flagConfigResponse =
+          objectMapper.readValue(flagConfigBytes, FlagConfigResponse.class);
+      Configuration.Builder builder = new Configuration.Builder(flagConfigResponse);
+      if (previousConfig != null) {
+        builder.banditParametersFromConfig(previousConfig);
+      }
+      builder.flagsSnapshotId(flagsSnapshotId);
+      return builder.build();
     } catch (IOException e) {
       throw new ConfigurationParseException("Failed to parse flag configuration", e);
     }
   }
 
   @Override
-  public BanditParametersResponse parseBanditParams(byte[] banditParamsJson)
-      throws ConfigurationParseException {
+  public boolean requiresUpdatedBanditModels(Configuration config) {
+    Set<String> neededModelVersions =
+        config.getBanditReferences().values().stream()
+            .map(BanditReference::getModelVersion)
+            .collect(Collectors.toSet());
+    Set<String> loadedModelVersions =
+        config.getBandits().values().stream()
+            .map(BanditParameters::getModelVersion)
+            .collect(Collectors.toSet());
+    return !loadedModelVersions.containsAll(neededModelVersions);
+  }
+
+  @Override
+  public Configuration applyBanditParameters(Configuration config, byte[] banditParamsBytes) {
     try {
-      log.debug("Parsing bandit parameters, {} bytes", banditParamsJson.length);
-      return objectMapper.readValue(banditParamsJson, BanditParametersResponse.class);
+      BanditParametersResponse response =
+          objectMapper.readValue(banditParamsBytes, BanditParametersResponse.class);
+      return config.toBuilder().banditParameters(response).build();
     } catch (IOException e) {
       throw new ConfigurationParseException("Failed to parse bandit parameters", e);
     }
@@ -80,17 +104,5 @@ public class JacksonConfigurationParser
     } catch (IOException e) {
       throw new ConfigurationParseException("Failed to parse JSON value", e);
     }
-  }
-
-  @NonNull @Override
-  public Configuration.Builder configurationBuilder(
-      @NotNull FlagConfigResponse flagConfigResponse) {
-    return new Configuration.Builder(flagConfigResponse);
-  }
-
-  @NonNull @Override
-  public Configuration.Builder configurationBuilder(
-      @NotNull FlagConfigResponse flagConfigResponse, boolean isConfigObfuscated) {
-    return new Configuration.Builder(flagConfigResponse, isConfigObfuscated);
   }
 }

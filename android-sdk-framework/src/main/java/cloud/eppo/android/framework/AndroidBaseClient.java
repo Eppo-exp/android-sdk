@@ -30,12 +30,8 @@ import org.jetbrains.annotations.Nullable;
  * @param <JsonFlagType> The JSON type used for JSON flag values (e.g., JsonNode, JsonElement)
  */
 public class AndroidBaseClient<
-        ConfigurationType extends SerializableEppoConfiguration,
-        ConfigurationBuilderType extends
-            SerializableEppoConfiguration.AbstractBuilder<
-                    ConfigurationBuilderType, ConfigurationType>,
-        JsonFlagType>
-    extends BaseEppoClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> {
+        ConfigurationType extends SerializableEppoConfiguration, JsonFlagType>
+    extends BaseEppoClient<ConfigurationType, JsonFlagType> {
   private static final String TAG = logTag(AndroidBaseClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
@@ -45,7 +41,7 @@ public class AndroidBaseClient<
   private long pollingIntervalMs;
   private long pollingJitterMs;
 
-  @Nullable private static AndroidBaseClient<?, ?, ?> instance;
+  @Nullable private static AndroidBaseClient<?, ?> instance;
 
   /**
    * Private constructor. Use Builder to construct instances.
@@ -74,8 +70,7 @@ public class AndroidBaseClient<
       boolean expectObfuscatedConfig,
       @Nullable CompletableFuture<ConfigurationType> initialConfiguration,
       @Nullable IAssignmentCache assignmentCache,
-      ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType>
-          configurationParser,
+      ConfigurationParser<ConfigurationType, JsonFlagType> configurationParser,
       EppoConfigurationClient configurationClient) {
     super(
         apiKey,
@@ -105,18 +100,13 @@ public class AndroidBaseClient<
    * @param <JsonFlagType> The JSON type parameter
    */
   @SuppressWarnings("unchecked")
-  public static <
-          ConfigurationType extends SerializableEppoConfiguration,
-          ConfigurationBuilderType extends
-              SerializableEppoConfiguration.AbstractBuilder<
-                      ConfigurationBuilderType, ConfigurationType>,
-          JsonFlagType>
-      AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> getInstance()
+  public static <ConfigurationType extends SerializableEppoConfiguration, JsonFlagType>
+      AndroidBaseClient<ConfigurationType, JsonFlagType> getInstance()
           throws NotInitializedException {
     if (instance == null) {
       throw new NotInitializedException();
     }
-    return (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
+    return (AndroidBaseClient<ConfigurationType, JsonFlagType>) instance;
   }
 
   /**
@@ -128,26 +118,15 @@ public class AndroidBaseClient<
    * @param <JsonFlagType> The JSON type used for JSON flag values
    */
   public abstract static class Builder<
-      SelfType extends
-          Builder<
-                  SelfType,
-                  AndroidBaseClientType,
-                  ConfigurationType,
-                  ConfigurationBuilderType,
-                  JsonFlagType>,
-      AndroidBaseClientType extends
-          AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>,
+      SelfType extends Builder<SelfType, AndroidBaseClientType, ConfigurationType, JsonFlagType>,
+      AndroidBaseClientType extends AndroidBaseClient<ConfigurationType, JsonFlagType>,
       ConfigurationType extends SerializableEppoConfiguration,
-      ConfigurationBuilderType extends
-          SerializableEppoConfiguration.AbstractBuilder<
-                  ConfigurationBuilderType, ConfigurationType>,
       JsonFlagType> {
     // Required parameters
     protected final Class<SelfType> selfClass;
     protected final String apiKey;
     protected final Application application;
-    protected final ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType>
-        configurationParser;
+    protected final ConfigurationParser<ConfigurationType, JsonFlagType> configurationParser;
     protected final CachingConfigurationStore<ConfigurationType> configStore;
     protected final EppoConfigurationClient configurationClient;
 
@@ -181,8 +160,7 @@ public class AndroidBaseClient<
         @NotNull Class<SelfType> selfClass,
         @NotNull String apiKey,
         @NotNull Application application,
-        @NotNull ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType>
-                configurationParser,
+        @NotNull ConfigurationParser<ConfigurationType, JsonFlagType> configurationParser,
         @NotNull CachingConfigurationStore<ConfigurationType> configStore,
         @NotNull EppoConfigurationClient configurationClient) {
       if (selfClass == null) {
@@ -294,8 +272,7 @@ public class AndroidBaseClient<
         boolean expectObfuscatedConfig,
         @Nullable CompletableFuture<ConfigurationType> initialConfiguration,
         @Nullable IAssignmentCache assignmentCache,
-        ConfigurationParser<ConfigurationType, ConfigurationBuilderType, JsonFlagType>
-            configurationParser,
+        ConfigurationParser<ConfigurationType, JsonFlagType> configurationParser,
         EppoConfigurationClient configurationClient);
 
     /**
@@ -428,8 +405,7 @@ public class AndroidBaseClient<
      *
      * @return The initialized EppoClient
      */
-    public AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>
-        buildAndInit() {
+    public AndroidBaseClient<ConfigurationType, JsonFlagType> buildAndInit() {
       try {
         return buildAndInitAsync().get();
       } catch (ExecutionException | InterruptedException | CompletionException e) {
@@ -441,10 +417,8 @@ public class AndroidBaseClient<
           if (cause instanceof RuntimeException
               && cause.getCause() instanceof EppoInitializationException) {
             @SuppressWarnings("unchecked")
-            AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>
-                typedInstance =
-                    (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>)
-                        instance;
+            AndroidBaseClient<ConfigurationType, JsonFlagType> typedInstance =
+                (AndroidBaseClient<ConfigurationType, JsonFlagType>) instance;
             return typedInstance;
           }
         }
@@ -454,8 +428,8 @@ public class AndroidBaseClient<
         }
       }
       @SuppressWarnings("unchecked")
-      AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType> typedInstance =
-          (AndroidBaseClient<ConfigurationType, ConfigurationBuilderType, JsonFlagType>) instance;
+      AndroidBaseClient<ConfigurationType, JsonFlagType> typedInstance =
+          (AndroidBaseClient<ConfigurationType, JsonFlagType>) instance;
       return typedInstance;
     }
   }

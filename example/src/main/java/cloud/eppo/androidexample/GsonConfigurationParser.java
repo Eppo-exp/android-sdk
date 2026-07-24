@@ -3,7 +3,6 @@ package cloud.eppo.androidexample;
 import static cloud.eppo.Utils.base64Decode;
 
 import android.util.Log;
-import androidx.annotation.NonNull;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.dto.Allocation;
@@ -45,7 +44,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
-import org.jetbrains.annotations.NotNull;
 
 /**
  * A GSON-based implementation of {@link ConfigurationParser}.
@@ -60,8 +58,7 @@ import org.jetbrains.annotations.NotNull;
  * to {@code ConfigurationParser<JsonNode>}). It is provided here as a reference implementation and
  * for use with framework clients that are parameterised over {@link JsonElement}.
  */
-public class GsonConfigurationParser
-    implements ConfigurationParser<Configuration, Configuration.Builder, JsonElement> {
+public class GsonConfigurationParser implements ConfigurationParser<Configuration, JsonElement> {
   private static final String TAG = GsonConfigurationParser.class.getSimpleName();
 
   public GsonConfigurationParser() {}
@@ -77,25 +74,47 @@ public class GsonConfigurationParser
   // ===== ConfigurationParser interface =====
 
   @Override
-  public FlagConfigResponse parseFlagConfig(byte[] flagConfigJson)
-      throws ConfigurationParseException {
+  public Configuration buildConfig(
+      byte[] flagConfigBytes,
+      @org.jetbrains.annotations.Nullable String flagsSnapshotId,
+      @org.jetbrains.annotations.Nullable Configuration previousConfig) {
     try {
-      Log.d(TAG, "Parsing flag configuration, " + flagConfigJson.length + " bytes");
-      JsonElement root = JsonParser.parseString(new String(flagConfigJson, StandardCharsets.UTF_8));
-      return deserializeFlagConfigResponse(root);
+      Log.d(TAG, "Parsing flag configuration, " + flagConfigBytes.length + " bytes");
+      JsonElement root =
+          JsonParser.parseString(new String(flagConfigBytes, StandardCharsets.UTF_8));
+      FlagConfigResponse flagConfigResponse = deserializeFlagConfigResponse(root);
+      Configuration.Builder builder = new Configuration.Builder(flagConfigResponse);
+      if (previousConfig != null) {
+        builder.banditParametersFromConfig(previousConfig);
+      }
+      builder.flagsSnapshotId(flagsSnapshotId);
+      return builder.build();
     } catch (Exception e) {
       throw new ConfigurationParseException("Failed to parse flag configuration", e);
     }
   }
 
   @Override
-  public BanditParametersResponse parseBanditParams(byte[] banditParamsJson)
-      throws ConfigurationParseException {
+  public boolean requiresUpdatedBanditModels(Configuration config) {
+    Set<String> neededModelVersions = new HashSet<>();
+    for (BanditReference ref : config.getBanditReferences().values()) {
+      neededModelVersions.add(ref.getModelVersion());
+    }
+    Set<String> loadedModelVersions = new HashSet<>();
+    for (BanditParameters params : config.getBandits().values()) {
+      loadedModelVersions.add(params.getModelVersion());
+    }
+    return !loadedModelVersions.containsAll(neededModelVersions);
+  }
+
+  @Override
+  public Configuration applyBanditParameters(Configuration config, byte[] banditParamsBytes) {
     try {
-      Log.d(TAG, "Parsing bandit parameters, " + banditParamsJson.length + " bytes");
+      Log.d(TAG, "Parsing bandit parameters, " + banditParamsBytes.length + " bytes");
       JsonElement root =
-          JsonParser.parseString(new String(banditParamsJson, StandardCharsets.UTF_8));
-      return deserializeBanditParametersResponse(root);
+          JsonParser.parseString(new String(banditParamsBytes, StandardCharsets.UTF_8));
+      BanditParametersResponse response = deserializeBanditParametersResponse(root);
+      return config.toBuilder().banditParameters(response).build();
     } catch (Exception e) {
       throw new ConfigurationParseException("Failed to parse bandit parameters", e);
     }
@@ -108,18 +127,6 @@ public class GsonConfigurationParser
     } catch (Exception e) {
       throw new ConfigurationParseException("Failed to parse JSON value", e);
     }
-  }
-
-  @NonNull @Override
-  public Configuration.Builder configurationBuilder(
-      @NotNull FlagConfigResponse flagConfigResponse) {
-    return new Configuration.Builder(flagConfigResponse);
-  }
-
-  @NonNull @Override
-  public Configuration.Builder configurationBuilder(
-      @NotNull FlagConfigResponse flagConfigResponse, boolean isConfigObfuscated) {
-    return new Configuration.Builder(flagConfigResponse, isConfigObfuscated);
   }
 
   // ===== Flag configuration =====

@@ -54,16 +54,18 @@ public class CustomClientActivity extends AppCompatActivity {
   private TextView assignmentLog;
   private ScrollView assignmentLogScrollView;
 
-  private AndroidBaseClient<Configuration, Configuration.Builder, JsonElement> client;
+  private AndroidBaseClient<Configuration, JsonElement> client;
 
   private class GsonAndroidBaseClientBuilder
       extends AndroidBaseClient.Builder<
-          GsonAndroidBaseClientBuilder, Configuration, Configuration.Builder, JsonElement> {
+          GsonAndroidBaseClientBuilder,
+          AndroidBaseClient<Configuration, JsonElement>,
+          Configuration,
+          JsonElement> {
     public GsonAndroidBaseClientBuilder(
         @NotNull String apiKey,
         @NotNull Application application,
-        @NotNull ConfigurationParser<Configuration, Configuration.Builder, JsonElement>
-                configurationParser,
+        @NotNull ConfigurationParser<Configuration, JsonElement> configurationParser,
         @NotNull CachingConfigurationStore<Configuration> configStore,
         @NotNull EppoConfigurationClient configurationClient) {
       super(
@@ -73,6 +75,36 @@ public class CustomClientActivity extends AppCompatActivity {
           configurationParser,
           configStore,
           configurationClient);
+    }
+
+    @Override
+    protected AndroidBaseClient<Configuration, JsonElement> newInstance(
+        String apiKey,
+        String sdkName,
+        String sdkVersion,
+        @org.jetbrains.annotations.Nullable String apiBaseUrl,
+        @org.jetbrains.annotations.Nullable cloud.eppo.logging.AssignmentLogger assignmentLogger,
+        cloud.eppo.android.framework.storage.CachingConfigurationStore<Configuration>
+            configurationStore,
+        boolean isGracefulMode,
+        boolean expectObfuscatedConfig,
+        @org.jetbrains.annotations.Nullable java.util.concurrent.CompletableFuture<Configuration> initialConfiguration,
+        @org.jetbrains.annotations.Nullable cloud.eppo.api.IAssignmentCache assignmentCache,
+        cloud.eppo.parser.ConfigurationParser<Configuration, JsonElement> configurationParser,
+        cloud.eppo.http.EppoConfigurationClient configurationClient) {
+      return new AndroidBaseClient<Configuration, JsonElement>(
+          apiKey,
+          sdkName,
+          sdkVersion,
+          apiBaseUrl,
+          assignmentLogger,
+          configurationStore,
+          isGracefulMode,
+          expectObfuscatedConfig,
+          initialConfiguration,
+          assignmentCache,
+          configurationParser,
+          configurationClient) {};
     }
   }
 
