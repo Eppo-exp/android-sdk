@@ -23,7 +23,7 @@ import cloud.eppo.api.dto.TargetingCondition;
 import cloud.eppo.api.dto.TargetingRule;
 import cloud.eppo.api.dto.Variation;
 import cloud.eppo.api.dto.VariationType;
-import cloud.eppo.model.ShardRange;
+import cloud.eppo.api.dto.ShardRange;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -549,7 +549,7 @@ public class GsonConfigurationCodec implements ConfigurationCodec<Configuration>
       if (rangesEl != null && rangesEl.isJsonArray()) {
         for (JsonElement rangeEl : rangesEl.getAsJsonArray()) {
           JsonObject range = rangeEl.getAsJsonObject();
-          ranges.add(new ShardRange(range.get("start").getAsInt(), range.get("end").getAsInt()));
+          ranges.add(new ShardRange.Default(range.get("start").getAsInt(), range.get("end").getAsInt()));
         }
       }
       shards.add(new Shard.Default(salt, ranges));
