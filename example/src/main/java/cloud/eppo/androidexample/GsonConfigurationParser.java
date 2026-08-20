@@ -74,50 +74,42 @@ public class GsonConfigurationParser implements ConfigurationParser<Configuratio
   // ===== ConfigurationParser interface =====
 
   @Override
-  public Configuration buildConfig(
-      byte[] flagConfigBytes,
-      @org.jetbrains.annotations.Nullable String flagsSnapshotId,
-      @org.jetbrains.annotations.Nullable Configuration previousConfig) {
+  public @org.jetbrains.annotations.NotNull FlagConfigResponse parseFlagConfig(
+      @org.jetbrains.annotations.NotNull byte[] flagConfigBytes)
+      throws ConfigurationParseException {
     try {
       Log.d(TAG, "Parsing flag configuration, " + flagConfigBytes.length + " bytes");
       JsonElement root =
           JsonParser.parseString(new String(flagConfigBytes, StandardCharsets.UTF_8));
-      FlagConfigResponse flagConfigResponse = deserializeFlagConfigResponse(root);
-      Configuration.Builder builder = new Configuration.Builder(flagConfigResponse);
-      if (previousConfig != null) {
-        builder.banditParametersFromConfig(previousConfig);
-      }
-      builder.flagsSnapshotId(flagsSnapshotId);
-      return builder.build();
+      return deserializeFlagConfigResponse(root);
     } catch (Exception e) {
       throw new ConfigurationParseException("Failed to parse flag configuration", e);
     }
   }
 
   @Override
-  public boolean requiresUpdatedBanditModels(Configuration config) {
-    Set<String> neededModelVersions = new HashSet<>();
-    for (BanditReference ref : config.getBanditReferences().values()) {
-      neededModelVersions.add(ref.getModelVersion());
+  public @org.jetbrains.annotations.NotNull Configuration buildConfig(
+      @org.jetbrains.annotations.NotNull FlagConfigResponse flags,
+      @org.jetbrains.annotations.Nullable String flagsSnapshotId,
+      @org.jetbrains.annotations.Nullable Configuration previousConfig,
+      @org.jetbrains.annotations.Nullable byte[] banditParamsBytes) {
+    Configuration.Builder builder = new Configuration.Builder(flags);
+    if (previousConfig != null) {
+      builder.banditParametersFromConfig(previousConfig);
     }
-    Set<String> loadedModelVersions = new HashSet<>();
-    for (BanditParameters params : config.getBandits().values()) {
-      loadedModelVersions.add(params.getModelVersion());
+    if (banditParamsBytes != null) {
+      try {
+        Log.d(TAG, "Parsing bandit parameters, " + banditParamsBytes.length + " bytes");
+        JsonElement root =
+            JsonParser.parseString(new String(banditParamsBytes, StandardCharsets.UTF_8));
+        BanditParametersResponse response = deserializeBanditParametersResponse(root);
+        builder.banditParameters(response);
+      } catch (Exception e) {
+        throw new ConfigurationParseException("Failed to parse bandit parameters", e);
+      }
     }
-    return !loadedModelVersions.containsAll(neededModelVersions);
-  }
-
-  @Override
-  public Configuration applyBanditParameters(Configuration config, byte[] banditParamsBytes) {
-    try {
-      Log.d(TAG, "Parsing bandit parameters, " + banditParamsBytes.length + " bytes");
-      JsonElement root =
-          JsonParser.parseString(new String(banditParamsBytes, StandardCharsets.UTF_8));
-      BanditParametersResponse response = deserializeBanditParametersResponse(root);
-      return config.toBuilder().banditParameters(response).build();
-    } catch (Exception e) {
-      throw new ConfigurationParseException("Failed to parse bandit parameters", e);
-    }
+    builder.flagsSnapshotId(flagsSnapshotId);
+    return builder.build();
   }
 
   @Override

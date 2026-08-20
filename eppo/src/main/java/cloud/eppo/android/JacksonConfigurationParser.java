@@ -2,21 +2,15 @@ package cloud.eppo.android;
 
 import cloud.eppo.android.dto.adapters.EppoModule;
 import cloud.eppo.api.Configuration;
-import cloud.eppo.api.dto.BanditParameters;
 import cloud.eppo.api.dto.BanditParametersResponse;
-import cloud.eppo.api.dto.BanditReference;
 import cloud.eppo.api.dto.FlagConfigResponse;
 import cloud.eppo.parser.ConfigurationParseException;
 import cloud.eppo.parser.ConfigurationParser;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of {@link ConfigurationParser} using Jackson.
@@ -26,8 +20,6 @@ import org.slf4j.LoggerFactory;
  * which can be unreliable when ProGuard minification is in use.
  */
 public class JacksonConfigurationParser implements ConfigurationParser<Configuration, JsonNode> {
-  private static final Logger log = LoggerFactory.getLogger(JacksonConfigurationParser.class);
-
   private final ObjectMapper objectMapper;
 
   /** Creates a new parser with the default ObjectMapper configuration. */
@@ -54,46 +46,36 @@ public class JacksonConfigurationParser implements ConfigurationParser<Configura
   }
 
   @Override
-  public Configuration buildConfig(
-      byte[] flagConfigBytes,
-      @Nullable String flagsSnapshotId,
-      @Nullable Configuration previousConfig) {
+  public @NotNull FlagConfigResponse parseFlagConfig(@NotNull byte[] flagConfigBytes)
+      throws ConfigurationParseException {
     try {
-      FlagConfigResponse flagConfigResponse =
-          objectMapper.readValue(flagConfigBytes, FlagConfigResponse.class);
-      Configuration.Builder builder = new Configuration.Builder(flagConfigResponse);
-      if (previousConfig != null) {
-        builder.banditParametersFromConfig(previousConfig);
-      }
-      builder.flagsSnapshotId(flagsSnapshotId);
-      return builder.build();
+      return objectMapper.readValue(flagConfigBytes, FlagConfigResponse.class);
     } catch (IOException e) {
       throw new ConfigurationParseException("Failed to parse flag configuration", e);
     }
   }
 
   @Override
-  public boolean requiresUpdatedBanditModels(Configuration config) {
-    Set<String> neededModelVersions =
-        config.getBanditReferences().values().stream()
-            .map(BanditReference::getModelVersion)
-            .collect(Collectors.toSet());
-    Set<String> loadedModelVersions =
-        config.getBandits().values().stream()
-            .map(BanditParameters::getModelVersion)
-            .collect(Collectors.toSet());
-    return !loadedModelVersions.containsAll(neededModelVersions);
-  }
-
-  @Override
-  public Configuration applyBanditParameters(Configuration config, byte[] banditParamsBytes) {
-    try {
-      BanditParametersResponse response =
-          objectMapper.readValue(banditParamsBytes, BanditParametersResponse.class);
-      return config.toBuilder().banditParameters(response).build();
-    } catch (IOException e) {
-      throw new ConfigurationParseException("Failed to parse bandit parameters", e);
+  public @NotNull Configuration buildConfig(
+      @NotNull FlagConfigResponse flags,
+      @Nullable String flagsSnapshotId,
+      @Nullable Configuration previousConfig,
+      @Nullable byte[] banditParamsBytes) {
+    Configuration.Builder builder = new Configuration.Builder(flags);
+    if (previousConfig != null) {
+      builder.banditParametersFromConfig(previousConfig);
     }
+    if (banditParamsBytes != null) {
+      try {
+        BanditParametersResponse response =
+            objectMapper.readValue(banditParamsBytes, BanditParametersResponse.class);
+        builder.banditParameters(response);
+      } catch (IOException e) {
+        throw new ConfigurationParseException("Failed to parse bandit parameters", e);
+      }
+    }
+    builder.flagsSnapshotId(flagsSnapshotId);
+    return builder.build();
   }
 
   @Override
