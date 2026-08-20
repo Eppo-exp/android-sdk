@@ -38,8 +38,8 @@ public class AndroidBaseClient<
   private static final long DEFAULT_POLLING_INTERVAL_MS = 5 * 60 * 1000;
   private static final long DEFAULT_JITTER_INTERVAL_RATIO = 10;
 
-  private long pollingIntervalMs;
-  private long pollingJitterMs;
+  long pollingIntervalMs;
+  long pollingJitterMs;
 
   @Nullable private static AndroidBaseClient<?, ?> instance;
 
@@ -365,6 +365,8 @@ public class AndroidBaseClient<
           effectiveJitter = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
 
+        newInstance.pollingIntervalMs = pollingIntervalMs;
+        newInstance.pollingJitterMs = effectiveJitter;
         newInstance.startPolling(pollingIntervalMs, effectiveJitter);
       }
 
@@ -409,6 +411,9 @@ public class AndroidBaseClient<
       try {
         return buildAndInitAsync().get();
       } catch (ExecutionException | InterruptedException | CompletionException e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         // If the exception was an `EppoInitializationException`, we know for sure that
         // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
         // wrapped by `CompletableFuture` with a `CompletionException`.

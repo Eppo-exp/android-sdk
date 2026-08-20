@@ -7,8 +7,11 @@ import static org.junit.Assert.assertNull;
 import android.app.Application;
 import cloud.eppo.api.Configuration;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
@@ -16,6 +19,8 @@ import org.robolectric.RuntimeEnvironment;
 /** Unit tests for {@link FileBackedConfigStore}. */
 @RunWith(RobolectricTestRunner.class)
 public class FileBackedConfigStoreTest {
+
+  @Rule public final TestName testName = new TestName();
 
   private Application application;
   private ConfigurationCodec<Configuration> codec;
@@ -25,7 +30,13 @@ public class FileBackedConfigStoreTest {
   public void setUp() {
     application = RuntimeEnvironment.getApplication();
     codec = new ConfigurationCodec.Default();
-    cacheFileSuffix = "test-" + System.currentTimeMillis();
+    cacheFileSuffix = "test-" + testName.getMethodName();
+    new ConfigCacheFile(application, cacheFileSuffix, codec.getContentType()).delete();
+  }
+
+  @After
+  public void tearDown() {
+    new ConfigCacheFile(application, cacheFileSuffix, codec.getContentType()).delete();
   }
 
   @Test

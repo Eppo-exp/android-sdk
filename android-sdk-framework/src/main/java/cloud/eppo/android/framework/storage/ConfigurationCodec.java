@@ -83,7 +83,8 @@ public interface ConfigurationCodec<ConfigurationType extends SerializableEppoCo
         Object obj = ois.readObject();
         if (!(obj instanceof Configuration)) {
           throw new RuntimeException(
-              "Deserialized object is not a Configuration:" + obj.getClass().getName());
+              "Deserialized object is not a Configuration: "
+                  + (obj == null ? "null" : obj.getClass().getName()));
         }
         return (Configuration) obj;
       } catch (IOException e) {
