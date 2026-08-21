@@ -41,7 +41,7 @@ public class AndroidBaseClient<
   long pollingIntervalMs;
   long pollingJitterMs;
 
-  @Nullable private static AndroidBaseClient<?, ?> instance;
+  @Nullable private static volatile AndroidBaseClient<?, ?> instance;
 
   /**
    * Private constructor. Use Builder to construct instances.

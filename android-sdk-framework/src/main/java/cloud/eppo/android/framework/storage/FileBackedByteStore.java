@@ -1,6 +1,7 @@
 package cloud.eppo.android.framework.storage;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.NotNull;
 public final class FileBackedByteStore implements ByteStore {
 
   private final BaseCacheFile cacheFile;
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   public FileBackedByteStore(@NotNull BaseCacheFile cacheFile) {
     if (cacheFile == null) {
@@ -21,13 +23,18 @@ public final class FileBackedByteStore implements ByteStore {
   @NotNull public CompletableFuture<byte[]> read() {
     return CompletableFuture.supplyAsync(
         () -> {
-          if (!cacheFile.exists()) {
-            return null;
-          }
-          try (java.io.InputStream in = cacheFile.getInputStream()) {
-            return readAllBytes(in);
+          lock.readLock().lock();
+          try {
+            if (!cacheFile.exists()) {
+              return null;
+            }
+            try (java.io.InputStream in = cacheFile.getInputStream()) {
+              return readAllBytes(in);
+            }
           } catch (Exception e) {
             throw new RuntimeException("Failed to read from cache file", e);
+          } finally {
+            lock.readLock().unlock();
           }
         });
   }
@@ -39,10 +46,13 @@ public final class FileBackedByteStore implements ByteStore {
     }
     return CompletableFuture.runAsync(
         () -> {
-          try (java.io.OutputStream out = cacheFile.getOutputStream()) {
-            out.write(bytes);
+          lock.writeLock().lock();
+          try {
+            cacheFile.atomicWrite(bytes);
           } catch (Exception e) {
             throw new RuntimeException("Failed to write to cache file", e);
+          } finally {
+            lock.writeLock().unlock();
           }
         });
   }

@@ -44,6 +44,24 @@ public class BaseCacheFile {
     return new FileOutputStream(cacheFile);
   }
 
+  /**
+   * Atomically writes bytes by writing to a temp file then renaming.
+   *
+   * @param bytes the bytes to write
+   * @throws IOException if writing or renaming fails
+   */
+  public void atomicWrite(byte[] bytes) throws IOException {
+    File tmpFile = new File(cacheFile.getParentFile(), cacheFile.getName() + ".tmp");
+    try (OutputStream out = new FileOutputStream(tmpFile)) {
+      out.write(bytes);
+      out.flush();
+    }
+    if (!tmpFile.renameTo(cacheFile)) {
+      tmpFile.delete();
+      throw new IOException("Failed to rename temp file to " + cacheFile.getName());
+    }
+  }
+
   public InputStream getInputStream() throws FileNotFoundException {
     return new FileInputStream(cacheFile);
   }

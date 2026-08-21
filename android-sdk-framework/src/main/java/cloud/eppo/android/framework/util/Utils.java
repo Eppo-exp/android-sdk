@@ -1,5 +1,9 @@
 package cloud.eppo.android.framework.util;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 public class Utils {
   public static String logTag(Class loggingClass) {
     // Common prefix can make filtering logs easier
@@ -14,8 +18,16 @@ public class Utils {
   }
 
   public static String safeCacheKey(String key) {
-    // Take the first eight characters to avoid the key being sensitive information
-    // Remove non-alphanumeric characters so it plays nice with filesystem
-    return key.substring(0, 8).replaceAll("\\W", "");
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      byte[] hash = digest.digest(key.getBytes(StandardCharsets.UTF_8));
+      StringBuilder hex = new StringBuilder();
+      for (int i = 0; i < 4; i++) {
+        hex.append(String.format("%02x", hash[i]));
+      }
+      return hex.toString();
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("SHA-256 not available", e);
+    }
   }
 }
