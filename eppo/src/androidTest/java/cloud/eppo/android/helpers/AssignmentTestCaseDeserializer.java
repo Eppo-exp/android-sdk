@@ -1,9 +1,9 @@
 package cloud.eppo.android.helpers;
 
-import cloud.eppo.android.dto.adapters.EppoValueDeserializer;
 import cloud.eppo.api.Attributes;
 import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.dto.VariationType;
+import cloud.eppo.ufc.dto.adapters.EppoValueDeserializer;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonNode;
