@@ -31,12 +31,16 @@ testDataDir := eppo/src/androidTest/assets
 tempDir := ${testDataDir}/temp
 gitDataDir := ${tempDir}/sdk-test-data
 branchName := main
+testDataRef ?= $(branchName)
 githubRepoLink := https://github.com/Eppo-exp/sdk-test-data.git
 .PHONY: test-data
 test-data:
 	rm -rf $(testDataDir)
 	mkdir -p $(tempDir)
-	git clone -b ${branchName} --depth 1 --single-branch ${githubRepoLink} ${gitDataDir}
+	git init ${gitDataDir}
+	git -C ${gitDataDir} remote add origin ${githubRepoLink}
+	git -C ${gitDataDir} fetch --depth 1 origin ${testDataRef}
+	git -C ${gitDataDir} checkout --detach FETCH_HEAD
 	cp ${gitDataDir}/ufc/flags-v1.json ${testDataDir}
 	cp ${gitDataDir}/ufc/flags-v1-obfuscated.json ${testDataDir}
 	cp -r ${gitDataDir}/ufc/tests ${testDataDir}

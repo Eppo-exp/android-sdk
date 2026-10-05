@@ -51,3 +51,36 @@ Once you have the prerequisites, follow the steps below to release a new version
 
 ## Getting Started
 For information on usage, refer to our [SDK Documentation](https://docs.geteppo.com/sdks/client-sdks/android/).
+
+
+## Publishing both Android artifacts
+
+Stable releases start by publishing a GitHub release tagged `v<android-sdk version>`
+from a commit on main. The tag must match `eppo/build.gradle`. Before publishing,
+set both module versions and their Java common/framework dependencies to stable
+versions already available on Maven Central. SNAPSHOT and dynamic production
+dependencies are rejected. The migration's snapshot pins remain until Java v4 ships.
+
+The release workflow runs the Android emulator matrix and local checks using the
+pinned `scripts/release/test-data-ref`, then publishes `android-sdk-framework`
+before `android-sdk`. Every GitHub release requires a new SDK version. An unchanged
+framework version is reused only when its recorded source/build fingerprint and
+all Maven Central checksums match. Changed framework inputs require a version bump.
+The emulator matrix reads that same pinned fixture ref from the release plan job.
+
+Each publication records its exact staged AAR, POM, Gradle metadata, sources and
+Javadoc checksums as an immutable JSON asset on the GitHub release before deployment.
+Retries reconcile those checksums against Central and never blindly upload again.
+If a run stops after recording intent, inspect its existing Central deployment and
+finish that deployment before retrying; do not delete provenance to force an upload.
+Unknown pre-existing coordinates fail closed. A final consumer resolves both AARs
+and transitive dependencies from remote repositories, without Maven Local.
+
+Publishing uses repository secrets `MAVEN_CENTRAL_TOKEN_USERNAME`,
+`MAVEN_CENTRAL_TOKEN_PASSWORD`, `GPG_PRIVATE_KEY`, and `GPG_PASSPHRASE`, plus repository
+variable `GPG_PUBLIC_KEY`. GitHub release publication authorizes deployment; no
+separate environment approval is introduced. Prereleases are ignored.
+
+Pushes to main and `snapshot/**` continue publishing both snapshot artifacts.
+After a stable release, restore snapshot versions before the next snapshot push.
+The workflow changes are a separate stack entry above migration PR #261.
