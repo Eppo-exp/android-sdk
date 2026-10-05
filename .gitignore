@@ -94,3 +94,5 @@ lint/tmp/
 
 eppo/src/test/resources/*
 eppo/src/androidTest/assets/*
+
+__pycache__/

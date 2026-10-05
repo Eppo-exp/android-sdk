@@ -92,16 +92,18 @@ signing {
 
 tasks.withType(Sign) {
     onlyIf {
-        (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) ||
+        !project.hasProperty('release') && ((System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) ||
                 (project.hasProperty('signing.keyId') &&
                         project.hasProperty('signing.password') &&
-                        project.hasProperty('signing.secretKeyRingFile'))
+                        project.hasProperty('signing.secretKeyRingFile')))
     }
 }
 
 mavenPublishing {
     publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
-    signAllPublications()
+    if (!project.hasProperty('release')) {
+        signAllPublications()
+    }
     coordinates("cloud.eppo", "android-sdk-framework", project.version)
 
     pom {
@@ -130,8 +132,8 @@ mavenPublishing {
 
 task checkVersion {
     doLast {
-        if (!project.hasProperty('release') && !project.hasProperty('snapshot')) {
-            throw new GradleException("You must specify either -Prelease or -Psnapshot")
+        if (project.hasProperty('release') == project.hasProperty('snapshot')) {
+            throw new GradleException("Specify exactly one of -Prelease or -Psnapshot")
         }
         if (project.hasProperty('release') && project.version.endsWith('SNAPSHOT')) {
             throw new GradleException("You cannot specify -Prelease with a SNAPSHOT version")
@@ -143,12 +145,14 @@ task checkVersion {
     }
 }
 
-tasks.named('publish').configure {
+// Guard each upload task in the same invocation, including direct snapshot uploads.
+tasks.withType(PublishToMavenRepository).configureEach {
     dependsOn checkVersion
 }
 
-tasks.withType(PublishToMavenRepository) {
-    onlyIf {
-        project.ext.has('shouldPublish') && project.ext.shouldPublish
+publishing.repositories {
+    maven {
+        name = 'releaseStaging'
+        url = rootProject.layout.buildDirectory.dir('staging-deploy')
     }
 }
