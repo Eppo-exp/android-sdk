@@ -26,7 +26,7 @@ public class LRUAssignmentCache extends AbstractAssignmentCache {
             boolean hadNoPreviousEntry;
             synchronized (cache) {
               String entry = cache.get(cacheKey);
-              hadNoPreviousEntry = entry == null;
+              hadNoPreviousEntry = entry == null || !entry.equals(serializedEntry);
               if (hadNoPreviousEntry) {
                 cache.put(cacheKey, serializedEntry);
               }
