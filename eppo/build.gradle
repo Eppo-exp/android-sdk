@@ -165,7 +165,6 @@ task checkVersion {
         if (project.hasProperty('snapshot') && !project.version.endsWith('SNAPSHOT')) {
             throw new GradleException("You cannot specify -Psnapshot with a non-SNAPSHOT version")
         }
-        project.ext.shouldPublish = true
     }
 }
 
@@ -174,9 +173,7 @@ tasks.named('publish').configure {
     dependsOn checkVersion
 }
 
-// Conditionally enable or disable publishing tasks
-tasks.withType(PublishToMavenRepository) {
-    onlyIf {
-        project.ext.has('shouldPublish') && project.ext.shouldPublish
-    }
+// Validate every publishing entry point before writing artifacts to a repository.
+tasks.withType(PublishToMavenRepository).configureEach {
+    dependsOn checkVersion
 }
