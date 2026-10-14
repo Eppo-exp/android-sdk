@@ -2,25 +2,17 @@ package cloud.eppo.android;
 
 import static org.junit.Assert.assertEquals;
 
-import cloud.eppo.BaseEppoClient;
-import cloud.eppo.EppoHttpClient;
+import cloud.eppo.android.dto.PrecomputedConfigurationResponse;
 import cloud.eppo.android.util.ObfuscationUtils;
+import cloud.eppo.api.Configuration;
 import cloud.eppo.logging.Assignment;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Protocol;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -34,94 +26,65 @@ public class AssignmentLoggingCacheTest {
   private static final ObjectMapper MAPPER = new ObjectMapper();
 
   @Test
-  public void standardClientLogsChangedAssignmentsAfterConfigurationReload() throws Exception {
-    AtomicReference<byte[]> response = new AtomicReference<>(standardConfig("allocation-1", "A"));
-    EppoHttpClient httpClient =
-        new EppoHttpClient("https://example.invalid", "test-api-key", "android", "test") {
-          @Override
-          public CompletableFuture<byte[]> getAsync(String path) {
-            return CompletableFuture.completedFuture(response.get());
-          }
-        };
-    Field override = BaseEppoClient.class.getDeclaredField("httpClientOverride");
-    override.setAccessible(true);
-    Object previous = override.get(null);
-    override.set(null, httpClient);
-    try {
-      List<Assignment> assignments = new ArrayList<>();
-      EppoClient client =
-          new EppoClient.Builder("test-api-key", RuntimeEnvironment.getApplication())
-              .forceReinitialize(true)
-              .ignoreCachedConfiguration(true)
-              .isGracefulMode(false)
-              .assignmentLogger(assignments::add)
-              .buildAndInitAsync()
-              .get(10, TimeUnit.SECONDS);
+  public void standardClientLogsChangedAssignmentsAfterConfigurationChanges() throws Exception {
+    ConfigurationStore store =
+        new ConfigurationStore(RuntimeEnvironment.getApplication(), "assignment-logging-test");
+    List<Assignment> assignments = new ArrayList<>();
+    EppoClient client =
+        new EppoClient.Builder("test-api-key", RuntimeEnvironment.getApplication())
+            .forceReinitialize(true)
+            .offlineMode(true)
+            .pollingEnabled(false)
+            .isGracefulMode(false)
+            .configStore(store)
+            .initialConfiguration(standardConfig("allocation-1", "A"))
+            .assignmentLogger(assignments::add)
+            .buildAndInitAsync()
+            .get(10, TimeUnit.SECONDS);
 
-      String[] variations = {"A", "B", "A", "A"};
-      String[] allocations = {"allocation-1", "allocation-1", "allocation-1", "allocation-2"};
-      for (int i = 0; i < variations.length; i++) {
-        response.set(standardConfig(allocations[i], variations[i]));
-        client.loadConfigurationAsync().get(10, TimeUnit.SECONDS);
-        for (int repeat = 0; repeat < 2; repeat++) {
-          assertEquals(variations[i], client.getStringAssignment(FLAG, SUBJECT, "default"));
-        }
-        assertAssignment(assignments, i, allocations[i], variations[i]);
-        client.loadConfigurationAsync().get(10, TimeUnit.SECONDS);
+    String[] variations = {"A", "B", "A", "A"};
+    String[] allocations = {"allocation-1", "allocation-1", "allocation-1", "allocation-2"};
+    for (int i = 0; i < variations.length; i++) {
+      for (int repeat = 0; repeat < 2; repeat++) {
+        store
+            .saveConfiguration(
+                new Configuration.Builder(standardConfig(allocations[i], variations[i])).build())
+            .get(10, TimeUnit.SECONDS);
         assertEquals(variations[i], client.getStringAssignment(FLAG, SUBJECT, "default"));
         assertAssignment(assignments, i, allocations[i], variations[i]);
       }
-    } finally {
-      override.set(null, previous);
     }
   }
 
   @Test
-  public void precomputedClientLogsChangedAssignmentsAfterConfigurationReload() throws Exception {
-    AtomicReference<byte[]> response =
-        new AtomicReference<>(precomputedConfig("allocation-1", "A"));
-    OkHttpClient httpClient =
-        new OkHttpClient.Builder()
-            .addInterceptor(
-                chain ->
-                    new Response.Builder()
-                        .request(chain.request())
-                        .protocol(Protocol.HTTP_1_1)
-                        .code(200)
-                        .message("OK")
-                        .body(
-                            ResponseBody.create(response.get(), MediaType.get("application/json")))
-                        .build())
-            .build();
-    try {
-      List<Assignment> assignments = new ArrayList<>();
-      EppoPrecomputedClient client =
-          new EppoPrecomputedClient.Builder("test-api-key", RuntimeEnvironment.getApplication())
-              .subjectKey(SUBJECT)
-              .forceReinitialize(true)
-              .ignoreCachedConfiguration(true)
-              .isGracefulMode(false)
-              .httpClient(httpClient)
-              .assignmentLogger(assignments::add)
-              .buildAndInitAsync()
-              .get(10, TimeUnit.SECONDS);
+  public void precomputedClientLogsChangedAssignmentsAfterConfigurationChanges() throws Exception {
+    PrecomputedConfigurationStore store =
+        new PrecomputedConfigurationStore(
+            RuntimeEnvironment.getApplication(), "assignment-logging-test");
+    List<Assignment> assignments = new ArrayList<>();
+    EppoPrecomputedClient client =
+        new EppoPrecomputedClient.Builder("test-api-key", RuntimeEnvironment.getApplication())
+            .subjectKey(SUBJECT)
+            .forceReinitialize(true)
+            .offlineMode(true)
+            .pollingEnabled(false)
+            .isGracefulMode(false)
+            .configStore(store)
+            .initialConfiguration(precomputedConfig("allocation-1", "A"))
+            .assignmentLogger(assignments::add)
+            .buildAndInitAsync()
+            .get(10, TimeUnit.SECONDS);
 
-      String[] variations = {"A", "B", "A", "A"};
-      String[] allocations = {"allocation-1", "allocation-1", "allocation-1", "allocation-2"};
-      for (int i = 0; i < variations.length; i++) {
-        response.set(precomputedConfig(allocations[i], variations[i]));
-        client.fetchPrecomputedFlagsAsync().get(10, TimeUnit.SECONDS);
-        for (int repeat = 0; repeat < 2; repeat++) {
-          assertEquals(variations[i], client.getStringAssignment(FLAG, "default"));
-        }
-        assertAssignment(assignments, i, allocations[i], variations[i]);
-        client.fetchPrecomputedFlagsAsync().get(10, TimeUnit.SECONDS);
+    String[] variations = {"A", "B", "A", "A"};
+    String[] allocations = {"allocation-1", "allocation-1", "allocation-1", "allocation-2"};
+    for (int i = 0; i < variations.length; i++) {
+      for (int repeat = 0; repeat < 2; repeat++) {
+        store.setConfiguration(
+            PrecomputedConfigurationResponse.fromBytes(
+                precomputedConfig(allocations[i], variations[i])));
         assertEquals(variations[i], client.getStringAssignment(FLAG, "default"));
         assertAssignment(assignments, i, allocations[i], variations[i]);
       }
-    } finally {
-      httpClient.dispatcher().executorService().shutdownNow();
-      httpClient.connectionPool().evictAll();
     }
   }
 
