@@ -1,0 +1,154 @@
+plugins {
+    id 'com.android.library'
+    id 'maven-publish'
+    id "com.vanniktech.maven.publish" version "0.32.0"
+    id 'signing'
+    id "com.diffplug.spotless" version "8.0.0"
+}
+
+group = "cloud.eppo"
+version = "0.1.0-SNAPSHOT"
+
+android {
+    namespace "cloud.eppo.android.framework"
+    compileSdk 34
+
+    buildFeatures.buildConfig true
+
+    defaultConfig {
+        minSdk 26
+        targetSdk 34
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        def FRAMEWORK_VERSION = "FRAMEWORK_VERSION"
+        def EPPO_VERSION = "EPPO_VERSION"
+        release {
+            minifyEnabled false
+            buildConfigField "String", FRAMEWORK_VERSION, "\"${project.version}\""
+            buildConfigField "String", EPPO_VERSION, "\"${project.version}\""
+        }
+        debug {
+            minifyEnabled false
+            buildConfigField "String", FRAMEWORK_VERSION, "\"${project.version}\""
+            buildConfigField "String", EPPO_VERSION, "\"${project.version}\""
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+}
+
+dependencies {
+    api 'cloud.eppo:eppo-sdk-framework:0.1.0-SNAPSHOT'
+
+    api 'com.google.code.gson:gson:2.10.1'
+    api 'org.slf4j:slf4j-android:1.7.36'
+    compileOnly 'org.jetbrains:annotations:24.0.0'
+
+    testImplementation 'cloud.eppo:sdk-common-jvm:4.0.0-SNAPSHOT'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.14.2'
+    testImplementation 'org.robolectric:robolectric:4.12.1'
+
+    androidTestImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'org.mockito:mockito-android:5.14.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'com.fasterxml.jackson.core:jackson-databind:2.19.1'
+}
+
+spotless {
+    format 'misc', {
+        target '*.gradle', '.gitattributes', '.gitignore'
+
+        trimTrailingWhitespace()
+        leadingTabsToSpaces(2)
+        endWithNewline()
+    }
+    java {
+        target '**/*.java'
+
+        googleJavaFormat()
+        formatAnnotations()
+    }
+}
+
+signing {
+    if (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) {
+        useInMemoryPgpKeys(System.env.GPG_PRIVATE_KEY, System.env.GPG_PASSPHRASE)
+    }
+
+    sign publishing.publications
+}
+
+tasks.withType(Sign) {
+    onlyIf {
+        (System.getenv("GPG_PRIVATE_KEY") && System.getenv("GPG_PASSPHRASE")) ||
+                (project.hasProperty('signing.keyId') &&
+                        project.hasProperty('signing.password') &&
+                        project.hasProperty('signing.secretKeyRingFile'))
+    }
+}
+
+mavenPublishing {
+    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL)
+    signAllPublications()
+    coordinates("cloud.eppo", "android-sdk-framework", project.version)
+
+    pom {
+        name = 'Eppo Android SDK Framework'
+        description = 'Android SDK Framework for Eppo - Library-independent EppoClient and PrecomputedEppoClient (abstracts JSON, HTTP, storage)'
+        url = 'https://github.com/Eppo-exp/android-sdk'
+        licenses {
+            license {
+                name = 'MIT License'
+                url = 'http://www.opensource.org/licenses/mit-license.php'
+            }
+        }
+        developers {
+            developer {
+                name = 'Eppo'
+                email = 'https://www.geteppo.com'
+            }
+        }
+        scm {
+            connection = 'scm:git:git://github.com/Eppo-exp/android-sdk.git'
+            developerConnection = 'scm:git:ssh://github.com/Eppo-exp/android-sdk.git'
+            url = 'https://github.com/Eppo-exp/android-sdk/tree/main'
+        }
+    }
+}
+
+task checkVersion {
+    doLast {
+        if (!project.hasProperty('release') && !project.hasProperty('snapshot')) {
+            throw new GradleException("You must specify either -Prelease or -Psnapshot")
+        }
+        if (project.hasProperty('release') && project.version.endsWith('SNAPSHOT')) {
+            throw new GradleException("You cannot specify -Prelease with a SNAPSHOT version")
+        }
+        if (project.hasProperty('snapshot') && !project.version.endsWith('SNAPSHOT')) {
+            throw new GradleException("You cannot specify -Psnapshot with a non-SNAPSHOT version")
+        }
+        project.ext.shouldPublish = true
+    }
+}
+
+tasks.named('publish').configure {
+    dependsOn checkVersion
+}
+
+tasks.withType(PublishToMavenRepository) {
+    onlyIf {
+        project.ext.has('shouldPublish') && project.ext.shouldPublish
+    }
+}

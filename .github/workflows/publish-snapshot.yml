@@ -2,7 +2,7 @@ name: Publish SDK Snapshot artifact
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'snapshot/**']
 
 env:
   CI: true
@@ -28,10 +28,14 @@ jobs:
           java-version: 17
           distribution: 'adopt'
 
-      - name: Stage snapshot artifact
-        run: ./gradlew eppo:assemble eppo:publish -Psnapshot
+      - name: Stage snapshot artifacts
+        run: ./gradlew android-sdk-framework:assemble android-sdk-framework:publish eppo:assemble eppo:publish -Psnapshot
 
-      - name: Publish Snapshot to Maven Central Portal
+      - name: Publish framework snapshot to Maven Central Portal
+        working-directory: android-sdk-framework
+        run: ../gradlew publishAllPublicationsToMavenCentralRepository -Psnapshot --no-daemon --stacktrace
+
+      - name: Publish SDK snapshot to Maven Central Portal
         working-directory: eppo
         run: ../gradlew publishAllPublicationsToMavenCentralRepository -Psnapshot --no-daemon --stacktrace
 
