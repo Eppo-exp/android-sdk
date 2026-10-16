@@ -19,3 +19,4 @@ dependencyResolutionManagement {
 rootProject.name = "Eppo SDK"
 include ':example'
 include ':eppo'
+include ':eppo-kotlin'
