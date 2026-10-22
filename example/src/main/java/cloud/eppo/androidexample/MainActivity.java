@@ -1,17 +1,13 @@
 package cloud.eppo.androidexample;
 
 import static cloud.eppo.android.util.Utils.safeCacheKey;
-import static cloud.eppo.androidexample.Constants.INITIAL_FLAG_KEY;
-import static cloud.eppo.androidexample.Constants.INITIAL_SUBJECT_ID;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.TextUtils;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import cloud.eppo.android.ConfigCacheFile;
-import cloud.eppo.android.EppoClient;
+import cloud.eppo.android.framework.storage.ConfigCacheFile;
 import com.geteppo.androidexample.BuildConfig;
 import com.geteppo.androidexample.R;
 
@@ -32,15 +28,26 @@ public class MainActivity extends AppCompatActivity {
         view ->
             startActivity(launchAssigner.putExtra(this.getPackageName() + ".offlineMode", false)));
 
+    Button gsonButton = findViewById(R.id.button_start_gson_assigner);
+    Intent launchGsonAssigner = new Intent(MainActivity.this, CustomClientActivity.class);
+    gsonButton.setOnClickListener(view -> startActivity(launchGsonAssigner));
+
     Button clearCacheButton = findViewById(R.id.button_clear_cache);
     clearCacheButton.setOnClickListener(view -> clearCacheFile());
   }
 
   private void clearCacheFile() {
     String cacheFileNameSuffix = safeCacheKey(API_KEY);
-    ConfigCacheFile cacheFile = new ConfigCacheFile(getApplication(), cacheFileNameSuffix);
-    cacheFile.delete();
-    Toast.makeText(this, "Cache Cleared", Toast.LENGTH_SHORT).show();
+    ConfigCacheFile cacheFile =
+        new ConfigCacheFile(
+            getApplication(), cacheFileNameSuffix, "application/x-java-serialized-object");
+    if (cacheFile.exists()) {
+
+      cacheFile.delete();
+      Toast.makeText(this, "Cache Cleared", Toast.LENGTH_SHORT).show();
+    } else {
+      Toast.makeText(this, "Cache file did not exist", Toast.LENGTH_SHORT).show();
+    }
   }
 
   @Override
@@ -48,8 +55,8 @@ public class MainActivity extends AppCompatActivity {
     super.onResume();
 
     // for testing assignments on application/main activity start
-    if (!TextUtils.isEmpty(INITIAL_FLAG_KEY)) {
-      EppoClient.getInstance().getStringAssignment(INITIAL_FLAG_KEY, INITIAL_SUBJECT_ID, "");
-    }
+    //    if (!TextUtils.isEmpty(INITIAL_FLAG_KEY)) {
+    //      EppoClient.getInstance().getStringAssignment(INITIAL_FLAG_KEY, INITIAL_SUBJECT_ID, "");
+    //    }
   }
 }
