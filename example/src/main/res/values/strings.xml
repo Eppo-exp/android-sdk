@@ -2,5 +2,6 @@
     <string name="app_name">Eppo Example</string>
     <string name="start_assignment_activity">Launch</string>
     <string name="start_offline_assignment_activity">Launch Offline Mode</string>
+    <string name="start_precomputed_activity">Launch Precomputed Client</string>
     <string name="clear_cache">Clear Cache</string>
 </resources>
