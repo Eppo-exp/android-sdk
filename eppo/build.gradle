@@ -69,7 +69,7 @@ ext.versions = [
 
 dependencies {
     api project(':android-sdk-framework')
-    api 'cloud.eppo:sdk-common-jvm:4.0.1'
+    api 'cloud.eppo:sdk-common-jvm:4.0.3'
 
     implementation 'org.slf4j:slf4j-api:2.0.17'
 
