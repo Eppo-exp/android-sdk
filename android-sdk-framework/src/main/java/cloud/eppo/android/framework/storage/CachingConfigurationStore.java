@@ -17,6 +17,8 @@ public class CachingConfigurationStore<ConfigurationType extends SerializableEpp
   private final ConfigurationCodec<ConfigurationType> codec;
   private final ByteStore byteStore;
   private volatile ConfigurationType configuration;
+  private final Object persistenceLock = new Object();
+  private CompletableFuture<Void> persistenceTail = CompletableFuture.completedFuture(null);
 
   protected CachingConfigurationStore(
       @NotNull ConfigurationCodec<ConfigurationType> codec, @NotNull ByteStore byteStore) {
@@ -36,8 +38,18 @@ public class CachingConfigurationStore<ConfigurationType extends SerializableEpp
     if (config == null) {
       throw new IllegalArgumentException("config must not be null");
     }
-    byte[] bytes = codec.toBytes(config);
-    return byteStore.write(bytes).thenRun(() -> this.configuration = config);
+    synchronized (persistenceLock) {
+      CompletableFuture<Void> result =
+          persistenceTail
+              .handle((ignored, failure) -> null)
+              .thenComposeAsync(
+                  ignored ->
+                      byteStore
+                          .write(codec.toBytes(config))
+                          .thenRun(() -> this.configuration = config));
+      persistenceTail = result;
+      return result;
+    }
   }
 
   /**
