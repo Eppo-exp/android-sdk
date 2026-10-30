@@ -4,7 +4,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 import urllib.error
 
 spec = importlib.util.spec_from_file_location('release', Path(__file__).parents[1] / 'release.py')
@@ -20,6 +20,16 @@ def record(artifact=r.FRAMEWORK, state='published'):
 
 
 class ReleaseTests(unittest.TestCase):
+    def test_validation_failure_does_not_record_an_attempt(self):
+        plan = {'tag': 'v5.0.0', 'artifacts': {
+            r.FRAMEWORK: {'action': 'publish', 'record': None, 'version': '0.1.0'}}}
+        with patch.object(r, 'stage_record', return_value=record(state='attempting')), \
+                patch.object(r, 'upload_record') as upload, patch.object(r.shutil, 'rmtree'), \
+                patch.object(r.subprocess, 'run', side_effect=subprocess.CalledProcessError(1, 'validation')):
+            with self.assertRaises(subprocess.CalledProcessError):
+                r.publish(plan)
+            upload.assert_not_called()
+
     def test_stable_versions_only(self):
         for version in ['0.1.0', '4.0.0', '12.31.0']:
             self.assertEqual(r.stable(version), version)
@@ -84,11 +94,11 @@ class ReleaseTests(unittest.TestCase):
         plan = {'tag': 'v4.0.0', 'artifacts': {
             r.FRAMEWORK: {'action': 'resume', 'record': value, 'version': '0.1.0'}}}
         with patch.object(r, 'wait_for_record', side_effect=ValueError('pending')), \
-                patch.object(r, 'stage_record') as stage, patch.object(r, 'run') as run:
+                patch.object(r, 'stage_record') as stage, patch.object(r.subprocess, 'run') as deploy:
             with self.assertRaisesRegex(ValueError, 'pending'):
                 r.publish(plan)
             stage.assert_not_called()
-            run.assert_not_called()
+            deploy.assert_not_called()
 
     def test_resume_framework_success_then_publish_common(self):
         framework = record()
@@ -103,7 +113,9 @@ class ReleaseTests(unittest.TestCase):
                 patch.object(r.subprocess, 'run') as deploy, patch.object(r.shutil, 'rmtree'):
             r.publish(plan)
             stage.assert_called_once_with(r.COMMON, plan['artifacts'][r.COMMON], plan)
-            deploy.assert_called_once_with(['./gradlew', 'jreleaserDeploy', '-PdeploymentVersion=4.0.0'], check=True)
+            self.assertEqual(deploy.call_args_list, [
+                call(['./gradlew', 'jreleaserDeploy', '--dryrun', '-PdeploymentVersion=4.0.0'], check=True),
+                call(['./gradlew', 'jreleaserDeploy', '-PdeploymentVersion=4.0.0'], check=True)])
             self.assertEqual(wait.call_count, 2)
             upload.assert_called_once_with(plan['tag'], common)
             consumer.assert_called_once_with(plan)
@@ -116,7 +128,7 @@ class ReleaseTests(unittest.TestCase):
                 patch.object(r.subprocess, 'run') as deploy:
             with self.assertRaisesRegex(ValueError, 'cannot persist'):
                 r.publish(plan)
-            deploy.assert_not_called()
+            deploy.assert_called_once_with(['./gradlew', 'jreleaserDeploy', '--dryrun', '-PdeploymentVersion=0.1.0'], check=True)
 
     def test_plan_rejects_wrong_tag_and_detached_version(self):
         with patch.object(r, 'run', return_value=''), \
@@ -291,6 +303,8 @@ class ReleaseTests(unittest.TestCase):
         uploads = []
 
         def external(command, **kwargs):
+            if "--dryrun" in command:
+                return
             if command[:3] == ['gh', 'release', 'upload']:
                 self.assertNotIn('--clobber', command)
                 path = Path(command[4])
@@ -317,6 +331,8 @@ class ReleaseTests(unittest.TestCase):
         deployments = []
 
         def resume_external(command, **kwargs):
+            if "--dryrun" in command:
+                return
             if command[:2] == ['./gradlew', 'jreleaserDeploy']:
                 deployments.append(r.COMMON)
                 central.add(r.COMMON)

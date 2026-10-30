@@ -237,11 +237,12 @@ def publish(plan):
         record = item['record']
         if item['action'] == 'publish':
             record = stage_record(artifact, item, plan)
-            # Persist intent and exact checksums BEFORE contacting Central. If the runner
-            # disappears, a rerun must reconcile this attempt instead of uploading twice.
-            upload_record(plan['tag'], record)
-            # Do not let JReleaser reuse framework outputs during the common deployment.
+            # Validate configuration/signing before recording an irreversible attempt.
+            # Dry-run must succeed before intent; intent must precede the real upload.
             shutil.rmtree(Path('build/jreleaser'), ignore_errors=True)
+            subprocess.run(['./gradlew', 'jreleaserDeploy', '--dryrun',
+                            '-PdeploymentVersion=' + item['version']], check=True)
+            upload_record(plan['tag'], record)
             subprocess.run(['./gradlew', 'jreleaserDeploy', '-PdeploymentVersion=' + item['version']], check=True)
         wait_for_record(record)
         # The intent/checksum record is immutable. Never replace it after deploy:
@@ -275,6 +276,7 @@ dependencies { sdk 'cloud.eppo:android-sdk:%s' }
 tasks.register('verifyRelease') {
   doLast {
     def artifacts = configurations.sdk.resolvedConfiguration.resolvedArtifacts
+    artifacts.each { assert it.file.isFile() }
     assert artifacts.any { it.name == 'android-sdk' && it.type == 'aar' &&
       it.moduleVersion.id.version == '%s' }
     assert artifacts.any { it.name == 'android-sdk-framework' && it.type == 'aar' &&
