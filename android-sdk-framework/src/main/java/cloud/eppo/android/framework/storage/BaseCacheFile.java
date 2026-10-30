@@ -51,14 +51,17 @@ public class BaseCacheFile {
    * @throws IOException if writing or renaming fails
    */
   public void atomicWrite(byte[] bytes) throws IOException {
-    File tmpFile = new File(cacheFile.getParentFile(), cacheFile.getName() + ".tmp");
-    try (OutputStream out = new FileOutputStream(tmpFile)) {
-      out.write(bytes);
-      out.flush();
-    }
-    if (!tmpFile.renameTo(cacheFile)) {
+    File tmpFile = File.createTempFile("eppo-cache-", ".tmp", cacheFile.getParentFile());
+    try {
+      try (OutputStream out = new FileOutputStream(tmpFile)) {
+        out.write(bytes);
+        out.flush();
+      }
+      if (!tmpFile.renameTo(cacheFile)) {
+        throw new IOException("Failed to rename temp file to " + cacheFile.getName());
+      }
+    } finally {
       tmpFile.delete();
-      throw new IOException("Failed to rename temp file to " + cacheFile.getName());
     }
   }
 

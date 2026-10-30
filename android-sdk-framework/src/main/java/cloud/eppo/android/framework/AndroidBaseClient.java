@@ -13,8 +13,8 @@ import cloud.eppo.api.SerializableEppoConfiguration;
 import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.logging.AssignmentLogger;
 import cloud.eppo.parser.ConfigurationParser;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -42,6 +42,18 @@ public class AndroidBaseClient<
   long pollingJitterMs;
 
   @Nullable private static volatile AndroidBaseClient<?, ?> instance;
+  private static final Object INITIALIZATION_LOCK = new Object();
+  @Nullable private static InitializationAttempt initialization;
+
+  private static final class InitializationAttempt {
+    private final Class<?> builderClass;
+    private final CompletableFuture<AndroidBaseClient<?, ?>> result = new CompletableFuture<>();
+    @Nullable private AndroidBaseClient<?, ?> candidate;
+
+    private InitializationAttempt(Class<?> builderClass) {
+      this.builderClass = builderClass;
+    }
+  }
 
   /**
    * Private constructor. Use Builder to construct instances.
@@ -103,10 +115,11 @@ public class AndroidBaseClient<
   public static <ConfigurationType extends SerializableEppoConfiguration, JsonFlagType>
       AndroidBaseClient<ConfigurationType, JsonFlagType> getInstance()
           throws NotInitializedException {
-    if (instance == null) {
+    AndroidBaseClient<?, ?> current = instance;
+    if (current == null) {
       throw new NotInitializedException();
     }
-    return (AndroidBaseClient<ConfigurationType, JsonFlagType>) instance;
+    return (AndroidBaseClient<ConfigurationType, JsonFlagType>) current;
   }
 
   /**
@@ -290,21 +303,111 @@ public class AndroidBaseClient<
      *   <li>Returns a CompletableFuture that completes when initialization is done
      * </ol>
      *
+     * <p>Repeated calls from the same concrete builder share initialization. A different builder
+     * must use forceReinitialize to replace the singleton. Forced replacement cancels pending
+     * callers of the previous attempt. A failed strict initialization can be retried; graceful
+     * configuration failures complete with a usable fallback client. A concrete builder class must
+     * use one consistent pair of configuration and JSON types.
+     *
      * @return CompletableFuture that completes with the initialized EppoClient
      */
     public CompletableFuture<AndroidBaseClientType> buildAndInitAsync() {
-      // Singleton handling
-      if (instance != null && !forceReinitialize) {
-        Log.w(TAG, "Eppo Client instance already initialized");
-        @SuppressWarnings("unchecked")
-        AndroidBaseClientType typedInstance = (AndroidBaseClientType) instance;
-        return CompletableFuture.completedFuture(typedInstance);
-      } else if (instance != null) {
-        // Stop polling if reinitializing
-        instance.stopPolling();
-        Log.i(TAG, "forceReinitialize triggered - reinitializing Eppo Client");
+      final InitializationAttempt attempt;
+      final InitializationAttempt previous;
+      final AndroidBaseClient<?, ?> previousClient;
+      synchronized (INITIALIZATION_LOCK) {
+        if (initialization != null && !forceReinitialize) {
+          if (initialization.builderClass != selfClass) {
+            CompletableFuture<AndroidBaseClientType> failed = new CompletableFuture<>();
+            failed.completeExceptionally(
+                new IllegalStateException(
+                    "A different client builder owns the singleton; use forceReinitialize to replace it"));
+            return failed;
+          }
+          return resultFor(initialization);
+        }
+        previous = initialization;
+        previousClient = previous == null ? null : previous.candidate;
+        attempt = new InitializationAttempt(selfClass);
+        initialization = attempt;
+        instance = null;
       }
+      try {
+        if (previousClient != null) {
+          previousClient.stopPolling();
+        }
+        initialize(attempt);
+      } catch (Throwable failure) {
+        finish(attempt, null, failure);
+      } finally {
+        // Start the replacement before notifying callbacks that may join its initialization.
+        if (previous != null) {
+          previous.result.completeExceptionally(
+              new CancellationException("Initialization superseded by forceReinitialize"));
+        }
+      }
+      return resultFor(attempt);
+    }
 
+    // A dependent future prevents one caller's cancellation from cancelling the shared attempt.
+    @SuppressWarnings("unchecked")
+    private CompletableFuture<AndroidBaseClientType> resultFor(InitializationAttempt attempt) {
+      return attempt.result.thenApply(client -> (AndroidBaseClientType) client);
+    }
+
+    private void finish(
+        InitializationAttempt attempt,
+        @Nullable AndroidBaseClientType client,
+        @Nullable Throwable failure) {
+      Throwable outcome = failure;
+      synchronized (INITIALIZATION_LOCK) {
+        if (initialization != attempt) {
+          outcome = new CancellationException("Initialization superseded by forceReinitialize");
+        } else {
+          if (outcome == null) {
+            try {
+              if (pollingEnabled && pollingIntervalMs > 0) {
+                long jitter =
+                    pollingJitterMs < 0
+                        ? pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO
+                        : pollingJitterMs;
+                client.pollingIntervalMs = pollingIntervalMs;
+                client.pollingJitterMs = jitter;
+                client.startPolling(pollingIntervalMs, jitter);
+              }
+              if (initialization == attempt) {
+                instance = client;
+              } else {
+                outcome =
+                    new CancellationException("Initialization superseded by forceReinitialize");
+              }
+            } catch (Throwable pollingFailure) {
+              outcome = pollingFailure;
+            }
+          }
+          if (outcome != null && initialization == attempt) {
+            initialization = null;
+            instance = null;
+          }
+        }
+      }
+      if (outcome == null) {
+        attempt.result.complete(client);
+      } else {
+        // The failed/superseded client owns its own poller, never the replacement's.
+        AndroidBaseClient<?, ?> failedClient = client != null ? client : attempt.candidate;
+        if (failedClient != null) {
+          try {
+            failedClient.stopPolling();
+          } catch (Throwable cleanupFailure) {
+            outcome.addSuppressed(cleanupFailure);
+          }
+        }
+        attempt.result.completeExceptionally(outcome);
+      }
+    }
+
+    private void initialize(InitializationAttempt attempt) {
       String sdkName = obfuscateConfig ? "android" : "android-debug";
       String sdkVersion = BuildConfig.EPPO_VERSION;
 
@@ -329,8 +432,13 @@ public class AndroidBaseClient<
               configurationParser,
               configurationClient);
 
-      // Set as singleton
-      instance = newInstance;
+      synchronized (INITIALIZATION_LOCK) {
+        if (initialization != attempt) {
+          newInstance.stopPolling();
+          return;
+        }
+        attempt.candidate = newInstance;
+      }
 
       // Register config change callback if provided
       if (configChangeCallback != null) {
@@ -357,19 +465,6 @@ public class AndroidBaseClient<
                 });
       }
 
-      // Start polling if configured
-      if (pollingEnabled && pollingIntervalMs > 0) {
-        Log.i(TAG, "Starting poller");
-        long effectiveJitter = pollingJitterMs;
-        if (effectiveJitter < 0) {
-          effectiveJitter = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
-        }
-
-        newInstance.pollingIntervalMs = pollingIntervalMs;
-        newInstance.pollingJitterMs = effectiveJitter;
-        newInstance.startPolling(pollingIntervalMs, effectiveJitter);
-      }
-
       if (newInstance.getInitialConfigFuture() != null) {
         newInstance
             .getInitialConfigFuture()
@@ -390,14 +485,15 @@ public class AndroidBaseClient<
         ret.complete(newInstance);
       }
 
-      return ret.exceptionally(
-          e -> {
-            Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
-            if (!isGracefulMode) {
-              throw new RuntimeException(e);
-            }
-            return newInstance;
-          });
+      ret.exceptionally(
+              e -> {
+                Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
+                if (!isGracefulMode) {
+                  throw new RuntimeException(e);
+                }
+                return newInstance;
+              })
+          .whenComplete((client, failure) -> finish(attempt, client, failure));
     }
 
     /**
@@ -410,32 +506,12 @@ public class AndroidBaseClient<
     public AndroidBaseClient<ConfigurationType, JsonFlagType> buildAndInit() {
       try {
         return buildAndInitAsync().get();
-      } catch (ExecutionException | InterruptedException | CompletionException e) {
-        if (e instanceof InterruptedException) {
-          Thread.currentThread().interrupt();
-        }
-        // If the exception was an `EppoInitializationException`, we know for sure that
-        // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
-        // wrapped by `CompletableFuture` with a `CompletionException`.
-        if (e instanceof CompletionException) {
-          Throwable cause = e.getCause();
-          if (cause instanceof RuntimeException
-              && cause.getCause() instanceof EppoInitializationException) {
-            @SuppressWarnings("unchecked")
-            AndroidBaseClient<ConfigurationType, JsonFlagType> typedInstance =
-                (AndroidBaseClient<ConfigurationType, JsonFlagType>) instance;
-            return typedInstance;
-          }
-        }
-        Log.e(TAG, "Exception caught during initialization: " + e.getMessage(), e);
-        if (!isGracefulMode) {
-          throw new RuntimeException(e);
-        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException("Interrupted while initializing client", e);
+      } catch (ExecutionException e) {
+        throw new RuntimeException("Unable to initialize client", e.getCause());
       }
-      @SuppressWarnings("unchecked")
-      AndroidBaseClient<ConfigurationType, JsonFlagType> typedInstance =
-          (AndroidBaseClient<ConfigurationType, JsonFlagType>) instance;
-      return typedInstance;
     }
   }
 
