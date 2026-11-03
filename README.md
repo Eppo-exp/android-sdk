@@ -12,7 +12,7 @@ feature flagging and experimentation for Eppo customers. An API key is required 
 
 ```groovy
 dependencies {
-  implementation 'cloud.eppo:android-sdk:4.11.1'
+  implementation 'cloud.eppo:android-sdk:4.12.2'
 }
 
 dependencyResolutionManagement {
@@ -51,3 +51,29 @@ Once you have the prerequisites, follow the steps below to release a new version
 
 ## Getting Started
 For information on usage, refer to our [SDK Documentation](https://docs.geteppo.com/sdks/client-sdks/android/).
+
+
+## Migrating from 4.x to 5.0
+
+The standard SDK now depends on `cloud.eppo:android-sdk-framework`. Applications using only
+assignment methods keep those entry points; integrations using builders or storage must update:
+
+- Replace `Builder.host(host)` with `apiBaseUrl(host + "/api")` for the standard endpoint layout.
+  `apiBaseUrl` is a complete base URL and does not append `/api`. The legacy static `init` and
+  `initAsync` host arguments retain their 4.x meaning and append `/api`.
+- Replace byte-array initial configuration with `CompletableFuture<Configuration>`.
+  Parse bytes with `JacksonConfigurationParser.parseFlagConfig`, then build the configuration
+  with `buildConfig(parsedFlags, null, null, null)`.
+- Custom stores now implement `CachingConfigurationStore<Configuration>` from the framework.
+  The old `cloud.eppo.android.ConfigurationStore`, `ConfigCacheFile` and `BaseCacheFile` classes
+  are removed. Storage abstractions live under `cloud.eppo.android.framework.storage`.
+- The default cache changes from raw JSON (`eppo-sdk-config-v4-flags-<key>.json`) to Java
+  serialization (`eppo-sdk-flags-<key>.ser`). There is no migration of the old cache;
+  an offline first launch after upgrading cannot use it. Plan an online configuration fetch.
+  Default-codec consumer rules preserve serialized Eppo class and field names in minified apps;
+  custom codecs and custom configuration types must supply their own compatibility rules.
+- Assignment details are available through the `get*AssignmentDetails`, `getJSONAssignmentDetails`
+  and `getBanditActionDetails` methods.
+
+Use the coordinated release workflow in PR #262 for both Android artifacts;
+do not publish the standard SDK with a snapshot framework dependency.

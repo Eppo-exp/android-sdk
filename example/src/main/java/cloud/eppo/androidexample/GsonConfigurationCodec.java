@@ -50,11 +50,11 @@ import org.jetbrains.annotations.Nullable;
  * A GSON-based {@link ConfigurationCodec} for {@link Configuration}.
  *
  * <p>Serializes to UTF-8 JSON rather than Java's binary serialization format. Cached configurations
- * are human-readable and immune to {@code serialVersionUID} drift between SDK versions. This is
- * useful for development and debugging in the example app.
+ * are human-readable. This is useful for development and debugging in the example app.
  *
- * <p>Because {@link Configuration} does not expose its internal maps, this codec uses reflection to
- * read the {@code flags}, {@code banditReferences}, and {@code bandits} fields.
+ * <p>Configuration exposes getBanditReferences() and getBandits(), but not its flag map. This codec
+ * reads the private flags field by reflection. That is not a supported API: the field can change in
+ * any sdk-common release.
  */
 public class GsonConfigurationCodec implements ConfigurationCodec<Configuration> {
 
@@ -70,17 +70,11 @@ public class GsonConfigurationCodec implements ConfigurationCodec<Configuration>
           });
 
   private static final Field FLAGS_FIELD;
-  private static final Field BANDIT_REFS_FIELD;
-  private static final Field BANDITS_FIELD;
 
   static {
     try {
       FLAGS_FIELD = Configuration.class.getDeclaredField("flags");
       FLAGS_FIELD.setAccessible(true);
-      BANDIT_REFS_FIELD = Configuration.class.getDeclaredField("banditReferences");
-      BANDIT_REFS_FIELD.setAccessible(true);
-      BANDITS_FIELD = Configuration.class.getDeclaredField("bandits");
-      BANDITS_FIELD.setAccessible(true);
     } catch (NoSuchFieldException e) {
       throw new ExceptionInInitializerError(e);
     }
@@ -132,10 +126,8 @@ public class GsonConfigurationCodec implements ConfigurationCodec<Configuration>
 
     try {
       Map<String, FlagConfig> flags = (Map<String, FlagConfig>) FLAGS_FIELD.get(config);
-      Map<String, BanditReference> banditRefs =
-          (Map<String, BanditReference>) BANDIT_REFS_FIELD.get(config);
-      Map<String, BanditParameters> bandits =
-          (Map<String, BanditParameters>) BANDITS_FIELD.get(config);
+      Map<String, BanditReference> banditRefs = config.getBanditReferences();
+      Map<String, BanditParameters> bandits = config.getBandits();
 
       if (flags != null) {
         root.add("flags", serializeFlags(flags));

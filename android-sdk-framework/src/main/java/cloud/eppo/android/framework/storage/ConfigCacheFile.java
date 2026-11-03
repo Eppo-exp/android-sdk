@@ -32,28 +32,4 @@ public final class ConfigCacheFile extends BaseCacheFile {
             + "."
             + CONTENT_TYPE_TO_EXTENSION.getOrDefault(contentType, DEFAULT_EXTENSION));
   }
-
-  /**
-   * Creates a cache file with filename "eppo-sdk-flags-{configType}-{suffix}.{ext}". Used when the
-   * logical suffix is split into config type and suffix (e.g. for FileBackedConfigStore).
-   *
-   * @deprecated Use {@link #ConfigCacheFile(Application, String, String)} instead.
-   */
-  ConfigCacheFile(
-      @NotNull Application application,
-      @NotNull String configType,
-      @NotNull String suffix,
-      @NotNull String contentType) {
-    this(application, configType + "-" + suffix, contentType);
-  }
-
-  /**
-   * Creates a cache file with the given full file name (no prefix). Used when the caller supplies
-   * the complete filename (e.g. baseName + "." + extension).
-   *
-   * @deprecated Use {@link #ConfigCacheFile(Application, String, String)} instead.
-   */
-  ConfigCacheFile(@NotNull Application application, @NotNull String fullFileName) {
-    super(application, fullFileName);
-  }
 }

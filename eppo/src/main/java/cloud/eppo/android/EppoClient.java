@@ -36,7 +36,8 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
 
   private long pollingIntervalMs, pollingJitterMs;
 
-  @Nullable private static EppoClient instance;
+  @Nullable private static volatile EppoClient instance;
+  @Nullable private static Runnable configChangeUnsubscribe;
 
   private EppoClient(
       String apiKey,
@@ -76,8 +77,9 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
-    // Use apiBaseUrl if provided, otherwise fall back to host
-    String baseUrl = apiBaseUrl != null ? apiBaseUrl : host;
+    // Use apiBaseUrl if provided, otherwise fall back to host. As in 4.x, requests go to
+    // {host}/api.
+    String baseUrl = apiBaseUrl != null ? apiBaseUrl : hostToApiBaseUrl(host);
     return new Builder(apiKey, application)
         .apiBaseUrl(baseUrl)
         .assignmentLogger(assignmentLogger)
@@ -96,11 +98,15 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
     return new Builder(apiKey, application)
-        .apiBaseUrl(host)
+        .apiBaseUrl(hostToApiBaseUrl(host))
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
         .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
         .buildAndInitAsync();
+  }
+
+  @Nullable private static String hostToApiBaseUrl(@Nullable String host) {
+    return host == null ? null : host + "/api";
   }
 
   public static EppoClient getInstance() throws NotInitializedException {
@@ -212,7 +218,8 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
 
     /**
      * Sets whether the client should periodically check for updated configuration. Used in
-     * conjunction with `pollingIntervalMs` default 60000 and `pollingJitterMs` default 600.
+     * conjunction with `pollingIntervalMs` default 300000 (five minutes) and `pollingJitterMs`
+     * default 10% of the interval.
      */
     public Builder pollingEnabled(boolean pollingEnabled) {
       this.pollingEnabled = pollingEnabled;
@@ -284,6 +291,10 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
       } else if (instance != null) {
         // Stop polling (if the client is polling for configuration)
         instance.stopPolling();
+        if (configChangeUnsubscribe != null) {
+          configChangeUnsubscribe.run();
+          configChangeUnsubscribe = null;
+        }
 
         // Always recreate for tests
         Log.d(TAG, "`forceReinitialize` triggered reinitializing Eppo Client");
@@ -312,7 +323,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
       EppoConfigurationClient clientToUse =
           this.configurationClient != null ? this.configurationClient : new OkHttpEppoClient();
 
-      instance =
+      final EppoClient client =
           new EppoClient(
               apiKey,
               sdkName,
@@ -326,9 +337,10 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
               obfuscateConfig,
               initialConfiguration,
               assignmentCache);
+      instance = client;
 
       if (configChangeCallback != null) {
-        instance.onConfigurationChange(configChangeCallback);
+        configChangeUnsubscribe = client.onConfigurationChange(configChangeCallback);
       }
 
       final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
@@ -338,14 +350,14 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
       if (!offlineMode) {
 
         // Not offline mode. Kick off a fetch.
-        instance
+        client
             .loadConfigurationAsync()
             .handle(
                 (success, ex) -> {
                   if (ex == null) {
-                    ret.complete(instance);
+                    ret.complete(client);
                   } else if (failCount.incrementAndGet() == 2
-                      || instance.getInitialConfigFuture() == null) {
+                      || client.getInitialConfigFuture() == null) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
@@ -361,16 +373,16 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
           pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
 
-        instance.startPolling(pollingIntervalMs, pollingJitterMs);
+        client.startPolling(pollingIntervalMs, pollingJitterMs);
       }
 
-      if (instance.getInitialConfigFuture() != null) {
-        instance
+      if (client.getInitialConfigFuture() != null) {
+        client
             .getInitialConfigFuture()
             .handle(
                 (success, ex) -> {
                   if (ex == null && success) {
-                    ret.complete(instance);
+                    ret.complete(client);
                   } else if (offlineMode || ex != null || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
@@ -380,6 +392,8 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
                   }
                   return null;
                 });
+      } else if (offlineMode) {
+        ret.complete(client);
       }
       return ret.exceptionally(
           e -> {
@@ -387,7 +401,7 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
             if (!isGracefulMode) {
               throw new RuntimeException(e);
             }
-            return instance;
+            return client;
           });
     }
 
@@ -396,6 +410,9 @@ public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
       try {
         return buildAndInitAsync().get();
       } catch (ExecutionException | InterruptedException | CompletionException e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         // If the exception was an `EppoInitializationException`, we know for sure that
         // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
         // wrapped by `CompletableFuture` with a `CompletionException`.

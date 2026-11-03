@@ -392,4 +392,46 @@ public class AndroidBaseClientInitializationTest {
       super((Class) OtherBuilder.class, app, CompletableFuture.completedFuture(null));
     }
   }
+
+  @Test
+  public void forcedReplacementUnsubscribesReplacedCallback() throws Exception {
+    AtomicInteger calls = new AtomicInteger();
+    TestBuilder builder =
+        builder(CompletableFuture.completedFuture(null))
+            .onConfigurationChange(config -> calls.incrementAndGet());
+    builder.buildAndInitAsync().get(5, TimeUnit.SECONDS);
+    builder.forceReinitialize(true).buildAndInitAsync().get(5, TimeUnit.SECONDS);
+    builder.configStore.saveConfiguration(Configuration.emptyConfig()).get(5, TimeUnit.SECONDS);
+    assertEquals(1, calls.get());
+  }
+
+  @Test
+  public void strictFailureUnsubscribesCallback() throws Exception {
+    AtomicInteger calls = new AtomicInteger();
+    CompletableFuture<Void> failed = new CompletableFuture<>();
+    failed.completeExceptionally(new IllegalStateException("fetch failed"));
+    TestBuilder builder = builder(failed).onConfigurationChange(config -> calls.incrementAndGet());
+    assertThrows(
+        ExecutionException.class, () -> builder.buildAndInitAsync().get(5, TimeUnit.SECONDS));
+    builder.configStore.saveConfiguration(Configuration.emptyConfig()).get(5, TimeUnit.SECONDS);
+    assertEquals(0, calls.get());
+  }
+
+  @Test
+  public void forcedReplacementStopsCompletedClientsPoller() throws Exception {
+    TestClient old =
+        builder(CompletableFuture.completedFuture(null))
+            .pollingEnabled(true)
+            .buildAndInitAsync()
+            .get(5, TimeUnit.SECONDS);
+    assertTrue(old.polling);
+    TestClient replacement =
+        builder(CompletableFuture.completedFuture(null))
+            .forceReinitialize(true)
+            .pollingEnabled(true)
+            .buildAndInitAsync()
+            .get(5, TimeUnit.SECONDS);
+    assertFalse(old.polling);
+    assertTrue(replacement.polling);
+  }
 }
