@@ -8,10 +8,10 @@ public class FileBackedConfigStore<ConfigurationType extends SerializableEppoCon
     extends CachingConfigurationStore<ConfigurationType> {
 
   /**
-   * Creates a FileBackedStore with the specified configuration.
+   * Creates a FileBackedConfigStore with the specified configuration.
    *
    * @param application the Android application context
-   * @param cacheFileSuffix suffix for the cache file name (e.g. "v4-flags-abc123")
+   * @param cacheFileSuffix suffix for the file named eppo-sdk-flags-{suffix}.{ext}
    * @param codec the codec for serializing/deserializing configurations
    */
   public FileBackedConfigStore(

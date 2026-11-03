@@ -56,7 +56,7 @@ public class CustomClientActivity extends AppCompatActivity {
 
   private AndroidBaseClient<Configuration, JsonElement> client;
 
-  private class GsonAndroidBaseClientBuilder
+  private static class GsonAndroidBaseClientBuilder
       extends AndroidBaseClient.Builder<
           GsonAndroidBaseClientBuilder,
           AndroidBaseClient<Configuration, JsonElement>,
@@ -160,7 +160,7 @@ public class CustomClientActivity extends AppCompatActivity {
                       appendToLog(
                           "Ready — GSON parser + GSON cache codec + header-injecting HTTP client.\n"
                               + "Injected headers: "
-                              + customHeaders));
+                              + customHeaders.keySet()));
             })
         .exceptionally(
             error -> {

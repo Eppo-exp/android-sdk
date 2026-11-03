@@ -29,7 +29,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <JsonFlagType> The JSON type used for JSON flag values (e.g., JsonNode, JsonElement)
  */
-public class AndroidBaseClient<
+public abstract class AndroidBaseClient<
         ConfigurationType extends SerializableEppoConfiguration, JsonFlagType>
     extends BaseEppoClient<ConfigurationType, JsonFlagType> {
   private static final String TAG = logTag(AndroidBaseClient.class);
@@ -49,6 +49,7 @@ public class AndroidBaseClient<
     private final Class<?> builderClass;
     private final CompletableFuture<AndroidBaseClient<?, ?>> result = new CompletableFuture<>();
     @Nullable private AndroidBaseClient<?, ?> candidate;
+    @Nullable private Runnable unsubscribe;
 
     private InitializationAttempt(Class<?> builderClass) {
       this.builderClass = builderClass;
@@ -56,7 +57,7 @@ public class AndroidBaseClient<
   }
 
   /**
-   * Private constructor. Use Builder to construct instances.
+   * Constructor for subclasses. Builder.newInstance creates instances.
    *
    * @param apiKey API key for Eppo
    * @param sdkName SDK name identifier
@@ -107,26 +108,20 @@ public class AndroidBaseClient<
    *
    * @return The singleton instance
    * @throws NotInitializedException if the client has not been initialized
-   * @param <ConfigurationType> The Configuration type parameter
-   * @param <ConfigurationBuilderType> The Configuration Builder type parameter
-   * @param <JsonFlagType> The JSON type parameter
    */
-  @SuppressWarnings("unchecked")
-  public static <ConfigurationType extends SerializableEppoConfiguration, JsonFlagType>
-      AndroidBaseClient<ConfigurationType, JsonFlagType> getInstance()
-          throws NotInitializedException {
+  public static AndroidBaseClient<?, ?> getInstance() throws NotInitializedException {
     AndroidBaseClient<?, ?> current = instance;
     if (current == null) {
       throw new NotInitializedException();
     }
-    return (AndroidBaseClient<ConfigurationType, JsonFlagType>) current;
+    return current;
   }
 
   /**
    * Builder for constructing and initializing EppoClient instances.
    *
-   * <p>This is the only way to create an EppoClient. The Builder is generic on JsonFlagType and
-   * builds an EppoClient with the same type parameter.
+   * <p>Base builder for AndroidBaseClient subclasses; subclasses implement newInstance. The Builder
+   * is generic on JsonFlagType and builds an EppoClient with the same type parameter.
    *
    * @param <JsonFlagType> The JSON type used for JSON flag values
    */
@@ -315,6 +310,7 @@ public class AndroidBaseClient<
       final InitializationAttempt attempt;
       final InitializationAttempt previous;
       final AndroidBaseClient<?, ?> previousClient;
+      final Runnable previousUnsubscribe;
       synchronized (INITIALIZATION_LOCK) {
         if (initialization != null && !forceReinitialize) {
           if (initialization.builderClass != selfClass) {
@@ -328,6 +324,7 @@ public class AndroidBaseClient<
         }
         previous = initialization;
         previousClient = previous == null ? null : previous.candidate;
+        previousUnsubscribe = previous == null ? null : previous.unsubscribe;
         attempt = new InitializationAttempt(selfClass);
         initialization = attempt;
         instance = null;
@@ -335,6 +332,9 @@ public class AndroidBaseClient<
       try {
         if (previousClient != null) {
           previousClient.stopPolling();
+        }
+        if (previousUnsubscribe != null) {
+          previousUnsubscribe.run();
         }
         initialize(attempt);
       } catch (Throwable failure) {
@@ -395,6 +395,9 @@ public class AndroidBaseClient<
         attempt.result.complete(client);
       } else {
         // The failed/superseded client owns its own poller, never the replacement's.
+        if (attempt.unsubscribe != null) {
+          attempt.unsubscribe.run();
+        }
         AndroidBaseClient<?, ?> failedClient = client != null ? client : attempt.candidate;
         if (failedClient != null) {
           try {
@@ -438,11 +441,10 @@ public class AndroidBaseClient<
           return;
         }
         attempt.candidate = newInstance;
-      }
-
-      // Register config change callback if provided
-      if (configChangeCallback != null) {
-        newInstance.onConfigurationChange(configChangeCallback);
+        // Register config change callback if provided. A replaced or failed attempt unsubscribes.
+        if (configChangeCallback != null) {
+          attempt.unsubscribe = newInstance.onConfigurationChange(configChangeCallback);
+        }
       }
 
       final CompletableFuture<AndroidBaseClientType> ret = new CompletableFuture<>();
@@ -503,7 +505,7 @@ public class AndroidBaseClient<
      *
      * @return The initialized EppoClient
      */
-    public AndroidBaseClient<ConfigurationType, JsonFlagType> buildAndInit() {
+    public AndroidBaseClientType buildAndInit() {
       try {
         return buildAndInitAsync().get();
       } catch (InterruptedException e) {

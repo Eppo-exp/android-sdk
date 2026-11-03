@@ -55,8 +55,6 @@ public interface ConfigurationCodec<ConfigurationType extends SerializableEppoCo
    * <p><strong>Security Note:</strong> Java serialization is used for local storage. Do not use
    * this codec to deserialize data from untrusted sources, as Java deserialization has known
    * security vulnerabilities.
-   *
-   * @param <ConfigurationType> the configuration type, must extend SerializableEppoConfiguration
    */
   public static class Default implements ConfigurationCodec<Configuration> {
     @Override
@@ -74,7 +72,6 @@ public interface ConfigurationCodec<ConfigurationType extends SerializableEppoCo
     }
 
     @Override
-    @SuppressWarnings("unchecked") // Safe cast - verified by configClass.isInstance() check
     public @NotNull Configuration fromBytes(byte[] bytes) {
       if (bytes == null) {
         throw new IllegalArgumentException("Bytes must not be null");

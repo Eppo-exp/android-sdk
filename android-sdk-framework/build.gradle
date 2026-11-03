@@ -19,6 +19,7 @@ android {
         minSdk 26
         targetSdk 34
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        consumerProguardFiles "consumer-rules.pro"
     }
 
     buildTypes {
@@ -49,8 +50,6 @@ android {
 dependencies {
     api 'cloud.eppo:eppo-sdk-framework:0.1.3'
 
-    api 'com.google.code.gson:gson:2.10.1'
-    api 'org.slf4j:slf4j-android:1.7.36'
     compileOnly 'org.jetbrains:annotations:24.0.0'
 
     testImplementation 'cloud.eppo:sdk-common-jvm:4.0.3'
@@ -108,7 +107,7 @@ mavenPublishing {
 
     pom {
         name = 'Eppo Android SDK Framework'
-        description = 'Android SDK Framework for Eppo - Library-independent EppoClient and PrecomputedEppoClient (abstracts JSON, HTTP, storage)'
+        description = 'Android base layer for Eppo SDKs: AndroidBaseClient and pluggable configuration storage'
         url = 'https://github.com/Eppo-exp/android-sdk'
         licenses {
             license {

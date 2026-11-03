@@ -77,7 +77,6 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp:${versions.okhttp}"
     implementation "com.github.zafarkhaja:java-semver:${versions.semver}"
     implementation "com.fasterxml.jackson.core:jackson-databind:2.19.1"
-    implementation "com.fasterxml.jackson.module:jackson-module-parameter-names:2.19.1"
 
     testImplementation "junit:junit:${versions.junit}"
     testImplementation "commons-io:commons-io:${versions.commonsio}"
@@ -168,6 +167,9 @@ task checkVersion {
         }
         if (project.hasProperty('snapshot') && !project.version.endsWith('SNAPSHOT')) {
             throw new GradleException("You cannot specify -Psnapshot with a non-SNAPSHOT version")
+        }
+        if (project.hasProperty('release') && project(':android-sdk-framework').version.toString().endsWith('SNAPSHOT')) {
+            throw new GradleException("You cannot release :eppo while :android-sdk-framework is a SNAPSHOT")
         }
         project.ext.shouldPublish = true
     }
