@@ -1,6 +1,7 @@
 package cloud.eppo.android;
 
 import android.app.Application;
+import cloud.eppo.android.framework.storage.BaseCacheFile;
 
 /** Disk cache file for precomputed configuration. */
 public class PrecomputedCacheFile extends BaseCacheFile {

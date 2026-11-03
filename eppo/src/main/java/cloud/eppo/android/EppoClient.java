@@ -7,25 +7,27 @@ import android.app.Application;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import cloud.eppo.BaseEppoClient;
-import cloud.eppo.IConfigurationStore;
 import cloud.eppo.android.cache.LRUAssignmentCache;
 import cloud.eppo.android.exceptions.MissingApiKeyException;
 import cloud.eppo.android.exceptions.MissingApplicationException;
 import cloud.eppo.android.exceptions.NotInitializedException;
-import cloud.eppo.api.Attributes;
+import cloud.eppo.android.framework.AndroidBaseClient;
+import cloud.eppo.android.framework.storage.CachingConfigurationStore;
+import cloud.eppo.android.framework.storage.ConfigurationCodec;
+import cloud.eppo.android.framework.storage.FileBackedConfigStore;
 import cloud.eppo.api.Configuration;
-import cloud.eppo.api.EppoValue;
 import cloud.eppo.api.IAssignmentCache;
+import cloud.eppo.http.EppoConfigurationClient;
 import cloud.eppo.logging.AssignmentLogger;
-import cloud.eppo.ufc.dto.VariationType;
+import cloud.eppo.parser.ConfigurationParser;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-public class EppoClient extends BaseEppoClient {
+public class EppoClient extends AndroidBaseClient<Configuration, JsonNode> {
   private static final String TAG = logTag(EppoClient.class);
   private static final boolean DEFAULT_IS_GRACEFUL_MODE = true;
   private static final boolean DEFAULT_OBFUSCATE_CONFIG = true;
@@ -34,35 +36,35 @@ public class EppoClient extends BaseEppoClient {
 
   private long pollingIntervalMs, pollingJitterMs;
 
-  @Nullable private static EppoClient instance;
+  @Nullable private static volatile EppoClient instance;
+  @Nullable private static Runnable configChangeUnsubscribe;
 
   private EppoClient(
       String apiKey,
       String sdkName,
       String sdkVersion,
-      @Deprecated @Nullable String host,
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
-      IConfigurationStore configurationStore,
+      CachingConfigurationStore<Configuration> configurationStore,
+      ConfigurationParser<Configuration, JsonNode> configurationParser,
+      EppoConfigurationClient configurationClient,
       boolean isGracefulMode,
-      boolean obfuscateConfig,
+      boolean expectObfuscatedConfig,
       @Nullable CompletableFuture<Configuration> initialConfiguration,
       @Nullable IAssignmentCache assignmentCache) {
     super(
         apiKey,
         sdkName,
         sdkVersion,
-        host,
         apiBaseUrl,
         assignmentLogger,
-        null,
         configurationStore,
         isGracefulMode,
-        obfuscateConfig,
-        false,
+        expectObfuscatedConfig,
         initialConfiguration,
         assignmentCache,
-        null);
+        configurationParser,
+        configurationClient);
   }
 
   /**
@@ -75,9 +77,11 @@ public class EppoClient extends BaseEppoClient {
       @Nullable String apiBaseUrl,
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
+    // Use apiBaseUrl if provided, otherwise fall back to host. As in 4.x, requests go to
+    // {host}/api.
+    String baseUrl = apiBaseUrl != null ? apiBaseUrl : hostToApiBaseUrl(host);
     return new Builder(apiKey, application)
-        .host(host)
-        .apiBaseUrl(apiBaseUrl)
+        .apiBaseUrl(baseUrl)
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
         .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
@@ -94,11 +98,15 @@ public class EppoClient extends BaseEppoClient {
       @Nullable AssignmentLogger assignmentLogger,
       boolean isGracefulMode) {
     return new Builder(apiKey, application)
-        .host(host)
+        .apiBaseUrl(hostToApiBaseUrl(host))
         .assignmentLogger(assignmentLogger)
         .isGracefulMode(isGracefulMode)
         .obfuscateConfig(DEFAULT_OBFUSCATE_CONFIG)
         .buildAndInitAsync();
+  }
+
+  @Nullable private static String hostToApiBaseUrl(@Nullable String host) {
+    return host == null ? null : host + "/api";
   }
 
   public static EppoClient getInstance() throws NotInitializedException {
@@ -107,16 +115,6 @@ public class EppoClient extends BaseEppoClient {
     }
 
     return EppoClient.instance;
-  }
-
-  protected EppoValue getTypedAssignment(
-      String flagKey,
-      String subjectKey,
-      Attributes subjectAttributes,
-      EppoValue defaultValue,
-      VariationType expectedType) {
-    return super.getTypedAssignment(
-        flagKey, subjectKey, subjectAttributes, defaultValue, expectedType);
   }
 
   /** (Re)loads flag and experiment configuration from the API server. */
@@ -132,12 +130,13 @@ public class EppoClient extends BaseEppoClient {
   }
 
   public static class Builder {
-    private String host;
     private String apiBaseUrl;
     private final Application application;
     private final String apiKey;
     @Nullable private AssignmentLogger assignmentLogger;
-    @Nullable private ConfigurationStore configStore;
+
+    @Nullable private CachingConfigurationStore<Configuration> configStore;
+
     private boolean isGracefulMode = DEFAULT_IS_GRACEFUL_MODE;
     private boolean obfuscateConfig = DEFAULT_OBFUSCATE_CONFIG;
     private boolean forceReinitialize = false;
@@ -157,14 +156,14 @@ public class EppoClient extends BaseEppoClient {
     private IAssignmentCache assignmentCache = new LRUAssignmentCache(100);
     @Nullable private Consumer<Configuration> configChangeCallback;
 
+    // Batteries-included: Allow overriding default implementations
+    @Nullable private ConfigurationParser<Configuration, JsonNode> configurationParser;
+
+    @Nullable private EppoConfigurationClient configurationClient;
+
     public Builder(@NonNull String apiKey, @NonNull Application application) {
       this.application = application;
       this.apiKey = apiKey;
-    }
-
-    public Builder host(@Nullable String host) {
-      this.host = host;
-      return this;
     }
 
     public Builder apiBaseUrl(@Nullable String apiBaseUrl) {
@@ -207,27 +206,20 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
-    public Builder initialConfiguration(byte[] initialFlagConfigResponse) {
-      this.initialConfiguration =
-          CompletableFuture.completedFuture(
-              new Configuration.Builder(initialFlagConfigResponse).build());
+    public Builder initialConfiguration(CompletableFuture<Configuration> initialConfiguration) {
+      this.initialConfiguration = initialConfiguration;
       return this;
     }
 
-    public Builder initialConfiguration(CompletableFuture<byte[]> initialFlagConfigResponse) {
-      this.initialConfiguration =
-          initialFlagConfigResponse.thenApply(ic -> new Configuration.Builder(ic).build());
-      return this;
-    }
-
-    public Builder configStore(ConfigurationStore configStore) {
+    public Builder configStore(CachingConfigurationStore<Configuration> configStore) {
       this.configStore = configStore;
       return this;
     }
 
     /**
      * Sets whether the client should periodically check for updated configuration. Used in
-     * conjunction with `pollingIntervalMs` default 60000 and `pollingJitterMs` default 600.
+     * conjunction with `pollingIntervalMs` default 300000 (five minutes) and `pollingJitterMs`
+     * default 10% of the interval.
      */
     public Builder pollingEnabled(boolean pollingEnabled) {
       this.pollingEnabled = pollingEnabled;
@@ -261,6 +253,30 @@ public class EppoClient extends BaseEppoClient {
       return this;
     }
 
+    /**
+     * Sets a custom configuration parser. If not specified, the default {@link
+     * JacksonConfigurationParser} will be used.
+     *
+     * @param parser the configuration parser to use
+     * @return this builder
+     */
+    public Builder configurationParser(ConfigurationParser<Configuration, JsonNode> parser) {
+      this.configurationParser = parser;
+      return this;
+    }
+
+    /**
+     * Sets a custom HTTP client for fetching configurations. If not specified, the default {@link
+     * OkHttpEppoClient} will be used.
+     *
+     * @param client the HTTP client to use
+     * @return this builder
+     */
+    public Builder configurationClient(EppoConfigurationClient client) {
+      this.configurationClient = client;
+      return this;
+    }
+
     public CompletableFuture<EppoClient> buildAndInitAsync() {
       if (application == null) {
         throw new MissingApplicationException();
@@ -275,6 +291,10 @@ public class EppoClient extends BaseEppoClient {
       } else if (instance != null) {
         // Stop polling (if the client is polling for configuration)
         instance.stopPolling();
+        if (configChangeUnsubscribe != null) {
+          configChangeUnsubscribe.run();
+          configChangeUnsubscribe = null;
+        }
 
         // Always recreate for tests
         Log.d(TAG, "`forceReinitialize` triggered reinitializing Eppo Client");
@@ -285,33 +305,42 @@ public class EppoClient extends BaseEppoClient {
 
       // Get caching from config store
       if (configStore == null) {
-        // Cache at a per-API key level (useful for development)
-        String cacheFileNameSuffix = safeCacheKey(apiKey);
-        configStore = new ConfigurationStore(application, cacheFileNameSuffix);
+        configStore = createDefaultConfigStore();
       }
 
       // If the initial config was not set, use the ConfigurationStore's cache as the initial
       // config.
       if (initialConfiguration == null && !ignoreCachedConfiguration) {
-        initialConfiguration = configStore.loadConfigFromCache();
+        initialConfiguration = configStore.loadFromStorage();
       }
 
-      instance =
+      // Create batteries-included implementations (use provided overrides or defaults)
+      ConfigurationParser<Configuration, JsonNode> parserToUse =
+          this.configurationParser != null
+              ? this.configurationParser
+              : new JacksonConfigurationParser();
+
+      EppoConfigurationClient clientToUse =
+          this.configurationClient != null ? this.configurationClient : new OkHttpEppoClient();
+
+      final EppoClient client =
           new EppoClient(
               apiKey,
               sdkName,
               sdkVersion,
-              host,
               apiBaseUrl,
               assignmentLogger,
               configStore,
+              parserToUse,
+              clientToUse,
               isGracefulMode,
               obfuscateConfig,
               initialConfiguration,
               assignmentCache);
+      instance = client;
 
       if (configChangeCallback != null) {
-        instance.onConfigurationChange(configChangeCallback);
+        configChangeUnsubscribe = client.onConfigurationChange(configChangeCallback);
       }
 
       final CompletableFuture<EppoClient> ret = new CompletableFuture<>();
@@ -321,14 +350,14 @@ public class EppoClient extends BaseEppoClient {
       if (!offlineMode) {
 
         // Not offline mode. Kick off a fetch.
-        instance
+        client
             .loadConfigurationAsync()
             .handle(
                 (success, ex) -> {
                   if (ex == null) {
-                    ret.complete(instance);
+                    ret.complete(client);
                   } else if (failCount.incrementAndGet() == 2
-                      || instance.getInitialConfigFuture() == null) {
+                      || client.getInitialConfigFuture() == null) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
@@ -344,26 +373,27 @@ public class EppoClient extends BaseEppoClient {
           pollingJitterMs = pollingIntervalMs / DEFAULT_JITTER_INTERVAL_RATIO;
         }
 
-        instance.startPolling(pollingIntervalMs, pollingJitterMs);
+        client.startPolling(pollingIntervalMs, pollingJitterMs);
       }
 
-      if (instance.getInitialConfigFuture() != null) {
-        instance
+      if (client.getInitialConfigFuture() != null) {
+        client
             .getInitialConfigFuture()
             .handle(
                 (success, ex) -> {
                   if (ex == null && success) {
-                    ret.complete(instance);
-                  } else if (offlineMode || failCount.incrementAndGet() == 2) {
+                    ret.complete(client);
+                  } else if (offlineMode || ex != null || failCount.incrementAndGet() == 2) {
                     ret.completeExceptionally(
                         new EppoInitializationException(
                             "Unable to initialize client; Configuration could not be loaded", ex));
                   } else {
-                    Log.d(TAG, "Initial config was not used.");
-                    failCount.incrementAndGet();
+                    Log.d(TAG, "Initial config was not used; waiting for fetch.");
                   }
                   return null;
                 });
+      } else if (offlineMode) {
+        ret.complete(client);
       }
       return ret.exceptionally(
           e -> {
@@ -371,7 +401,7 @@ public class EppoClient extends BaseEppoClient {
             if (!isGracefulMode) {
               throw new RuntimeException(e);
             }
-            return instance;
+            return client;
           });
     }
 
@@ -380,6 +410,9 @@ public class EppoClient extends BaseEppoClient {
       try {
         return buildAndInitAsync().get();
       } catch (ExecutionException | InterruptedException | CompletionException e) {
+        if (e instanceof InterruptedException) {
+          Thread.currentThread().interrupt();
+        }
         // If the exception was an `EppoInitializationException`, we know for sure that
         // `buildAndInitAsync` logged it (and wrapped it with a RuntimeException) which was then
         // wrapped by `CompletableFuture` with a `CompletionException`.
@@ -396,6 +429,13 @@ public class EppoClient extends BaseEppoClient {
         }
       }
       return instance;
+    }
+
+    private CachingConfigurationStore<Configuration> createDefaultConfigStore() {
+      ConfigurationCodec<Configuration> codec = new ConfigurationCodec.Default();
+
+      // Cache at a per-API key level (useful for development)
+      return new FileBackedConfigStore<>(application, safeCacheKey(apiKey), codec);
     }
   }
 

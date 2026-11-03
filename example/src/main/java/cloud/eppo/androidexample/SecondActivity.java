@@ -86,7 +86,13 @@ public class SecondActivity extends AppCompatActivity {
 
     String assignedVariation =
         EppoClient.getInstance()
-            .getStringAssignment(experimentKey, subjectId, new Attributes(), "");
+            .getStringAssignment(experimentKey, subjectId, new Attributes(), "DEFAULT");
+    cloud.eppo.api.AssignmentDetails<String> details =
+        EppoClient.getInstance()
+            .getStringAssignmentDetails(experimentKey, subjectId, new Attributes(), "DEFAULT");
+    appendToAssignmentLogView(
+        "Evaluation: " + details.getEvaluationDetails().getFlagEvaluationCode());
+    Log.i("Eppo", "Assignment: " + assignedVariation);
     appendToAssignmentLogView("Assigned variation: " + assignedVariation);
   }
 
