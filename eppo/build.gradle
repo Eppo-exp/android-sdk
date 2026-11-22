@@ -56,7 +56,7 @@ ext {}
 ext.versions = [
     "junit": "4.13.2",
     "mockito": "5.14.2",
-    "roboelectric": "4.12+",
+    "roboelectric": "4.18.1",
     "androidx_junit": "1.2.1",
     "androidx_test_core": "1.6.1",
     "androidx_runner": "1.6.2",
