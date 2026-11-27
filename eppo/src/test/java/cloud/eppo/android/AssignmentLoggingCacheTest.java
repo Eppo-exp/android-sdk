@@ -3,6 +3,8 @@ package cloud.eppo.android;
 import static org.junit.Assert.assertEquals;
 
 import cloud.eppo.android.dto.PrecomputedConfigurationResponse;
+import cloud.eppo.android.framework.storage.ConfigurationCodec;
+import cloud.eppo.android.framework.storage.FileBackedConfigStore;
 import cloud.eppo.android.util.ObfuscationUtils;
 import cloud.eppo.api.Configuration;
 import cloud.eppo.logging.Assignment;
@@ -12,6 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,11 +27,15 @@ public class AssignmentLoggingCacheTest {
   private static final String SUBJECT = "test-subject";
   private static final String SALT = "test-salt";
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static final JacksonConfigurationParser PARSER = new JacksonConfigurationParser();
 
   @Test
   public void standardClientLogsChangedAssignmentsAfterConfigurationChanges() throws Exception {
-    ConfigurationStore store =
-        new ConfigurationStore(RuntimeEnvironment.getApplication(), "assignment-logging-test");
+    FileBackedConfigStore<Configuration> store =
+        new FileBackedConfigStore<>(
+            RuntimeEnvironment.getApplication(),
+            "assignment-logging-test",
+            new ConfigurationCodec.Default());
     List<Assignment> assignments = new ArrayList<>();
     EppoClient client =
         new EppoClient.Builder("test-api-key", RuntimeEnvironment.getApplication())
@@ -37,7 +44,8 @@ public class AssignmentLoggingCacheTest {
             .pollingEnabled(false)
             .isGracefulMode(false)
             .configStore(store)
-            .initialConfiguration(standardConfig("allocation-1", "A"))
+            .initialConfiguration(
+                CompletableFuture.completedFuture(standardConfiguration("allocation-1", "A")))
             .assignmentLogger(assignments::add)
             .buildAndInitAsync()
             .get(10, TimeUnit.SECONDS);
@@ -47,8 +55,7 @@ public class AssignmentLoggingCacheTest {
     for (int i = 0; i < variations.length; i++) {
       for (int repeat = 0; repeat < 2; repeat++) {
         store
-            .saveConfiguration(
-                new Configuration.Builder(standardConfig(allocations[i], variations[i])).build())
+            .saveConfiguration(standardConfiguration(allocations[i], variations[i]))
             .get(10, TimeUnit.SECONDS);
         assertEquals(variations[i], client.getStringAssignment(FLAG, SUBJECT, "default"));
         assertAssignment(assignments, i, allocations[i], variations[i]);
@@ -127,6 +134,12 @@ public class AssignmentLoggingCacheTest {
         .put("variationKey", encode(variation))
         .putArray("shards");
     return MAPPER.writeValueAsBytes(config);
+  }
+
+  private static Configuration standardConfiguration(String allocation, String variation)
+      throws Exception {
+    return PARSER.buildConfig(
+        PARSER.parseFlagConfig(standardConfig(allocation, variation)), null, null, null);
   }
 
   private static byte[] precomputedConfig(String allocation, String variation) throws Exception {
