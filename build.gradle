@@ -1,9 +1,48 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 plugins {
+    id 'org.jreleaser' version '1.26.0'
     id 'com.android.application' version '8.10.1' apply false
     id 'com.android.library' version '8.10.1' apply false
 }
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+// JReleaser only deploys already-staged release files; GitHub is the release entry point.
+group = 'cloud.eppo'
+version = findProperty('deploymentVersion') ?: '0.0.0'
+jreleaser {
+    signing {
+        active = 'ALWAYS'
+        armored = true
+        verify = false
+        mode = 'MEMORY'
+    }
+    deploy.maven.mavenCentral {
+        'release-deploy' {
+            active = 'RELEASE'
+            url = 'https://central.sonatype.com/api/v1/publisher'
+            stagingRepository('build/staging-deploy')
+        }
+    }
+}
+
+tasks.register('releaseVersions') {
+    doLast {
+        [project(':android-sdk-framework'), project(':eppo')].each { module ->
+            ['api', 'implementation'].each { scope ->
+                module.configurations.getByName(scope).dependencies.each { dependency ->
+                    if (!(dependency instanceof ProjectDependency) && dependency.version &&
+                        !(dependency.version ==~ /[0-9]+\.[0-9]+\.[0-9]+/)) {
+                        throw new GradleException("Release requires a fixed stable dependency: ${dependency}")
+                    }
+                }
+            }
+        }
+        println groovy.json.JsonOutput.toJson([
+            'android-sdk-framework': project(':android-sdk-framework').version.toString(),
+            'android-sdk': project(':eppo').version.toString()
+        ])
+    }
 }
